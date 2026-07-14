@@ -22,6 +22,27 @@ public class SchoolDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
+    // Inventario
+    public DbSet<Category> Categories => Set<Category>();
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<StockMovement> StockMovements => Set<StockMovement>();
+
+    // Ventas
+    public DbSet<Sale> Sales => Set<Sale>();
+    public DbSet<SaleLine> SaleLines => Set<SaleLine>();
+
+    // Compras
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
+    public DbSet<PurchaseOrder> PurchaseOrders => Set<PurchaseOrder>();
+    public DbSet<PurchaseOrderLine> PurchaseOrderLines => Set<PurchaseOrderLine>();
+    public DbSet<GoodsReceipt> GoodsReceipts => Set<GoodsReceipt>();
+    public DbSet<GoodsReceiptLine> GoodsReceiptLines => Set<GoodsReceiptLine>();
+    public DbSet<SupplierInvoice> SupplierInvoices => Set<SupplierInvoice>();
+
+    // Tesorería
+    public DbSet<CashSession> CashSessions => Set<CashSession>();
+    public DbSet<CashMovement> CashMovements => Set<CashMovement>();
+
     /// <summary>Precisión estándar del dinero en toda la DB.</summary>
     private const int MoneyPrecision = 18;
     private const int MoneyScale = 4;
@@ -127,6 +148,134 @@ public class SchoolDbContext : DbContext
             e.Property(x => x.Entity).HasMaxLength(100);
             e.Property(x => x.EntityId).HasMaxLength(100);
             e.HasIndex(x => new { x.SchoolId, x.CreatedAtUtc });
+        });
+
+        ConfigureInventory(b);
+        ConfigureSales(b);
+        ConfigurePurchasing(b);
+        ConfigureTreasury(b);
+    }
+
+    private static void ConfigureInventory(ModelBuilder b)
+    {
+        b.Entity<Category>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(120).IsRequired();
+            e.HasIndex(x => new { x.SchoolId, x.Name }).IsUnique();
+        });
+
+        b.Entity<Product>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Barcode).HasMaxLength(100);
+            // Código de barras único por escuela (cuando existe).
+            e.HasIndex(x => new { x.SchoolId, x.Barcode }).IsUnique().HasFilter(null);
+            e.HasOne(x => x.Category).WithMany()
+                .HasForeignKey(x => x.CategoryId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        b.Entity<StockMovement>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Reference).HasMaxLength(100);
+            e.Property(x => x.Reason).HasMaxLength(300);
+            e.HasIndex(x => new { x.ProductId, x.CreatedAtUtc });
+            e.HasOne(x => x.Product).WithMany(p => p.StockMovements)
+                .HasForeignKey(x => x.ProductId).OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureSales(ModelBuilder b)
+    {
+        b.Entity<Sale>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.SchoolId, x.CreatedAtUtc });
+            e.HasIndex(x => x.AccountId);
+        });
+
+        b.Entity<SaleLine>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Description).HasMaxLength(200).IsRequired();
+            e.HasOne(x => x.Sale).WithMany(s => s.Lines)
+                .HasForeignKey(x => x.SaleId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.ProductId);
+        });
+    }
+
+    private static void ConfigurePurchasing(ModelBuilder b)
+    {
+        b.Entity<Supplier>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Rfc).HasMaxLength(20);
+            e.Property(x => x.ContactName).HasMaxLength(150);
+            e.Property(x => x.Phone).HasMaxLength(50);
+            e.Property(x => x.Email).HasMaxLength(256);
+            e.HasIndex(x => new { x.SchoolId, x.Name });
+        });
+
+        b.Entity<PurchaseOrder>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.OrderNumber).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => new { x.SchoolId, x.OrderNumber }).IsUnique();
+            e.HasOne(x => x.Supplier).WithMany()
+                .HasForeignKey(x => x.SupplierId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<PurchaseOrderLine>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasOne(x => x.PurchaseOrder).WithMany(p => p.Lines)
+                .HasForeignKey(x => x.PurchaseOrderId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.ProductId);
+        });
+
+        b.Entity<GoodsReceipt>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.HasOne(x => x.PurchaseOrder).WithMany(p => p.Receipts)
+                .HasForeignKey(x => x.PurchaseOrderId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<GoodsReceiptLine>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasOne(x => x.GoodsReceipt).WithMany(g => g.Lines)
+                .HasForeignKey(x => x.GoodsReceiptId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.ProductId);
+        });
+
+        b.Entity<SupplierInvoice>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.InvoiceNumber).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => new { x.SchoolId, x.SupplierId, x.InvoiceNumber }).IsUnique();
+            e.HasOne(x => x.Supplier).WithMany()
+                .HasForeignKey(x => x.SupplierId).OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureTreasury(ModelBuilder b)
+    {
+        b.Entity<CashSession>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.SchoolId, x.Status });
+        });
+
+        b.Entity<CashMovement>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Reason).HasMaxLength(300).IsRequired();
+            e.HasOne(x => x.CashSession).WithMany(s => s.Movements)
+                .HasForeignKey(x => x.CashSessionId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

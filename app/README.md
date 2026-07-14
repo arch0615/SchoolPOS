@@ -49,18 +49,25 @@ La cadena de conexión real se inyecta por escuela vía `AddSchoolPosData(connec
 (ver `SchoolPOS.Data/DependencyInjection.cs`). La cadena de diseño (solo para generar
 migraciones) está en `SchoolDbContextFactory`.
 
-## Estado actual (hito M1)
+## Estado actual (Fase 1 completa — hito M1)
 
-Núcleo del libro mayor de saldo — **fuente única de verdad** con transacciones atómicas:
+Núcleo del libro mayor de saldo — **fuente única de verdad** con transacciones atómicas,
+y el **esquema completo de la Fase 1** (22 entidades) con dos migraciones.
 
 - `Money` en `decimal` con redondeo comercial (NFR-4).
-- Esquema Fase 1: School, Student, Account, BalanceMovement (inmutable), TopUp
-  (dedupe por `gateway_ref`), Guardian, User, AuditLog.
+- **Saldo:** School, Student, Account, BalanceMovement (inmutable), TopUp (dedupe por
+  `gateway_ref`), Guardian, User, AuditLog.
+- **Inventario:** Category, Product (stock denormalizado), StockMovement (Kardex).
+- **Ventas:** Sale, SaleLine.
+- **Compras:** Supplier, PurchaseOrder, PurchaseOrderLine, GoodsReceipt (+Line), SupplierInvoice.
+- **Tesorería:** CashSession, CashMovement.
 - `BalanceService`: recarga (100% al estudiante, idempotente), cobro con saldo (UPDATE
   condicional atómico → sin sobregiro ni doble gasto), devolución y ajuste auditado.
-- 11 pruebas verdes, incl. **recarga + venta + devolución reconcilian** (M1).
+- 14 pruebas verdes, incl. **recarga + venta + devolución reconcilian** (M1), Kardex
+  reconcilia con existencias, y renglones de venta cuadran con el total.
 
 ### Siguiente
 
-Fase 1 restante (Product/Category/Kardex, Sale/SaleLine, Supplier/PO, CashSession) y
-Fase 2 (POS WPF: ventas + inventario offline sobre la DB local).
+Fase 1.B restante: servicios de dominio de **inventario** (entrada/salida/ajuste con Kardex
+atómico) y **ventas** (arma la venta, cobra por saldo, descuenta stock). Luego Fase 2
+(POS WPF: ventas + inventario offline sobre la DB local).
