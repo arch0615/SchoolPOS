@@ -19,6 +19,8 @@ public static class DependencyInjection
 
         services.AddSingleton<IClock, SystemClock>();
         services.AddScoped<IBalanceService, BalanceService>();
+        services.AddScoped<IInventoryService, InventoryService>();
+        services.AddScoped<ISalesService, SalesService>();
         return services;
     }
 }

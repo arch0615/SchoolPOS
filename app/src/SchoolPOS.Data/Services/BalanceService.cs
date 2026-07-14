@@ -12,6 +12,8 @@ namespace SchoolPOS.Data.Services;
 /// importe</c>), atómico por fila, por lo que dos cargos concurrentes nunca sobregiran ni
 /// gastan doble. Cada mutación de saldo se persiste junto con su asiento inmutable dentro de
 /// la misma transacción; por construcción <c>SUM(Amount) == Account.Balance</c> siempre reconcilia.
+/// Las operaciones son componibles: si ya hay una transacción activa (p. ej. iniciada por una
+/// venta), participan en ella en vez de anidar.
 /// </summary>
 public sealed class BalanceService : IBalanceService
 {
@@ -27,55 +29,40 @@ public sealed class BalanceService : IBalanceService
         _clock = clock;
     }
 
-    public async Task<BalanceMovement> ApplyTopUpAsync(Guid topUpId, CancellationToken ct = default)
-    {
-        await using var tx = await _db.Database.BeginTransactionAsync(ct);
-
-        var topUp = await _db.TopUps.FirstOrDefaultAsync(t => t.Id == topUpId, ct)
-            ?? throw new InvalidOperationException($"Recarga {topUpId} no encontrada.");
-
-        // Idempotencia: si ya fue aplicada, no hacer nada y devolver el asiento existente (NFR-7).
-        if (topUp.AppliedLocally)
+    public Task<BalanceMovement> ApplyTopUpAsync(Guid topUpId, CancellationToken ct = default) =>
+        _db.ExecuteAtomicAsync(async () =>
         {
-            var existing = await _db.BalanceMovements.AsNoTracking()
-                .FirstOrDefaultAsync(m => m.Type == MovementType.TopUp && m.Reference == topUp.GatewayRef, ct);
-            await tx.CommitAsync(ct);
-            return existing
-                ?? throw new InvalidOperationException(
-                    $"Inconsistencia: la recarga {topUpId} figura aplicada pero sin asiento.");
-        }
+            var topUp = await _db.TopUps.FirstOrDefaultAsync(t => t.Id == topUpId, ct)
+                ?? throw new InvalidOperationException($"Recarga {topUpId} no encontrada.");
 
-        var amount = Math.Round(topUp.Amount, Scale, Rounding); // 100% al estudiante (FR-COM-1)
-        var now = _clock.UtcNow;
+            // Idempotencia: si ya fue aplicada, devolver el asiento existente sin re-acreditar (NFR-7).
+            if (topUp.AppliedLocally)
+            {
+                return await _db.BalanceMovements.AsNoTracking()
+                    .FirstOrDefaultAsync(m => m.Type == MovementType.TopUp && m.Reference == topUp.GatewayRef, ct)
+                    ?? throw new InvalidOperationException(
+                        $"Inconsistencia: la recarga {topUpId} figura aplicada pero sin asiento.");
+            }
 
-        await _db.Accounts
-            .Where(a => a.Id == topUp.AccountId)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(a => a.Balance, a => a.Balance + amount)
-                .SetProperty(a => a.UpdatedAtUtc, now), ct);
+            var amount = Math.Round(topUp.Amount, Scale, Rounding); // 100% al estudiante (FR-COM-1)
+            var now = _clock.UtcNow;
 
-        var newBalance = await ReadBalanceAsync(topUp.AccountId, ct);
+            await _db.Accounts
+                .Where(a => a.Id == topUp.AccountId)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(a => a.Balance, a => a.Balance + amount)
+                    .SetProperty(a => a.UpdatedAtUtc, now), ct);
 
-        var movement = new BalanceMovement
-        {
-            AccountId = topUp.AccountId,
-            Type = MovementType.TopUp,
-            Amount = amount,
-            BalanceAfter = newBalance,
-            Reference = topUp.GatewayRef,
-            OperatorId = null, // recarga del portal: sin operador
-            CreatedAtUtc = now,
-        };
-        _db.BalanceMovements.Add(movement);
+            var movement = await AppendMovementAsync(
+                topUp.AccountId, MovementType.TopUp, amount, topUp.GatewayRef, operatorId: null, now, ct);
 
-        topUp.AppliedLocally = true;
-        topUp.Status = TopUpStatus.Applied;
-        topUp.AppliedAtUtc = now;
+            topUp.AppliedLocally = true;
+            topUp.Status = TopUpStatus.Applied;
+            topUp.AppliedAtUtc = now;
+            await _db.SaveChangesAsync(ct);
 
-        await _db.SaveChangesAsync(ct);
-        await tx.CommitAsync(ct);
-        return movement;
-    }
+            return movement;
+        }, ct);
 
     public Task<BalanceMovement> ChargeSaleAsync(
         Guid accountId, decimal amount, string reference, Guid operatorId, CancellationToken ct = default)
@@ -85,7 +72,7 @@ public sealed class BalanceService : IBalanceService
         Guid accountId, decimal amount, string reference, Guid operatorId, CancellationToken ct = default)
         => ApplyCreditAsync(accountId, amount, MovementType.Refund, reference, operatorId, ct);
 
-    public async Task<BalanceMovement> AdjustAsync(
+    public Task<BalanceMovement> AdjustAsync(
         Guid accountId, decimal amount, string reason, Guid operatorId, CancellationToken ct = default)
     {
         // Ajuste manual auditado: importe con signo, sin verificación de suficiencia (autoridad admin).
@@ -93,73 +80,70 @@ public sealed class BalanceService : IBalanceService
             throw new ArgumentException("El ajuste no puede ser cero.", nameof(amount));
 
         var signed = Math.Round(amount, Scale, Rounding);
-        await using var tx = await _db.Database.BeginTransactionAsync(ct);
-        var now = _clock.UtcNow;
+        return _db.ExecuteAtomicAsync(async () =>
+        {
+            var now = _clock.UtcNow;
+            await _db.Accounts
+                .Where(a => a.Id == accountId)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(a => a.Balance, a => a.Balance + signed)
+                    .SetProperty(a => a.UpdatedAtUtc, now), ct);
 
-        await _db.Accounts
-            .Where(a => a.Id == accountId)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(a => a.Balance, a => a.Balance + signed)
-                .SetProperty(a => a.UpdatedAtUtc, now), ct);
-
-        var movement = await AppendMovementAsync(
-            accountId, MovementType.Adjustment, signed, reason, operatorId, now, ct);
-        await tx.CommitAsync(ct);
-        return movement;
+            return await AppendMovementAsync(accountId, MovementType.Adjustment, signed, reason, operatorId, now, ct);
+        }, ct);
     }
 
     // ---- helpers ----
 
-    private async Task<BalanceMovement> ApplyGuardedDebitAsync(
+    private Task<BalanceMovement> ApplyGuardedDebitAsync(
         Guid accountId, decimal amount, MovementType type, string reference, Guid operatorId, CancellationToken ct)
     {
         RequirePositive(amount);
         var debit = Math.Round(amount, Scale, Rounding);
 
-        await using var tx = await _db.Database.BeginTransactionAsync(ct);
-
-        // UPDATE atómico condicional: solo descuenta si alcanza saldo + sobregiro permitido.
-        var affected = await _db.Accounts
-            .Where(a => a.Id == accountId && a.Balance + a.OverdraftLimit >= debit)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(a => a.Balance, a => a.Balance - debit)
-                .SetProperty(a => a.UpdatedAtUtc, _clock.UtcNow), ct);
-
-        if (affected == 0)
+        return _db.ExecuteAtomicAsync(async () =>
         {
-            var account = await _db.Accounts.AsNoTracking()
-                .FirstOrDefaultAsync(a => a.Id == accountId, ct)
-                ?? throw new InvalidOperationException($"Cuenta {accountId} no encontrada.");
-            throw new InsufficientBalanceException(accountId, debit, account.Balance + account.OverdraftLimit);
-        }
+            var now = _clock.UtcNow;
 
-        var movement = await AppendMovementAsync(
-            accountId, type, -debit, reference, operatorId, _clock.UtcNow, ct);
-        await tx.CommitAsync(ct);
-        return movement;
+            // UPDATE atómico condicional: solo descuenta si alcanza saldo + sobregiro permitido.
+            var affected = await _db.Accounts
+                .Where(a => a.Id == accountId && a.Balance + a.OverdraftLimit >= debit)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(a => a.Balance, a => a.Balance - debit)
+                    .SetProperty(a => a.UpdatedAtUtc, now), ct);
+
+            if (affected == 0)
+            {
+                var account = await _db.Accounts.AsNoTracking()
+                    .FirstOrDefaultAsync(a => a.Id == accountId, ct)
+                    ?? throw new InvalidOperationException($"Cuenta {accountId} no encontrada.");
+                throw new InsufficientBalanceException(accountId, debit, account.Balance + account.OverdraftLimit);
+            }
+
+            return await AppendMovementAsync(accountId, type, -debit, reference, operatorId, now, ct);
+        }, ct);
     }
 
-    private async Task<BalanceMovement> ApplyCreditAsync(
+    private Task<BalanceMovement> ApplyCreditAsync(
         Guid accountId, decimal amount, MovementType type, string reference, Guid operatorId, CancellationToken ct)
     {
         RequirePositive(amount);
         var credit = Math.Round(amount, Scale, Rounding);
 
-        await using var tx = await _db.Database.BeginTransactionAsync(ct);
-        var now = _clock.UtcNow;
+        return _db.ExecuteAtomicAsync(async () =>
+        {
+            var now = _clock.UtcNow;
+            var affected = await _db.Accounts
+                .Where(a => a.Id == accountId)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(a => a.Balance, a => a.Balance + credit)
+                    .SetProperty(a => a.UpdatedAtUtc, now), ct);
 
-        var affected = await _db.Accounts
-            .Where(a => a.Id == accountId)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(a => a.Balance, a => a.Balance + credit)
-                .SetProperty(a => a.UpdatedAtUtc, now), ct);
+            if (affected == 0)
+                throw new InvalidOperationException($"Cuenta {accountId} no encontrada.");
 
-        if (affected == 0)
-            throw new InvalidOperationException($"Cuenta {accountId} no encontrada.");
-
-        var movement = await AppendMovementAsync(accountId, type, credit, reference, operatorId, now, ct);
-        await tx.CommitAsync(ct);
-        return movement;
+            return await AppendMovementAsync(accountId, type, credit, reference, operatorId, now, ct);
+        }, ct);
     }
 
     /// <summary>Inserta el asiento inmutable con la instantánea del saldo resultante.</summary>
