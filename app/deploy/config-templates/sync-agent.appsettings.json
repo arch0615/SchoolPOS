@@ -1,0 +1,16 @@
+{
+  "// NOTA": "Plantilla para el Agente de Sincronización (corre en cada escuela). Reemplazar los marcadores.",
+  "Logging": {
+    "LogLevel": { "Default": "Information", "Microsoft.Hosting.Lifetime": "Information" }
+  },
+  "Database": {
+    "Provider": "SqlServer"
+  },
+  "ConnectionStrings": {
+    "Cloud": "Server=<SERVIDOR-NUBE>;Database=SchoolPOS_Cloud;User Id=<usuario>;Password=<secreto>;TrustServerCertificate=True;",
+    "Local": "Server=localhost\\SQLEXPRESS;Database=SchoolPOS_<ESCUELA>;Trusted_Connection=True;TrustServerCertificate=True;"
+  },
+  "Sync": {
+    "IntervalSeconds": 30
+  }
+}

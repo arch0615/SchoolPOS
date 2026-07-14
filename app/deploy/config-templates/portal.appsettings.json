@@ -1,0 +1,30 @@
+{
+  "// NOTA": "Plantilla para el Portal (nube). Reemplazar los marcadores. NO subir secretos al repositorio.",
+  "Logging": {
+    "LogLevel": { "Default": "Information", "Microsoft.AspNetCore": "Warning" }
+  },
+  "AllowedHosts": "*",
+  "Database": {
+    "Provider": "SqlServer"
+  },
+  "ConnectionStrings": {
+    "Portal": "Server=<SERVIDOR-NUBE>;Database=SchoolPOS_Cloud;User Id=<usuario>;Password=<secreto>;TrustServerCertificate=True;"
+  },
+  "Portal": {
+    "SchoolId": "<PEGAR-SCHOOL-ID-DE-LA-PROVISION>",
+    "SeedDemoData": false,
+    "VendorAccessCode": "<CAMBIAR-CODIGO-PROVEEDOR>"
+  },
+  "Payments": {
+    "Provider": "MercadoPago"
+  },
+  "MercadoPago": {
+    "AccessToken": "<TOKEN-DEL-VENDEDOR-OAUTH-MARKETPLACE>",
+    "WebhookSecret": "<CLAVE-SECRETA-WEBHOOK>",
+    "NotificationUrl": "https://<tu-dominio>/api/payments/webhook",
+    "SuccessUrl": "https://<tu-dominio>/Payments/Result?status=approved",
+    "FailureUrl": "https://<tu-dominio>/Payments/Result?status=rejected",
+    "PendingUrl": "https://<tu-dominio>/Payments/Result?status=pending",
+    "BaseUrl": "https://api.mercadopago.com"
+  }
+}

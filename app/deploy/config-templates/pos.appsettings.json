@@ -1,0 +1,9 @@
+{
+  "// NOTA": "Plantilla para el POS de escritorio (WPF). Copiar a SchoolPOS.Pos.Desktop/appsettings.json y reemplazar los marcadores.",
+  "Pos": {
+    "SchoolId": "<PEGAR-SCHOOL-ID-DE-LA-PROVISION>"
+  },
+  "ConnectionStrings": {
+    "Local": "Server=localhost\\SQLEXPRESS;Database=SchoolPOS_<ESCUELA>;Trusted_Connection=True;TrustServerCertificate=True;"
+  }
+}
