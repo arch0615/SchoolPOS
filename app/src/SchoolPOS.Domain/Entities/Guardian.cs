@@ -21,6 +21,10 @@ public class Guardian
     public int FailedLoginCount { get; set; }
     public DateTime? LockedUntilUtc { get; set; }
 
+    /// <summary>Hash del token de recuperación de contraseña (nunca en claro). De un solo uso.</summary>
+    public string? PasswordResetTokenHash { get; set; }
+    public DateTime? PasswordResetExpiresUtc { get; set; }
+
     public ICollection<GuardianStudent> Students { get; set; } = new List<GuardianStudent>();
 
     public DateTime CreatedAtUtc { get; set; }

@@ -120,6 +120,7 @@ public class SchoolDbContext : DbContext
             e.Property(x => x.Email).HasMaxLength(256).IsRequired();
             e.Property(x => x.FullName).HasMaxLength(200);
             e.Property(x => x.PasswordHash).HasMaxLength(500).IsRequired();
+            e.Property(x => x.PasswordResetTokenHash).HasMaxLength(500);
             e.HasIndex(x => new { x.SchoolId, x.Email }).IsUnique();
         });
 

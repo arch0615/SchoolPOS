@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using SchoolPOS.Domain.Abstractions;
 using SchoolPOS.Domain.Entities;
@@ -147,5 +148,73 @@ public sealed class GuardianService : IGuardianService
             .Select(m => new MovementRow(
                 m.CreatedAtUtc, m.Type.ToString(), m.Amount, m.BalanceAfter, m.Reference))
             .ToListAsync(ct);
+    }
+
+    public Task<Guardian?> GetAsync(Guid guardianId, CancellationToken ct = default) =>
+        _db.Guardians.AsNoTracking().FirstOrDefaultAsync(g => g.Id == guardianId, ct);
+
+    public async Task<string?> RequestPasswordResetAsync(
+        Guid schoolId, string email, CancellationToken ct = default)
+    {
+        var normalized = email.Trim().ToLowerInvariant();
+        var guardian = await _db.Guardians
+            .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.Email == normalized, ct);
+        if (guardian is null)
+            return null; // no revelar si la cuenta existe
+
+        // Token aleatorio (hex, url-safe). Se guarda solo su hash; caduca en 1 hora.
+        var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+        guardian.PasswordResetTokenHash = _hasher.Hash(token);
+        guardian.PasswordResetExpiresUtc = _clock.UtcNow.AddHours(1);
+        await _db.SaveChangesAsync(ct);
+        return token;
+    }
+
+    public async Task<bool> ResetPasswordAsync(
+        Guid schoolId, string email, string token, string newPassword, CancellationToken ct = default)
+    {
+        if (string.IsNullOrEmpty(newPassword) || newPassword.Length < 6)
+            return false;
+
+        var normalized = email.Trim().ToLowerInvariant();
+        var guardian = await _db.Guardians
+            .FirstOrDefaultAsync(g => g.SchoolId == schoolId && g.Email == normalized, ct);
+        if (guardian?.PasswordResetTokenHash is null || guardian.PasswordResetExpiresUtc is null)
+            return false;
+        if (guardian.PasswordResetExpiresUtc < _clock.UtcNow)
+            return false;
+        if (!_hasher.Verify(token, guardian.PasswordResetTokenHash))
+            return false;
+
+        guardian.PasswordHash = _hasher.Hash(newPassword);
+        guardian.PasswordResetTokenHash = null; // un solo uso
+        guardian.PasswordResetExpiresUtc = null;
+        guardian.FailedLoginCount = 0;          // limpia bloqueo
+        guardian.LockedUntilUtc = null;
+        await _db.SaveChangesAsync(ct);
+        return true;
+    }
+
+    public async Task<bool> ChangePasswordAsync(
+        Guid guardianId, string currentPassword, string newPassword, CancellationToken ct = default)
+    {
+        if (string.IsNullOrEmpty(newPassword) || newPassword.Length < 6)
+            return false;
+
+        var guardian = await _db.Guardians.FirstOrDefaultAsync(g => g.Id == guardianId, ct);
+        if (guardian is null || !_hasher.Verify(currentPassword, guardian.PasswordHash))
+            return false;
+
+        guardian.PasswordHash = _hasher.Hash(newPassword);
+        await _db.SaveChangesAsync(ct);
+        return true;
+    }
+
+    public async Task UpdateProfileAsync(Guid guardianId, string fullName, CancellationToken ct = default)
+    {
+        var guardian = await _db.Guardians.FirstOrDefaultAsync(g => g.Id == guardianId, ct)
+            ?? throw new InvalidOperationException("Tutor no encontrado.");
+        guardian.FullName = fullName;
+        await _db.SaveChangesAsync(ct);
     }
 }

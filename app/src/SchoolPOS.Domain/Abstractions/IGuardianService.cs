@@ -48,4 +48,25 @@ public interface IGuardianService
     /// <summary>Movimientos de una cuenta, opcionalmente filtrados por rango de fechas (FR-WP-8).</summary>
     Task<IReadOnlyList<MovementRow>> GetMovementsAsync(
         Guid accountId, DateTime? fromUtc, DateTime? toUtc, CancellationToken ct = default);
+
+    /// <summary>Datos del tutor (para el perfil).</summary>
+    Task<Guardian?> GetAsync(Guid guardianId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Genera un token de recuperación de contraseña de un solo uso con vencimiento (FR-WP-4). Devuelve
+    /// el token en claro para enviarlo por correo (o mostrarlo en desarrollo); <c>null</c> si el correo
+    /// no existe (no se revela la existencia de la cuenta).
+    /// </summary>
+    Task<string?> RequestPasswordResetAsync(Guid schoolId, string email, CancellationToken ct = default);
+
+    /// <summary>Restablece la contraseña con un token válido y vigente. El token es de un solo uso.</summary>
+    Task<bool> ResetPasswordAsync(
+        Guid schoolId, string email, string token, string newPassword, CancellationToken ct = default);
+
+    /// <summary>Cambia la contraseña verificando la actual (FR-WP-10).</summary>
+    Task<bool> ChangePasswordAsync(
+        Guid guardianId, string currentPassword, string newPassword, CancellationToken ct = default);
+
+    /// <summary>Actualiza datos del perfil (nombre).</summary>
+    Task UpdateProfileAsync(Guid guardianId, string fullName, CancellationToken ct = default);
 }

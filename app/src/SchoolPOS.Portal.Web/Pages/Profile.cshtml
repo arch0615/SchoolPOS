@@ -1,0 +1,33 @@
+@page
+@model SchoolPOS.Portal.Web.Pages.ProfileModel
+@{
+    ViewData["Title"] = "Mi perfil";
+}
+@if (!string.IsNullOrEmpty(Model.Message)) { <div class="msg ok">@Model.Message</div> }
+@if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
+
+<div class="card">
+    <h1>Mi perfil</h1>
+    <p class="muted">Correo: <strong>@(Model.Me?.Email)</strong></p>
+</div>
+
+<div class="row">
+    <div class="card">
+        <h2>Datos personales</h2>
+        <form method="post" asp-page-handler="Profile">
+            <label>Nombre completo</label>
+            <input asp-for="FullName" />
+            <div style="margin-top:12px"><button class="btn" type="submit">Guardar</button></div>
+        </form>
+    </div>
+    <div class="card">
+        <h2>Cambiar contraseña</h2>
+        <form method="post" asp-page-handler="Password">
+            <label>Contraseña actual</label>
+            <input asp-for="CurrentPassword" type="password" />
+            <label>Nueva contraseña (mínimo 6)</label>
+            <input asp-for="NewPassword" type="password" />
+            <div style="margin-top:12px"><button class="btn accent" type="submit">Actualizar contraseña</button></div>
+        </form>
+    </div>
+</div>
