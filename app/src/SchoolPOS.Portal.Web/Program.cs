@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using SchoolPOS.Data;
 using SchoolPOS.Domain.Abstractions;
+using SchoolPOS.Payments.MercadoPago;
 using SchoolPOS.Portal.Web.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,8 +21,23 @@ builder.Services.AddSchoolPosData(options =>
         options.UseSqlite(connectionString);
 });
 
-// Pasarela de pago (sandbox en desarrollo; sustituir por Mercado Pago real en producción).
-builder.Services.AddScoped<IPaymentGateway, SandboxPaymentGateway>();
+// Pasarela de pago: sandbox (desarrollo) o Mercado Pago real (producción), según configuración.
+var paymentsProvider = config["Payments:Provider"] ?? "Sandbox";
+if (string.Equals(paymentsProvider, "MercadoPago", StringComparison.OrdinalIgnoreCase))
+{
+    var mpOptions = config.GetSection("MercadoPago").Get<MercadoPagoOptions>() ?? new MercadoPagoOptions();
+    builder.Services.AddSingleton(mpOptions);
+    builder.Services.AddHttpClient<IPaymentGateway, MercadoPagoGateway>(client =>
+    {
+        if (!string.IsNullOrEmpty(mpOptions.BaseUrl))
+            client.BaseAddress = new Uri(mpOptions.BaseUrl);
+    });
+}
+else
+{
+    builder.Services.AddScoped<IPaymentGateway, SandboxPaymentGateway>();
+}
+
 builder.Services.AddSingleton(new PortalOptions
 {
     SchoolId = schoolId,
@@ -78,9 +94,15 @@ app.MapPost("/api/payments/webhook", async (
 {
     using var reader = new StreamReader(request.Body);
     var payload = await reader.ReadToEndAsync(ct);
-    var signature = request.Headers["X-Signature"].ToString();
 
-    var notification = await gateway.VerifyWebhookAsync(signature, payload, ct);
+    // Mercado Pago envía x-signature + x-request-id y el id del pago en la query (data.id).
+    var webhook = new WebhookRequest(
+        RawBody: payload,
+        Signature: request.Headers["x-signature"].ToString(),
+        RequestId: request.Headers["x-request-id"].ToString(),
+        ResourceId: request.Query["data.id"].FirstOrDefault() ?? request.Query["id"].FirstOrDefault());
+
+    var notification = await gateway.VerifyWebhookAsync(webhook, ct);
     if (notification is null)
         return Results.BadRequest("Notificación inválida.");
 

@@ -18,6 +18,6 @@ public sealed class FakePaymentGateway : IPaymentGateway
         return Task.FromResult(new PaymentPreference(gatewayRef, $"https://mp.test/checkout/{gatewayRef}"));
     }
 
-    public Task<PaymentNotification?> VerifyWebhookAsync(string signature, string rawPayload, CancellationToken ct = default)
-        => Task.FromResult<PaymentNotification?>(new PaymentNotification(rawPayload, PaymentStatus.Approved));
+    public Task<PaymentNotification?> VerifyWebhookAsync(WebhookRequest request, CancellationToken ct = default)
+        => Task.FromResult<PaymentNotification?>(new PaymentNotification(request.RawBody, PaymentStatus.Approved));
 }

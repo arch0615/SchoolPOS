@@ -31,7 +31,7 @@ public class SandboxModel : PageModel
     public async Task<IActionResult> OnPostApproveAsync(string reference)
     {
         // Simula la notificación server-side de la pasarela.
-        var notification = await _gateway.VerifyWebhookAsync(signature: "sandbox", rawPayload: $"{reference}|approved");
+        var notification = await _gateway.VerifyWebhookAsync(new WebhookRequest($"{reference}|approved"));
         if (notification is { Status: PaymentStatus.Approved })
         {
             var topUp = await _topUps.ConfirmAsync(notification.GatewayRef);

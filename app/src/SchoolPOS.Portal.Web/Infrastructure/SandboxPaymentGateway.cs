@@ -18,11 +18,10 @@ public sealed class SandboxPaymentGateway : IPaymentGateway
         return Task.FromResult(new PaymentPreference(gatewayRef, checkoutUrl));
     }
 
-    public Task<PaymentNotification?> VerifyWebhookAsync(
-        string signature, string rawPayload, CancellationToken ct = default)
+    public Task<PaymentNotification?> VerifyWebhookAsync(WebhookRequest request, CancellationToken ct = default)
     {
-        // En sandbox el payload es "<gatewayRef>|<approved|rejected>".
-        var parts = rawPayload.Split('|');
+        // En sandbox el cuerpo es "<gatewayRef>|<approved|rejected>".
+        var parts = request.RawBody.Split('|');
         if (parts.Length != 2)
             return Task.FromResult<PaymentNotification?>(null);
 

@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\SchoolPOS.Data\SchoolPOS.Data.csproj" />
     <ProjectReference Include="..\SchoolPOS.Domain\SchoolPOS.Domain.csproj" />
+    <ProjectReference Include="..\SchoolPOS.Payments.MercadoPago\SchoolPOS.Payments.MercadoPago.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -23,6 +23,17 @@ public enum PaymentStatus
 public sealed record PaymentNotification(string GatewayRef, PaymentStatus Status);
 
 /// <summary>
+/// Datos crudos de una notificación de webhook, independientes del framework. Mercado Pago
+/// requiere el cuerpo, la firma (<c>x-signature</c>), el id de solicitud (<c>x-request-id</c>) y el
+/// id del recurso (<c>data.id</c>, el pago) para validar la firma HMAC.
+/// </summary>
+public sealed record WebhookRequest(
+    string RawBody,
+    string? Signature = null,
+    string? RequestId = null,
+    string? ResourceId = null);
+
+/// <summary>
 /// Abstracción de la pasarela de pago (Mercado Pago). El importe de comisión se envía como
 /// <c>application_fee</c> del marketplace para que se separe automáticamente a la cuenta del
 /// proveedor (FR-COM-2). La confirmación del pago se valida por webhook server-side, nunca por
@@ -37,5 +48,5 @@ public interface IPaymentGateway
     /// Verifica una notificación de webhook contra la pasarela (firma + consulta del pago) y
     /// devuelve su estado real. Devuelve <c>null</c> si la notificación no es válida.
     /// </summary>
-    Task<PaymentNotification?> VerifyWebhookAsync(string signature, string rawPayload, CancellationToken ct = default);
+    Task<PaymentNotification?> VerifyWebhookAsync(WebhookRequest request, CancellationToken ct = default);
 }
