@@ -21,6 +21,8 @@ public static class DependencyInjection
         services.AddScoped<IBalanceService, BalanceService>();
         services.AddScoped<IInventoryService, InventoryService>();
         services.AddScoped<ISalesService, SalesService>();
+        services.AddScoped<IPurchasingService, PurchasingService>();
+        services.AddScoped<ITreasuryService, TreasuryService>();
         return services;
     }
 }
