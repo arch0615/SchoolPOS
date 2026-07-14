@@ -1,0 +1,67 @@
+@{
+    var authed = User.Identity?.IsAuthenticated ?? false;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] · Tienda Escolar</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: system-ui, "Segoe UI", Roboto, sans-serif; color: #23303e; background: #f4f6f9; }
+        a { color: #1e5aa8; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        header { background: #1e5aa8; color: #fff; }
+        .bar { max-width: 900px; margin: 0 auto; display: flex; align-items: center; padding: 14px 20px; gap: 16px; }
+        .bar .brand { font-weight: 700; font-size: 18px; color: #fff; }
+        .bar nav { margin-left: auto; display: flex; gap: 16px; align-items: center; }
+        .bar nav a, .bar nav form button { color: #dbe7f6; background: none; border: 0; font-size: 14px; cursor: pointer; }
+        main { max-width: 900px; margin: 0 auto; padding: 24px 20px 48px; }
+        .card { background: #fff; border-radius: 10px; padding: 22px; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+        h1 { font-size: 26px; margin: 0 0 6px; }
+        h2 { font-size: 18px; margin: 0 0 12px; }
+        label { display: block; font-size: 13px; font-weight: 600; margin: 10px 0 4px; color: #4a5a6a; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #cdd6e0; border-radius: 6px; font-size: 15px; }
+        .btn { display: inline-block; background: #1e5aa8; color: #fff; border: 0; border-radius: 6px;
+               padding: 11px 18px; font-size: 15px; font-weight: 600; cursor: pointer; }
+        .btn.accent { background: #2e8b57; }
+        .btn.danger { background: #c0392b; }
+        .btn.ghost { background: #e8edf3; color: #1e5aa8; }
+        .row { display: flex; gap: 16px; flex-wrap: wrap; }
+        .row > * { flex: 1; min-width: 220px; }
+        .balance { font-size: 34px; font-weight: 800; color: #2e8b57; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid #eef1f5; font-size: 14px; }
+        th { color: #8391a1; font-weight: 600; }
+        .msg { padding: 10px 14px; border-radius: 6px; margin: 8px 0; }
+        .msg.error { background: #fdecea; color: #c0392b; }
+        .msg.ok { background: #eafaf1; color: #1e7d48; }
+        .muted { color: #8391a1; font-size: 13px; }
+        .pill { display:inline-block; padding:2px 8px; border-radius:10px; background:#eef1f5; font-size:12px; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="bar">
+            <a class="brand" href="/">🏫 Tienda Escolar</a>
+            <nav>
+                @if (authed)
+                {
+                    <a href="/Dashboard">Mi panel</a>
+                    <a href="/History">Movimientos</a>
+                    <form method="post" action="/Account/Logout"><button type="submit">Salir</button></form>
+                }
+                else
+                {
+                    <a href="/Account/Login">Ingresar</a>
+                    <a href="/Account/Register">Registrarse</a>
+                }
+            </nav>
+        </div>
+    </header>
+    <main>
+        @RenderBody()
+    </main>
+</body>
+</html>

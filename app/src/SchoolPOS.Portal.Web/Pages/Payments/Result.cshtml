@@ -1,0 +1,18 @@
+@page
+@model SchoolPOS.Portal.Web.Pages.Payments.ResultModel
+@{
+    ViewData["Title"] = "Resultado del pago";
+}
+<div class="card" style="max-width:460px;margin:0 auto;text-align:center">
+    @if (Model.Approved)
+    {
+        <h1 style="color:#2e8b57">✔ Pago aprobado</h1>
+        <p class="muted">Tu recarga fue aplicada al saldo del estudiante.</p>
+    }
+    else
+    {
+        <h1 style="color:#c0392b">✖ Pago no completado</h1>
+        <p class="muted">El pago fue rechazado o cancelado. No se aplicó ninguna recarga.</p>
+    }
+    <a class="btn" href="/Dashboard">Volver a mi panel</a>
+</div>

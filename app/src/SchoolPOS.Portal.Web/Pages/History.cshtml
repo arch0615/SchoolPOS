@@ -1,0 +1,56 @@
+@page
+@model SchoolPOS.Portal.Web.Pages.HistoryModel
+@{
+    ViewData["Title"] = "Movimientos";
+}
+<div class="card">
+    <h1>Historial de movimientos</h1>
+    <form method="get" class="row" style="align-items:flex-end">
+        <div>
+            <label>Estudiante</label>
+            <select name="StudentId" onchange="this.form.submit()">
+                @foreach (var s in Model.Students)
+                {
+                    <option value="@s.StudentId" selected="@(Model.Selected?.StudentId == s.StudentId)">@s.FullName · @s.EnrollmentNo</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label>Desde</label>
+            <input type="date" name="From" value="@(Model.From?.ToString("yyyy-MM-dd"))" />
+        </div>
+        <div>
+            <label>Hasta</label>
+            <input type="date" name="To" value="@(Model.To?.ToString("yyyy-MM-dd"))" />
+        </div>
+        <div style="max-width:140px">
+            <label>&nbsp;</label>
+            <button class="btn" type="submit">Filtrar</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    @if (Model.Movements.Count == 0)
+    {
+        <p class="muted">Sin movimientos en el rango seleccionado.</p>
+    }
+    else
+    {
+        <table>
+            <thead><tr><th>Fecha (UTC)</th><th>Tipo</th><th>Referencia</th><th style="text-align:right">Importe</th><th style="text-align:right">Saldo</th></tr></thead>
+            <tbody>
+            @foreach (var m in Model.Movements)
+            {
+                <tr>
+                    <td>@m.CreatedAtUtc.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td><span class="pill">@m.Type</span></td>
+                    <td class="muted">@m.Reference</td>
+                    <td style="text-align:right;color:@(m.Amount < 0 ? "#c0392b" : "#1e7d48")">@m.Amount.ToString("C2")</td>
+                    <td style="text-align:right">@m.BalanceAfter.ToString("C2")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</div>

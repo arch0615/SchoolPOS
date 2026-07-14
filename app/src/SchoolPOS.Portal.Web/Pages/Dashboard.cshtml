@@ -1,0 +1,93 @@
+@page
+@model SchoolPOS.Portal.Web.Pages.DashboardModel
+@{
+    ViewData["Title"] = "Mi panel";
+}
+
+@if (!string.IsNullOrEmpty(Model.Message)) { <div class="msg ok">@Model.Message</div> }
+@if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
+
+@if (Model.Students.Count == 0)
+{
+    <div class="card">
+        <h1>Bienvenido</h1>
+        <p class="muted">Aún no has vinculado a ningún estudiante. Ingresa la matrícula para empezar.</p>
+        <form method="post" asp-page-handler="LinkStudent">
+            <label>Matrícula del estudiante</label>
+            <input name="enrollmentNo" placeholder="Ej. MAT-001" />
+            <div style="margin-top:12px"><button class="btn" type="submit">Vincular estudiante</button></div>
+        </form>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="row" style="align-items:center">
+            <div>
+                <h2 style="margin-bottom:2px">Estudiante</h2>
+                <form method="get" style="max-width:320px">
+                    <select name="studentId" onchange="this.form.submit()">
+                        @foreach (var s in Model.Students)
+                        {
+                            <option value="@s.StudentId" selected="@(Model.Selected?.StudentId == s.StudentId)">
+                                @s.FullName · @s.EnrollmentNo
+                            </option>
+                        }
+                    </select>
+                </form>
+            </div>
+            <div style="text-align:right">
+                <div class="muted">Saldo disponible</div>
+                <div class="balance">@((Model.Selected?.Balance ?? 0).ToString("C2"))</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="card">
+            <h2>Recargar saldo</h2>
+            <form method="post" asp-page-handler="TopUp">
+                <input type="hidden" name="studentId" value="@Model.Selected!.StudentId" />
+                <input type="hidden" name="accountId" value="@Model.Selected!.AccountId" />
+                <label>Monto (MXN)</label>
+                <input name="amount" type="number" min="1" step="1" value="100" />
+                <p class="muted">El estudiante recibe el 100% del monto recargado.</p>
+                <button class="btn accent" type="submit">Continuar al pago</button>
+            </form>
+        </div>
+        <div class="card">
+            <h2>Vincular otro hijo</h2>
+            <form method="post" asp-page-handler="LinkStudent">
+                <label>Matrícula</label>
+                <input name="enrollmentNo" placeholder="Ej. MAT-002" />
+                <div style="margin-top:12px"><button class="btn ghost" type="submit">Vincular</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Movimientos recientes</h2>
+        @if (Model.Movements.Count == 0)
+        {
+            <p class="muted">Sin movimientos todavía.</p>
+        }
+        else
+        {
+            <table>
+                <thead><tr><th>Fecha (UTC)</th><th>Tipo</th><th style="text-align:right">Importe</th><th style="text-align:right">Saldo</th></tr></thead>
+                <tbody>
+                @foreach (var m in Model.Movements)
+                {
+                    <tr>
+                        <td>@m.CreatedAtUtc.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td><span class="pill">@m.Type</span></td>
+                        <td style="text-align:right;color:@(m.Amount < 0 ? "#c0392b" : "#1e7d48")">@m.Amount.ToString("C2")</td>
+                        <td style="text-align:right">@m.BalanceAfter.ToString("C2")</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+            <p style="margin-top:10px"><a href="/History?studentId=@Model.Selected!.StudentId">Ver historial completo →</a></p>
+        }
+    </div>
+}

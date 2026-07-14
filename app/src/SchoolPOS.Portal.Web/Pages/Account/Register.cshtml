@@ -1,0 +1,27 @@
+@page
+@model SchoolPOS.Portal.Web.Pages.Account.RegisterModel
+@{
+    ViewData["Title"] = "Registro";
+}
+<div class="card" style="max-width:460px;margin:0 auto">
+    <h1>Crear cuenta</h1>
+    <p class="muted">Registra tu cuenta de padre/tutor. Después podrás vincular a tu hijo por matrícula.</p>
+
+    @if (!string.IsNullOrEmpty(Model.Error))
+    {
+        <div class="msg error">@Model.Error</div>
+    }
+
+    <form method="post">
+        <label>Nombre completo</label>
+        <input asp-for="Input.FullName" />
+        <label>Correo electrónico</label>
+        <input asp-for="Input.Email" type="email" />
+        <label>Contraseña (mínimo 6 caracteres)</label>
+        <input asp-for="Input.Password" type="password" />
+        <div style="margin-top:16px">
+            <button class="btn" type="submit">Registrarme</button>
+            <a class="btn ghost" href="/Account/Login">Ya tengo cuenta</a>
+        </div>
+    </form>
+</div>

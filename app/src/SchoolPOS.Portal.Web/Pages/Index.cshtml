@@ -1,0 +1,19 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Inicio";
+}
+<div class="card">
+    <h1>Recarga el saldo escolar en línea</h1>
+    <p class="muted">Portal para padres y estudiantes. Recarga saldo de forma segura y tu hijo compra en la
+        tienda escolar sin efectivo. Consulta el saldo y los movimientos cuando quieras.</p>
+    <div style="margin-top:16px">
+        <a class="btn" href="/Account/Register">Crear cuenta</a>
+        <a class="btn ghost" href="/Account/Login">Ya tengo cuenta</a>
+    </div>
+</div>
+<div class="row">
+    <div class="card"><h2>💳 Recarga simple</h2><p class="muted">Elige un monto y paga en línea. El saldo se abona al 100%.</p></div>
+    <div class="card"><h2>👨‍👩‍👧 Varios hijos</h2><p class="muted">Vincula a tus hijos por matrícula y cambia entre sus cuentas.</p></div>
+    <div class="card"><h2>📊 Transparencia</h2><p class="muted">Revisa recargas y consumos con su historial detallado.</p></div>
+</div>

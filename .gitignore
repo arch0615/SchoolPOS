@@ -33,6 +33,11 @@ secrets.json
 # ---- Local tooling / SDK ----
 .dotnet/
 
+# ---- Local dev databases (SQLite) ----
+*.db
+*.db-shm
+*.db-wal
+
 # ---- OS noise ----
 .DS_Store
 Thumbs.db
