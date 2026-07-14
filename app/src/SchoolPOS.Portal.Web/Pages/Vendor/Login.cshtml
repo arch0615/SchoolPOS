@@ -1,0 +1,18 @@
+@page
+@model SchoolPOS.Portal.Web.Pages.Vendor.LoginModel
+@{
+    ViewData["Title"] = "Acceso proveedor";
+}
+<div class="card" style="max-width:420px;margin:0 auto">
+    <div class="pill">Panel del proveedor</div>
+    <h1 style="margin-top:10px">Comisiones</h1>
+    <p class="muted">Acceso para el proveedor: consolidado de comisiones de todas las escuelas.</p>
+
+    @if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
+
+    <form method="post">
+        <label>Código de acceso</label>
+        <input asp-for="AccessCode" type="password" />
+        <div style="margin-top:14px"><button class="btn" type="submit">Entrar</button></div>
+    </form>
+</div>

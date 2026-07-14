@@ -40,6 +40,7 @@ public static class DependencyInjection
         services.AddScoped<IPurchasingService, PurchasingService>();
         services.AddScoped<ITreasuryService, TreasuryService>();
         services.AddScoped<IGuardianService, GuardianService>();
+        services.AddScoped<ICommissionReportService, CommissionReportService>();
         // El flujo de recargas requiere que el host (portal) registre un IPaymentGateway
         // (implementación real de Mercado Pago con sus credenciales).
         services.AddScoped<ITopUpService, TopUpService>();

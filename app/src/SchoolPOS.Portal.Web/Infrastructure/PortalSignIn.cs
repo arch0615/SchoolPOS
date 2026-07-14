@@ -20,4 +20,16 @@ public static class PortalSignIn
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         return http.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
     }
+
+    /// <summary>Emite la cookie del proveedor (acceso al panel de comisiones).</summary>
+    public static Task SignInVendorAsync(HttpContext http)
+    {
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Name, "Proveedor"),
+            new(ClaimsExtensions.PortalRoleClaim, "vendor"),
+        };
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        return http.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+    }
 }

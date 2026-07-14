@@ -1,0 +1,81 @@
+@page
+@model SchoolPOS.Portal.Web.Pages.Vendor.IndexModel
+@{
+    ViewData["Title"] = "Comisiones del proveedor";
+}
+<div class="card">
+    <div class="row" style="align-items:center">
+        <div>
+            <div class="pill">Panel del proveedor</div>
+            <h1 style="margin-top:8px;margin-bottom:0">Comisiones</h1>
+            <p class="muted">Consolidado de todas las escuelas · recargas capturadas</p>
+        </div>
+        <form method="get" class="row" style="align-items:flex-end;max-width:420px">
+            <div><label>Desde</label><input type="date" name="From" value="@(Model.From?.ToString("yyyy-MM-dd"))" /></div>
+            <div><label>Hasta</label><input type="date" name="To" value="@(Model.To?.ToString("yyyy-MM-dd"))" /></div>
+            <div style="max-width:120px"><label>&nbsp;</label><button class="btn" type="submit">Filtrar</button></div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <div class="card">
+        <div class="muted">Comisión total (tu ingreso)</div>
+        <div class="balance">@Model.Rollup.TotalCommission.ToString("C2")</div>
+    </div>
+    <div class="card">
+        <div class="muted">Total recargado</div>
+        <div class="balance" style="color:#1e5aa8">@Model.Rollup.TotalRecharged.ToString("C2")</div>
+    </div>
+    <div class="card">
+        <div class="muted">Recargas</div>
+        <div class="balance" style="color:#23303e">@Model.Rollup.TopUpCount</div>
+        <div class="muted">tasa media @((Model.AverageRate * 100).ToString("0.##"))%</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Desglose por escuela</h2>
+    @if (Model.Rollup.Schools.Count == 0)
+    {
+        <p class="muted">Sin recargas capturadas en el periodo.</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Escuela</th>
+                    <th style="text-align:right">Recargas</th>
+                    <th style="text-align:right">Total recargado</th>
+                    <th style="text-align:right">Comisión</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var s in Model.Rollup.Schools)
+            {
+                <tr>
+                    <td>@s.SchoolName</td>
+                    <td style="text-align:right">@s.TopUpCount</td>
+                    <td style="text-align:right">@s.TotalRecharged.ToString("C2")</td>
+                    <td style="text-align:right;font-weight:700;color:#2e8b57">@s.TotalCommission.ToString("C2")</td>
+                </tr>
+            }
+            </tbody>
+            <tfoot>
+                <tr style="border-top:2px solid #dfe5ec">
+                    <td style="font-weight:700">Total</td>
+                    <td style="text-align:right;font-weight:700">@Model.Rollup.TopUpCount</td>
+                    <td style="text-align:right;font-weight:700">@Model.Rollup.TotalRecharged.ToString("C2")</td>
+                    <td style="text-align:right;font-weight:700;color:#2e8b57">@Model.Rollup.TotalCommission.ToString("C2")</td>
+                </tr>
+            </tfoot>
+        </table>
+    }
+</div>
+
+<div class="card">
+    <p class="muted">La comisión se separa automáticamente a tu cuenta en la pasarela (split de Mercado Pago).
+        Cada escuela recibe además su factura/CFDI por la comisión.</p>
+    <form method="post" action="/Account/Logout"><button class="btn ghost" type="submit">Salir del panel</button></form>
+</div>

@@ -22,7 +22,11 @@ builder.Services.AddSchoolPosData(options =>
 
 // Pasarela de pago (sandbox en desarrollo; sustituir por Mercado Pago real en producción).
 builder.Services.AddScoped<IPaymentGateway, SandboxPaymentGateway>();
-builder.Services.AddSingleton(new PortalOptions { SchoolId = schoolId });
+builder.Services.AddSingleton(new PortalOptions
+{
+    SchoolId = schoolId,
+    VendorAccessCode = config["Portal:VendorAccessCode"] ?? "vendor-demo",
+});
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -33,7 +37,11 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ExpireTimeSpan = TimeSpan.FromHours(4);
         options.SlidingExpiration = true;
     });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    // Panel del proveedor: requiere identidad de proveedor (comisiones vendor-wide).
+    options.AddPolicy("Vendor", policy => policy.RequireClaim(ClaimsExtensions.PortalRoleClaim, "vendor"));
+});
 builder.Services.AddRazorPages();
 
 var app = builder.Build();

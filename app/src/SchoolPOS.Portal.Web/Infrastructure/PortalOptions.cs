@@ -7,4 +7,7 @@ namespace SchoolPOS.Portal.Web.Infrastructure;
 public sealed class PortalOptions
 {
     public Guid SchoolId { get; init; }
+
+    /// <summary>Código de acceso al panel del proveedor (comisiones). Configurar por instalación.</summary>
+    public string VendorAccessCode { get; init; } = "vendor-demo";
 }

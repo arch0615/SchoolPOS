@@ -6,6 +6,7 @@ namespace SchoolPOS.Portal.Web.Infrastructure;
 public static class ClaimsExtensions
 {
     public const string SchoolIdClaim = "school_id";
+    public const string PortalRoleClaim = "portal_role";
 
     public static Guid GetGuardianId(this ClaimsPrincipal user)
     {
