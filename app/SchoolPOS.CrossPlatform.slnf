@@ -1,0 +1,13 @@
+{
+  "solution": {
+    "path": "SchoolPOS.sln",
+    "projects": [
+      "src/SchoolPOS.Domain/SchoolPOS.Domain.csproj",
+      "src/SchoolPOS.Data/SchoolPOS.Data.csproj",
+      "src/SchoolPOS.Portal.Web/SchoolPOS.Portal.Web.csproj",
+      "src/SchoolPOS.Sync.Agent/SchoolPOS.Sync.Agent.csproj",
+      "tests/SchoolPOS.Domain.Tests/SchoolPOS.Domain.Tests.csproj",
+      "tests/SchoolPOS.Data.Tests/SchoolPOS.Data.Tests.csproj"
+    ]
+  }
+}

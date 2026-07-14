@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-SchoolPOS.Sync.Agent-29fd32a8-dc05-407a-92e6-83c190ddf6b7</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SchoolPOS.Data\SchoolPOS.Data.csproj" />
+    <ProjectReference Include="..\SchoolPOS.Domain\SchoolPOS.Domain.csproj" />
+  </ItemGroup>
+</Project>

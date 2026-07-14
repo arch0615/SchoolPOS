@@ -1,0 +1,38 @@
+# ---- .NET / build ----
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+artifacts/
+
+# ---- Rider / VS Code ----
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# ---- Test / coverage ----
+[Tt]est[Rr]esult*/
+coverage*.json
+coverage*.xml
+*.coverage
+
+# ---- Secrets & per-school config (NEVER commit) ----
+# Real connection strings, Mercado Pago keys, and per-school settings
+appsettings.*.Local.json
+appsettings.Production.json
+secrets.json
+*.pfx
+.env
+.env.*
+
+# ---- Local tooling / SDK ----
+.dotnet/
+
+# ---- OS noise ----
+.DS_Store
+Thumbs.db

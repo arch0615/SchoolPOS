@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    POS de escritorio (WPF). Solo compila en Windows (net8.0-windows).
+    En Linux/CI se excluye mediante SchoolPOS.CrossPlatform.slnf.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>SchoolPOS.Pos.Desktop</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SchoolPOS.Domain\SchoolPOS.Domain.csproj" />
+    <ProjectReference Include="..\SchoolPOS.Data\SchoolPOS.Data.csproj" />
+  </ItemGroup>
+
+</Project>

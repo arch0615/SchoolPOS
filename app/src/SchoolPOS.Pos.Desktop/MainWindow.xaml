@@ -1,0 +1,10 @@
+<Window x:Class="SchoolPOS.Pos.Desktop.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Punto de Venta Escolar" Height="600" Width="900">
+    <Grid>
+        <TextBlock Text="Punto de Venta Escolar — POS"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   FontSize="24" />
+    </Grid>
+</Window>
