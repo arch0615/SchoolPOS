@@ -32,4 +32,10 @@ public interface IInventoryService
 
     /// <summary>Productos por debajo de su mínimo (alertas de bajo inventario, FR-INV-5).</summary>
     Task<IReadOnlyList<Product>> GetLowStockAsync(Guid schoolId, CancellationToken ct = default);
+
+    /// <summary>Busca un producto activo por código de barras exacto (vía rápida de escaneo, FR-SAL-1).</summary>
+    Task<Product?> FindByBarcodeAsync(Guid schoolId, string barcode, CancellationToken ct = default);
+
+    /// <summary>Búsqueda de productos activos por nombre o código de barras (parcial).</summary>
+    Task<IReadOnlyList<Product>> SearchAsync(Guid schoolId, string term, CancellationToken ct = default);
 }

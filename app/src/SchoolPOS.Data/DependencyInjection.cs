@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using SchoolPOS.Domain.Abstractions;
+using SchoolPOS.Data.Security;
 using SchoolPOS.Data.Services;
 
 namespace SchoolPOS.Data;
@@ -18,6 +19,9 @@ public static class DependencyInjection
             options.UseSqlServer(connectionString));
 
         services.AddSingleton<IClock, SystemClock>();
+        services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IStudentDirectory, StudentDirectory>();
         services.AddScoped<IBalanceService, BalanceService>();
         services.AddScoped<IInventoryService, InventoryService>();
         services.AddScoped<ISalesService, SalesService>();

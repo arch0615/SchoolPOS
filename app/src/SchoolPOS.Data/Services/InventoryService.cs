@@ -98,6 +98,28 @@ public sealed class InventoryService : IInventoryService
             .OrderBy(p => p.Name)
             .ToListAsync(ct);
 
+    public Task<Product?> FindByBarcodeAsync(Guid schoolId, string barcode, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(barcode))
+            return Task.FromResult<Product?>(null);
+
+        return _db.Products.AsNoTracking()
+            .FirstOrDefaultAsync(p => p.SchoolId == schoolId && p.IsActive && p.Barcode == barcode, ct);
+    }
+
+    public async Task<IReadOnlyList<Product>> SearchAsync(Guid schoolId, string term, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(term))
+            return Array.Empty<Product>();
+
+        return await _db.Products.AsNoTracking()
+            .Where(p => p.SchoolId == schoolId && p.IsActive &&
+                        (p.Name.Contains(term) || (p.Barcode != null && p.Barcode.Contains(term))))
+            .OrderBy(p => p.Name)
+            .Take(50)
+            .ToListAsync(ct);
+    }
+
     private async Task<StockMovement> AppendMovementAsync(
         Guid productId, StockMovementType type, decimal signedQty, decimal? unitCost,
         string? reference, string? reason, Guid operatorId, DateTime now, CancellationToken ct)
