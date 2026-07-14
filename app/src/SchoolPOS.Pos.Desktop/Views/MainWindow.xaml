@@ -1,0 +1,66 @@
+<Window x:Class="SchoolPOS.Pos.Desktop.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:SchoolPOS.Pos.Desktop.ViewModels"
+        xmlns:views="clr-namespace:SchoolPOS.Pos.Desktop.Views"
+        Title="Punto de Venta Escolar" Height="720" Width="1180"
+        WindowStartupLocation="CenterScreen" Background="{StaticResource SurfaceBrush}">
+
+    <Window.Resources>
+        <!-- Mapeo view-model -> vista -->
+        <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
+            <views:DashboardView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SalesViewModel}">
+            <views:SalesView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:InventoryViewModel}">
+            <views:InventoryView />
+        </DataTemplate>
+
+        <Style x:Key="NavButton" TargetType="Button">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Padding" Value="18,12" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Panel lateral de navegación -->
+        <Border Grid.Column="0" Background="{StaticResource PrimaryBrush}">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Margin="0,20,0,10">
+                    <TextBlock Text="Tienda Escolar" Foreground="White" FontSize="18"
+                               FontWeight="Bold" Margin="18,0,0,2" />
+                    <TextBlock Text="POS" Foreground="#BBD3F0" FontSize="12" Margin="18,0,0,16" />
+                    <Button Content="🏠  Inicio" Style="{StaticResource NavButton}" Command="{Binding ShowDashboardCommand}" />
+                    <Button Content="🛒  Venta" Style="{StaticResource NavButton}" Command="{Binding ShowSalesCommand}" />
+                    <Button Content="📦  Inventario" Style="{StaticResource NavButton}"
+                            Command="{Binding ShowInventoryCommand}"
+                            Visibility="{Binding CanManageInventory, Converter={StaticResource BoolToVisibility}}" />
+                </StackPanel>
+
+                <StackPanel DockPanel.Dock="Bottom" Margin="18,10">
+                    <TextBlock Text="{Binding OperatorName}" Foreground="White" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding RoleName}" Foreground="#BBD3F0" FontSize="12" Margin="0,0,0,8" />
+                    <Button Content="Cerrar sesión" Command="{Binding SignOutCommand}"
+                            Background="#154680" Foreground="White" BorderThickness="0" Padding="10,8" />
+                </StackPanel>
+                <Grid />
+            </DockPanel>
+        </Border>
+
+        <!-- Contenido -->
+        <ContentControl Grid.Column="1" Content="{Binding CurrentView}" Margin="0" />
+    </Grid>
+</Window>

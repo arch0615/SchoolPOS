@@ -1,0 +1,41 @@
+using System.Windows.Input;
+
+namespace SchoolPOS.Pos.Desktop.Infrastructure;
+
+/// <summary>Comando asíncrono que evita reentradas mientras se ejecuta.</summary>
+public sealed class AsyncRelayCommand : ICommand
+{
+    private readonly Func<Task> _execute;
+    private readonly Func<bool>? _canExecute;
+    private bool _running;
+
+    public AsyncRelayCommand(Func<Task> execute, Func<bool>? canExecute = null)
+    {
+        _execute = execute;
+        _canExecute = canExecute;
+    }
+
+    public bool CanExecute(object? parameter) => !_running && (_canExecute?.Invoke() ?? true);
+
+    public async void Execute(object? parameter)
+    {
+        if (!CanExecute(parameter))
+            return;
+
+        _running = true;
+        RaiseCanExecuteChanged();
+        try
+        {
+            await _execute();
+        }
+        finally
+        {
+            _running = false;
+            RaiseCanExecuteChanged();
+        }
+    }
+
+    public event EventHandler? CanExecuteChanged;
+
+    public void RaiseCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+}
