@@ -2,6 +2,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using SchoolPOS.Data;
 using SchoolPOS.Domain.Entities;
+using SchoolPOS.Domain.Enums;
 
 namespace SchoolPOS.Data.Tests.TestSupport;
 
@@ -89,6 +90,43 @@ public sealed class TestDatabase : IDisposable
     {
         var school = SeedSchool(commissionRate: commissionRate);
         return SeedStudentAccount(school.Id, initialBalance, overdraftLimit);
+    }
+
+    /// <summary>
+    /// Siembra un roster (escuela + estudiante + cuenta) con Ids explícitos, para poder replicar el
+    /// mismo roster en la nube y en la DB local (pruebas de sincronización).
+    /// </summary>
+    public void SeedRoster(
+        Guid schoolId, Guid studentId, Guid accountId, decimal balance = 0m, string enrollmentNo = "A-001")
+    {
+        Context.Schools.Add(new School { Id = schoolId, Name = "Colegio Sync", Currency = "MXN", CommissionRate = 0.05m });
+        var student = new Student { Id = studentId, SchoolId = schoolId, EnrollmentNo = enrollmentNo, FullName = "Alumno Sync" };
+        var account = new Account { Id = accountId, StudentId = studentId, Balance = balance };
+        student.Account = account;
+        Context.Students.Add(student);
+        Context.Accounts.Add(account);
+        Context.SaveChanges();
+        Context.ChangeTracker.Clear();
+    }
+
+    /// <summary>Siembra una recarga confirmada (nube) lista para bajar al ledger local.</summary>
+    public TopUp SeedConfirmedTopUp(Guid schoolId, Guid accountId, decimal amount, string gatewayRef)
+    {
+        var topUp = new TopUp
+        {
+            SchoolId = schoolId,
+            AccountId = accountId,
+            Amount = amount,
+            CommissionRate = 0.05m,
+            CommissionAmount = Math.Round(amount * 0.05m, 2, MidpointRounding.AwayFromZero),
+            GatewayRef = gatewayRef,
+            Status = TopUpStatus.Confirmed,
+            AppliedLocally = false,
+        };
+        Context.TopUps.Add(topUp);
+        Context.SaveChanges();
+        Context.ChangeTracker.Clear();
+        return topUp;
     }
 
     public void Dispose()
