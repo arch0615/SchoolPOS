@@ -22,6 +22,7 @@ public sealed class PosSession
     public bool CanManageInventory => Role is UserRole.Warehouse or UserRole.Admin;
     public bool CanApplyDiscount => Role is UserRole.Admin;
     public bool IsAdmin => Role is UserRole.Admin;
+    public bool CanViewReports => Role is UserRole.Admin;
 
     public void SignIn(User user) => Operator = user;
 

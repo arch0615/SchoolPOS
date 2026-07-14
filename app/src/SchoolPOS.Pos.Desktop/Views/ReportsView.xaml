@@ -1,0 +1,67 @@
+<UserControl x:Class="SchoolPOS.Pos.Desktop.Views.ReportsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <DockPanel Margin="24">
+        <TextBlock DockPanel.Dock="Top" Text="Reportes" FontSize="24" FontWeight="Bold" Foreground="#333" Margin="0,0,0,12" />
+
+        <Grid DockPanel.Dock="Top" Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                <TextBlock Text="Desde" />
+                <DatePicker SelectedDate="{Binding From}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                <TextBlock Text="Hasta" />
+                <DatePicker SelectedDate="{Binding To}" />
+            </StackPanel>
+            <Button Grid.Column="2" Content="Generar" Style="{StaticResource PrimaryButton}"
+                    Command="{Binding RefreshCommand}" VerticalAlignment="Bottom" />
+        </Grid>
+
+        <!-- Tarjetas resumen -->
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,14">
+            <Border Background="White" CornerRadius="8" Padding="18" Margin="0,0,12,0" Width="200">
+                <StackPanel>
+                    <TextBlock Text="Ventas del periodo" Foreground="#888" />
+                    <TextBlock Text="{Binding SalesTotalText}" FontSize="24" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" />
+                    <TextBlock Text="{Binding Sales.SaleCount, StringFormat='{}{0} ventas'}" Foreground="#888" />
+                    <TextBlock Text="{Binding Sales.TotalByBalance, StringFormat='Saldo: {0:C2}'}" Foreground="#888" FontSize="12" />
+                    <TextBlock Text="{Binding Sales.TotalByCash, StringFormat='Efectivo: {0:C2}'}" Foreground="#888" FontSize="12" />
+                </StackPanel>
+            </Border>
+            <Border Background="White" CornerRadius="8" Padding="18" Margin="0,0,12,0" Width="200">
+                <StackPanel>
+                    <TextBlock Text="Flujo de efectivo" Foreground="#888" />
+                    <TextBlock Text="{Binding CashFlow.Net, StringFormat=C2}" FontSize="24" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" />
+                    <TextBlock Text="{Binding CashFlow.ManualIncome, StringFormat='Ingresos: {0:C2}'}" Foreground="#888" FontSize="12" />
+                    <TextBlock Text="{Binding CashFlow.ManualExpense, StringFormat='Egresos: {0:C2}'}" Foreground="#888" FontSize="12" />
+                </StackPanel>
+            </Border>
+            <Border Background="White" CornerRadius="8" Padding="18" Width="200">
+                <StackPanel>
+                    <TextBlock Text="Saldos de clientes" Foreground="#888" />
+                    <TextBlock Text="{Binding Balances.TotalBalance, StringFormat=C2}" FontSize="24" FontWeight="Bold" Foreground="#23303e" />
+                    <TextBlock Text="{Binding Balances.AccountCount, StringFormat='{}{0} cuentas'}" Foreground="#888" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+            <TextBlock Text="Ventas por producto" FontWeight="SemiBold" FontSize="15" />
+            <Button Content="Exportar CSV" Command="{Binding ExportProductsCommand}" HorizontalAlignment="Right" DockPanel.Dock="Right" />
+        </DockPanel>
+        <DataGrid ItemsSource="{Binding TopProducts}" AutoGenerateColumns="False" IsReadOnly="True"
+                  HeadersVisibility="Column" GridLinesVisibility="Horizontal" Background="White" RowBackground="White">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Producto" Binding="{Binding Description}" Width="*" />
+                <DataGridTextColumn Header="Cantidad" Binding="{Binding Quantity}" Width="140" />
+                <DataGridTextColumn Header="Ingreso" Binding="{Binding Revenue, StringFormat=C2}" Width="160" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>

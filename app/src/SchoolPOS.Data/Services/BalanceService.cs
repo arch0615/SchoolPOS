@@ -83,13 +83,30 @@ public sealed class BalanceService : IBalanceService
         return _db.ExecuteAtomicAsync(async () =>
         {
             var now = _clock.UtcNow;
+            var before = await ReadBalanceAsync(accountId, ct);
+
             await _db.Accounts
                 .Where(a => a.Id == accountId)
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(a => a.Balance, a => a.Balance + signed)
                     .SetProperty(a => a.UpdatedAtUtc, now), ct);
 
-            return await AppendMovementAsync(accountId, MovementType.Adjustment, signed, reason, operatorId, now, ct);
+            var movement = await AppendMovementAsync(accountId, MovementType.Adjustment, signed, reason, operatorId, now, ct);
+
+            // Bitácora: ajuste manual de saldo es acción sensible (FR-ADM-4).
+            _db.AuditLogs.Add(new AuditLog
+            {
+                SchoolId = await SchoolIdForAccountAsync(accountId, ct),
+                Actor = operatorId.ToString(),
+                Action = "BalanceAdjustment",
+                Entity = nameof(Account),
+                EntityId = accountId.ToString(),
+                Before = before.ToString("0.00"),
+                After = movement.BalanceAfter.ToString("0.00") + $" ({reason})",
+                CreatedAtUtc = now,
+            });
+            await _db.SaveChangesAsync(ct);
+            return movement;
         }, ct);
     }
 
@@ -169,6 +186,12 @@ public sealed class BalanceService : IBalanceService
 
     private Task<decimal> ReadBalanceAsync(Guid accountId, CancellationToken ct) =>
         _db.Accounts.AsNoTracking().Where(a => a.Id == accountId).Select(a => a.Balance).FirstAsync(ct);
+
+    private Task<Guid> SchoolIdForAccountAsync(Guid accountId, CancellationToken ct) =>
+        _db.Accounts.AsNoTracking()
+            .Where(a => a.Id == accountId)
+            .Select(a => a.Student.SchoolId)
+            .FirstAsync(ct);
 
     private static void RequirePositive(decimal amount)
     {

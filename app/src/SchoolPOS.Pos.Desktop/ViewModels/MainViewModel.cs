@@ -12,6 +12,8 @@ public sealed class MainViewModel : ViewModelBase
     private readonly DashboardViewModel _dashboard;
     private readonly SalesViewModel _sales;
     private readonly InventoryViewModel _inventory;
+    private readonly ReportsViewModel _reports;
+    private readonly AuditViewModel _audit;
 
     private object? _currentView;
 
@@ -19,16 +21,22 @@ public sealed class MainViewModel : ViewModelBase
         PosSession session,
         DashboardViewModel dashboard,
         SalesViewModel sales,
-        InventoryViewModel inventory)
+        InventoryViewModel inventory,
+        ReportsViewModel reports,
+        AuditViewModel audit)
     {
         _session = session;
         _dashboard = dashboard;
         _sales = sales;
         _inventory = inventory;
+        _reports = reports;
+        _audit = audit;
 
         ShowDashboardCommand = new RelayCommand(async () => await NavigateAsync(_dashboard));
         ShowSalesCommand = new RelayCommand(async () => await NavigateAsync(_sales));
         ShowInventoryCommand = new RelayCommand(async () => await NavigateAsync(_inventory), () => CanManageInventory);
+        ShowReportsCommand = new RelayCommand(async () => await NavigateAsync(_reports), () => CanViewReports);
+        ShowAuditCommand = new RelayCommand(async () => await NavigateAsync(_audit), () => CanViewReports);
         SignOutCommand = new RelayCommand(() => SignOutRequested?.Invoke());
 
         _ = NavigateAsync(_dashboard);
@@ -49,10 +57,13 @@ public sealed class MainViewModel : ViewModelBase
     };
 
     public bool CanManageInventory => _session.CanManageInventory;
+    public bool CanViewReports => _session.CanViewReports;
 
     public RelayCommand ShowDashboardCommand { get; }
     public RelayCommand ShowSalesCommand { get; }
     public RelayCommand ShowInventoryCommand { get; }
+    public RelayCommand ShowReportsCommand { get; }
+    public RelayCommand ShowAuditCommand { get; }
     public RelayCommand SignOutCommand { get; }
 
     public event Action? SignOutRequested;

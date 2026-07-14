@@ -1,0 +1,41 @@
+<UserControl x:Class="SchoolPOS.Pos.Desktop.Views.AuditView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <DockPanel Margin="24">
+        <TextBlock DockPanel.Dock="Top" Text="Bitácora" FontSize="24" FontWeight="Bold" Foreground="#333" Margin="0,0,0,12" />
+
+        <Grid DockPanel.Dock="Top" Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                <TextBlock Text="Desde" /><DatePicker SelectedDate="{Binding From}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                <TextBlock Text="Hasta" /><DatePicker SelectedDate="{Binding To}" />
+            </StackPanel>
+            <StackPanel Grid.Column="2" Margin="0,0,12,0" Width="200">
+                <TextBlock Text="Acción" />
+                <TextBox Text="{Binding ActionFilter, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="Ej. BalanceAdjustment, Refund" />
+            </StackPanel>
+            <Button Grid.Column="3" Content="Filtrar" Style="{StaticResource PrimaryButton}"
+                    Command="{Binding RefreshCommand}" VerticalAlignment="Bottom" />
+        </Grid>
+
+        <DataGrid ItemsSource="{Binding Entries}" AutoGenerateColumns="False" IsReadOnly="True"
+                  HeadersVisibility="Column" GridLinesVisibility="Horizontal" Background="White" RowBackground="White">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Fecha (UTC)" Binding="{Binding CreatedAtUtc, StringFormat='dd/MM/yyyy HH:mm'}" Width="150" />
+                <DataGridTextColumn Header="Acción" Binding="{Binding Action}" Width="160" />
+                <DataGridTextColumn Header="Entidad" Binding="{Binding Entity}" Width="110" />
+                <DataGridTextColumn Header="Actor" Binding="{Binding Actor}" Width="*" />
+                <DataGridTextColumn Header="Antes" Binding="{Binding Before}" Width="120" />
+                <DataGridTextColumn Header="Después" Binding="{Binding After}" Width="200" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>

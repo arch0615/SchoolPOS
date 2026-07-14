@@ -17,6 +17,12 @@
         <DataTemplate DataType="{x:Type vm:InventoryViewModel}">
             <views:InventoryView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ReportsViewModel}">
+            <views:ReportsView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:AuditViewModel}">
+            <views:AuditView />
+        </DataTemplate>
 
         <Style x:Key="NavButton" TargetType="Button">
             <Setter Property="Foreground" Value="White" />
@@ -48,6 +54,12 @@
                     <Button Content="📦  Inventario" Style="{StaticResource NavButton}"
                             Command="{Binding ShowInventoryCommand}"
                             Visibility="{Binding CanManageInventory, Converter={StaticResource BoolToVisibility}}" />
+                    <Button Content="📈  Reportes" Style="{StaticResource NavButton}"
+                            Command="{Binding ShowReportsCommand}"
+                            Visibility="{Binding CanViewReports, Converter={StaticResource BoolToVisibility}}" />
+                    <Button Content="📋  Bitácora" Style="{StaticResource NavButton}"
+                            Command="{Binding ShowAuditCommand}"
+                            Visibility="{Binding CanViewReports, Converter={StaticResource BoolToVisibility}}" />
                 </StackPanel>
 
                 <StackPanel DockPanel.Dock="Bottom" Margin="18,10">
