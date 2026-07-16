@@ -4,6 +4,7 @@ using SchoolPOS.Data;
 using SchoolPOS.Domain.Abstractions;
 using SchoolPOS.Payments.MercadoPago;
 using SchoolPOS.Portal.Web.Infrastructure;
+using SchoolPOS.Portal.Web.Infrastructure.Email;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -43,6 +44,19 @@ builder.Services.AddSingleton(new PortalOptions
     SchoolId = schoolId,
     VendorAccessCode = config["Portal:VendorAccessCode"] ?? "vendor-demo",
 });
+
+// Correo transaccional: SMTP real o emisor de log (desarrollo).
+var emailProvider = config["Email:Provider"] ?? "Log";
+if (string.Equals(emailProvider, "Smtp", StringComparison.OrdinalIgnoreCase))
+{
+    var smtp = config.GetSection("Smtp").Get<SmtpOptions>() ?? new SmtpOptions();
+    builder.Services.AddSingleton(smtp);
+    builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
+}
+else
+{
+    builder.Services.AddSingleton<IEmailSender, LoggingEmailSender>();
+}
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>

@@ -30,6 +30,15 @@ secrets.json
 .env
 .env.*
 
+# Fiscal credentials (CSD) and client-provided credential docs — NEVER commit
+*.cer
+*.key
+*.sdg
+CSD_*/
+Info1.docx
+clave privada.txt
+Usuario*.txt
+
 # ---- Local tooling / SDK ----
 .dotnet/
 

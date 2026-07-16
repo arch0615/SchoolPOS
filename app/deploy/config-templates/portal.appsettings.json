@@ -18,6 +18,18 @@
   "Payments": {
     "Provider": "MercadoPago"
   },
+  "Email": {
+    "Provider": "Smtp"
+  },
+  "Smtp": {
+    "Host": "bulldogti.com",
+    "Port": 465,
+    "Security": "SslOnConnect",
+    "User": "soporte@bulldogti.com",
+    "Password": "<CONTRASEÑA-CORREO — usar variable de entorno, NO subir al repo>",
+    "FromEmail": "soporte@bulldogti.com",
+    "FromName": "Tienda Escolar"
+  },
   "MercadoPago": {
     "AccessToken": "<TOKEN-DEL-VENDEDOR-OAUTH-MARKETPLACE>",
     "WebhookSecret": "<CLAVE-SECRETA-WEBHOOK>",
