@@ -4,6 +4,7 @@
     <ProjectReference Include="..\SchoolPOS.Data\SchoolPOS.Data.csproj" />
     <ProjectReference Include="..\SchoolPOS.Domain\SchoolPOS.Domain.csproj" />
     <ProjectReference Include="..\SchoolPOS.Payments.MercadoPago\SchoolPOS.Payments.MercadoPago.csproj" />
+    <ProjectReference Include="..\SchoolPOS.Invoicing.Sw\SchoolPOS.Invoicing.Sw.csproj" />
   </ItemGroup>
 
   <ItemGroup>

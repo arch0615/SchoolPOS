@@ -22,5 +22,17 @@ public class School
     /// <summary>Si el impuesto está incluido en el precio (true) o se añade (false).</summary>
     public bool TaxInclusive { get; set; } = true;
 
+    // --- Datos fiscales de la escuela (receptor del CFDI de comisión, FR-COM-5) ---
+    /// <summary>RFC de la escuela (receptor).</summary>
+    public string? Rfc { get; set; }
+    /// <summary>Razón social para el CFDI (puede diferir de Name).</summary>
+    public string? LegalName { get; set; }
+    /// <summary>Régimen fiscal del receptor (código SAT, p. ej. "601").</summary>
+    public string? TaxRegime { get; set; }
+    /// <summary>Código postal del domicilio fiscal del receptor.</summary>
+    public string? PostalCode { get; set; }
+    /// <summary>Uso del CFDI (código SAT, p. ej. "G03").</summary>
+    public string? CfdiUse { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
 }

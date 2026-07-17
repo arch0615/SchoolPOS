@@ -50,3 +50,16 @@ public enum SaleStatus
     PartiallyRefunded = 2,
     Refunded = 3,
 }
+
+/// <summary>Estado de una factura de comisión (CFDI) emitida a la escuela.</summary>
+public enum CfdiStatus
+{
+    /// <summary>Registrada, aún no timbrada.</summary>
+    Draft = 1,
+    /// <summary>Timbrada por el PAC (tiene folio fiscal / UUID).</summary>
+    Stamped = 2,
+    /// <summary>Falló el timbrado.</summary>
+    Failed = 3,
+    /// <summary>Cancelada ante el SAT.</summary>
+    Cancelled = 4,
+}

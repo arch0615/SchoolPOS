@@ -7,6 +7,7 @@
       "src/SchoolPOS.Portal.Web/SchoolPOS.Portal.Web.csproj",
       "src/SchoolPOS.Sync.Agent/SchoolPOS.Sync.Agent.csproj",
       "src/SchoolPOS.Payments.MercadoPago/SchoolPOS.Payments.MercadoPago.csproj",
+      "src/SchoolPOS.Invoicing.Sw/SchoolPOS.Invoicing.Sw.csproj",
       "tools/SchoolPOS.Provision/SchoolPOS.Provision.csproj",
       "tests/SchoolPOS.Domain.Tests/SchoolPOS.Domain.Tests.csproj",
       "tests/SchoolPOS.Data.Tests/SchoolPOS.Data.Tests.csproj",

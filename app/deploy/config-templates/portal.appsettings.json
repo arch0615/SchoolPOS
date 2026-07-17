@@ -21,6 +21,27 @@
   "Email": {
     "Provider": "Smtp"
   },
+  "Cfdi": {
+    "Provider": "Sw",
+    "TaxRate": 0.16,
+    "TaxInclusive": true,
+    "ConceptTemplate": "Comisión por recargas en línea"
+  },
+  "SwCfdi": {
+    "// NOTA": "SW Sapien (PAC). Usar BaseUrl de PRUEBAS primero. CSD del emisor se carga en la cuenta de SW. Validar catálogos SAT con el contador.",
+    "BaseUrl": "https://services.test.sw.com.mx",
+    "User": "oortega@bulldogti.com",
+    "Password": "<PASSWORD-SW — usar variable de entorno, NO subir al repo>",
+    "Token": "",
+    "IssuerRfc": "SEB2201264R8",
+    "IssuerName": "SERVICIOS ESPECIALIZADOS BULLDOG TI",
+    "IssuerTaxRegime": "626",
+    "IssuerPostalCode": "23089",
+    "ConceptSatKey": "84121500",
+    "ConceptUnitKey": "ACT",
+    "PaymentForm": "03",
+    "PaymentMethod": "PUE"
+  },
   "Smtp": {
     "Host": "bulldogti.com",
     "Port": 465,

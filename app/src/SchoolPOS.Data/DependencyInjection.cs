@@ -41,6 +41,10 @@ public static class DependencyInjection
         services.AddScoped<ITreasuryService, TreasuryService>();
         services.AddScoped<IGuardianService, GuardianService>();
         services.AddScoped<ICommissionReportService, CommissionReportService>();
+        // CFDI de comisión: emisor simulado por defecto (dev). El host puede sustituirlo por SW.
+        services.AddSingleton(new CfdiSettings());
+        services.AddScoped<ICfdiIssuer, NullCfdiIssuer>();
+        services.AddScoped<ICommissionInvoiceService, CommissionInvoiceService>();
         services.AddScoped<ISalesReportService, SalesReportService>();
         services.AddScoped<IFinancialReportService, FinancialReportService>();
         services.AddScoped<IPurchasingReportService, PurchasingReportService>();

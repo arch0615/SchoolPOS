@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SchoolPOS.Data;
 using SchoolPOS.Domain.Abstractions;
 using SchoolPOS.Payments.MercadoPago;
+using SchoolPOS.Invoicing.Sw;
 using SchoolPOS.Portal.Web.Infrastructure;
 using SchoolPOS.Portal.Web.Infrastructure.Email;
 
@@ -57,6 +58,22 @@ else
 {
     builder.Services.AddSingleton<IEmailSender, LoggingEmailSender>();
 }
+
+// CFDI de comisión: emisor simulado (Null, por defecto en dev) o SW Sapien real.
+var cfdiSettings = config.GetSection("Cfdi").Get<CfdiSettings>();
+if (cfdiSettings is not null)
+    builder.Services.AddSingleton(cfdiSettings);
+if (string.Equals(config["Cfdi:Provider"], "Sw", StringComparison.OrdinalIgnoreCase))
+{
+    var swOptions = config.GetSection("SwCfdi").Get<SwCfdiOptions>() ?? new SwCfdiOptions();
+    builder.Services.AddSingleton(swOptions);
+    builder.Services.AddHttpClient<ICfdiIssuer, SwCfdiIssuer>(client =>
+    {
+        if (!string.IsNullOrEmpty(swOptions.BaseUrl))
+            client.BaseAddress = new Uri(swOptions.BaseUrl);
+    });
+}
+// else: NullCfdiIssuer ya está registrado por AddSchoolPosData (default de desarrollo).
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>

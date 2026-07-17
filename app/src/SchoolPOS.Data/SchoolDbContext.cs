@@ -43,6 +43,9 @@ public class SchoolDbContext : DbContext
     public DbSet<CashSession> CashSessions => Set<CashSession>();
     public DbSet<CashMovement> CashMovements => Set<CashMovement>();
 
+    // Facturación de comisión (CFDI)
+    public DbSet<CommissionInvoice> CommissionInvoices => Set<CommissionInvoice>();
+
     /// <summary>Precisión estándar del dinero en toda la DB.</summary>
     private const int MoneyPrecision = 18;
     private const int MoneyScale = 4;
@@ -65,6 +68,19 @@ public class SchoolDbContext : DbContext
             e.HasKey(x => x.Id);
             e.Property(x => x.Name).HasMaxLength(200).IsRequired();
             e.Property(x => x.Currency).HasMaxLength(3).IsRequired();
+            e.Property(x => x.Rfc).HasMaxLength(13);
+            e.Property(x => x.LegalName).HasMaxLength(250);
+            e.Property(x => x.TaxRegime).HasMaxLength(10);
+            e.Property(x => x.PostalCode).HasMaxLength(10);
+            e.Property(x => x.CfdiUse).HasMaxLength(10);
+        });
+
+        b.Entity<CommissionInvoice>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Uuid).HasMaxLength(36);
+            e.Property(x => x.Currency).HasMaxLength(3).IsRequired();
+            e.HasIndex(x => new { x.SchoolId, x.PeriodFromUtc, x.PeriodToUtc });
         });
 
         b.Entity<Student>(e =>
