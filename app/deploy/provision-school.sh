@@ -23,8 +23,12 @@ ARGS=(
   --CommissionRate "${COMMISSION_RATE:-0.05}"
   --TaxRate "${TAX_RATE:-0}"
 )
-if [[ -n "${SCHOOL_ID:-}" ]]; then
-  ARGS+=(--SchoolId "$SCHOOL_ID")
-fi
+if [[ -n "${SCHOOL_ID:-}" ]]; then ARGS+=(--SchoolId "$SCHOOL_ID"); fi
+# Datos fiscales (para facturar comisión) — opcionales
+if [[ -n "${RFC:-}" ]]; then ARGS+=(--Rfc "$RFC"); fi
+if [[ -n "${LEGAL_NAME:-}" ]]; then ARGS+=(--LegalName "$LEGAL_NAME"); fi
+if [[ -n "${TAX_REGIME:-}" ]]; then ARGS+=(--TaxRegime "$TAX_REGIME"); fi
+if [[ -n "${POSTAL_CODE:-}" ]]; then ARGS+=(--PostalCode "$POSTAL_CODE"); fi
+if [[ -n "${CFDI_USE:-}" ]]; then ARGS+=(--CfdiUse "$CFDI_USE"); fi
 
 dotnet run --project "$TOOL" -c Release -- "${ARGS[@]}"

@@ -23,6 +23,12 @@ public static class DemoDataSeeder
             CommissionRate = 0.05m,
             TaxRate = 0m,
             TaxInclusive = true,
+            // Datos fiscales de demostración (para poder emitir CFDI simulado en dev).
+            LegalName = "Escuela Demo SA de CV",
+            Rfc = "XAXX010101000",
+            TaxRegime = "601",
+            PostalCode = "23089",
+            CfdiUse = "G03",
             CreatedAtUtc = DateTime.UtcNow,
         };
         db.Schools.Add(school);

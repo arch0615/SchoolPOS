@@ -16,7 +16,9 @@ using SchoolPOS.Domain.Enums;
 //     --ConnectionString "Server=localhost\SQLEXPRESS;Database=SchoolPOS_MiEscuela;Trusted_Connection=True;TrustServerCertificate=True;" \
 //     --SchoolName "Colegio X" --AdminUser admin --AdminPassword "Secreta123" \
 //     [--Provider SqlServer|Sqlite] [--SchoolId <guid>] [--Currency MXN] \
-//     [--CommissionRate 0.05] [--TaxRate 0] [--TaxInclusive true]
+//     [--CommissionRate 0.05] [--TaxRate 0] [--TaxInclusive true] \
+//     [--Rfc XAXX010101000] [--LegalName "Escuela SA"] [--TaxRegime 601] \
+//     [--PostalCode 23089] [--CfdiUse G03]   (datos fiscales para facturar comisión)
 // ---------------------------------------------------------------------------
 
 var opts = ArgParser.Parse(args);
@@ -47,6 +49,13 @@ try
     var schoolId = opts.TryGetValue("SchoolId", out var sid) && Guid.TryParse(sid, out var g)
         ? g : Guid.NewGuid();
 
+    // Datos fiscales de la escuela (receptor del CFDI de comisión) — opcionales.
+    string? rfc = opts.GetValueOrDefault("Rfc");
+    string? legalName = opts.GetValueOrDefault("LegalName");
+    string? taxRegime = opts.GetValueOrDefault("TaxRegime");
+    string? postalCode = opts.GetValueOrDefault("PostalCode");
+    string? cfdiUse = opts.GetValueOrDefault("CfdiUse");
+
     var builder = new DbContextOptionsBuilder<SchoolDbContext>();
     var isSqlite = string.Equals(provider, "Sqlite", StringComparison.OrdinalIgnoreCase);
     if (isSqlite) builder.UseSqlite(connectionString);
@@ -71,6 +80,11 @@ try
             CommissionRate = commissionRate,
             TaxRate = taxRate,
             TaxInclusive = taxInclusive,
+            Rfc = rfc,
+            LegalName = legalName,
+            TaxRegime = taxRegime,
+            PostalCode = postalCode,
+            CfdiUse = cfdiUse,
             CreatedAtUtc = DateTime.UtcNow,
         };
         db.Schools.Add(school);
@@ -79,7 +93,22 @@ try
     }
     else
     {
-        Console.WriteLine($"• Escuela ya existente: {school.Name} (sin cambios)");
+        // Actualiza los datos fiscales si se proporcionaron (permite completarlos en un re-run).
+        var changed = false;
+        if (rfc is not null) { school.Rfc = rfc; changed = true; }
+        if (legalName is not null) { school.LegalName = legalName; changed = true; }
+        if (taxRegime is not null) { school.TaxRegime = taxRegime; changed = true; }
+        if (postalCode is not null) { school.PostalCode = postalCode; changed = true; }
+        if (cfdiUse is not null) { school.CfdiUse = cfdiUse; changed = true; }
+        if (changed)
+        {
+            await db.SaveChangesAsync();
+            Console.WriteLine($"• Escuela ya existente: {school.Name} · datos fiscales actualizados");
+        }
+        else
+        {
+            Console.WriteLine($"• Escuela ya existente: {school.Name} (sin cambios)");
+        }
     }
 
     // Operador administrador (idempotente por usuario).
@@ -100,6 +129,9 @@ try
     Console.WriteLine("════════════════════════════════════════════════════════");
     Console.WriteLine($" SchoolId : {school.Id}");
     Console.WriteLine($" Moneda   : {school.Currency}   Comisión: {school.CommissionRate:P2}   IVA: {school.TaxRate:P2}");
+    var fiscalOk = !string.IsNullOrWhiteSpace(school.Rfc) && !string.IsNullOrWhiteSpace(school.TaxRegime)
+        && !string.IsNullOrWhiteSpace(school.PostalCode) && !string.IsNullOrWhiteSpace(school.CfdiUse);
+    Console.WriteLine($" Fiscal   : {(fiscalOk ? $"RFC {school.Rfc} · régimen {school.TaxRegime} · CP {school.PostalCode} · uso {school.CfdiUse}" : "INCOMPLETO (requerido para facturar comisión)")}");
     Console.WriteLine();
     Console.WriteLine(" Configura este SchoolId en:");
     Console.WriteLine("   • POS (appsettings.json): Pos:SchoolId");

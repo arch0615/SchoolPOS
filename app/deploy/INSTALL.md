@@ -54,6 +54,12 @@ SCHOOL_NAME="Colegio X" ADMIN_PASSWORD="CAMBIA-ESTO" ./provision-school.sh
 > **Anota el `SchoolId`** que imprime el comando: se usa en el POS y el portal.
 > Para re-ejecutar sin duplicar, vuelve a pasar el mismo `--SchoolId` / `-SchoolId`.
 
+**Datos fiscales (para facturar la comisión, FR-COM-5):** agrega `-Rfc`, `-LegalName`,
+`-TaxRegime`, `-PostalCode`, `-CfdiUse` (PowerShell) o las variables `RFC`, `LEGAL_NAME`,
+`TAX_REGIME`, `POSTAL_CODE`, `CFDI_USE` (bash). Sin estos datos el sistema **no puede
+emitir el CFDI de comisión** de esa escuela. Se pueden completar después volviendo a
+ejecutar con el mismo `SchoolId` (actualiza solo lo fiscal).
+
 Los estudiantes (roster) se dan de alta después desde el POS (inventario/clientes)
 o por carga inicial; el portal los vincula por matrícula.
 

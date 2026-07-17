@@ -3,6 +3,8 @@
 @{
     ViewData["Title"] = "Comisiones del proveedor";
 }
+@if (!string.IsNullOrEmpty(Model.Message)) { <div class="msg ok">@Model.Message</div> }
+@if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
 <div class="card">
     <div class="row" style="align-items:center">
         <div>
@@ -49,6 +51,7 @@
                     <th style="text-align:right">Recargas</th>
                     <th style="text-align:right">Total recargado</th>
                     <th style="text-align:right">Comisión</th>
+                    <th style="text-align:right">Factura</th>
                 </tr>
             </thead>
             <tbody>
@@ -59,6 +62,14 @@
                     <td style="text-align:right">@s.TopUpCount</td>
                     <td style="text-align:right">@s.TotalRecharged.ToString("C2")</td>
                     <td style="text-align:right;font-weight:700;color:#2e8b57">@s.TotalCommission.ToString("C2")</td>
+                    <td style="text-align:right">
+                        <form method="post" asp-page-handler="Issue" style="display:inline">
+                            <input type="hidden" name="schoolId" value="@s.SchoolId" />
+                            <input type="hidden" name="from" value="@(Model.From?.ToString("yyyy-MM-dd"))" />
+                            <input type="hidden" name="to" value="@(Model.To?.ToString("yyyy-MM-dd"))" />
+                            <button class="btn ghost" type="submit" style="padding:6px 10px;min-width:0">Emitir CFDI</button>
+                        </form>
+                    </td>
                 </tr>
             }
             </tbody>
@@ -68,8 +79,44 @@
                     <td style="text-align:right;font-weight:700">@Model.Rollup.TopUpCount</td>
                     <td style="text-align:right;font-weight:700">@Model.Rollup.TotalRecharged.ToString("C2")</td>
                     <td style="text-align:right;font-weight:700;color:#2e8b57">@Model.Rollup.TotalCommission.ToString("C2")</td>
+                    <td></td>
                 </tr>
             </tfoot>
+        </table>
+        <p class="muted" style="margin-top:8px">La factura se emite por el periodo seleccionado (Desde/Hasta). En desarrollo el timbrado es simulado.</p>
+    }
+</div>
+
+<div class="card">
+    <h2>Facturas de comisión emitidas</h2>
+    @if (Model.Invoices.Count == 0)
+    {
+        <p class="muted">Aún no hay facturas emitidas.</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Escuela</th>
+                    <th>Periodo</th>
+                    <th style="text-align:right">Comisión</th>
+                    <th>Estado</th>
+                    <th>Folio fiscal (UUID)</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var inv in Model.Invoices)
+            {
+                <tr>
+                    <td>@inv.SchoolName</td>
+                    <td>@inv.PeriodFrom.ToString("dd/MM/yyyy") – @inv.PeriodTo.ToString("dd/MM/yyyy")</td>
+                    <td style="text-align:right">@inv.Amount.ToString("C2")</td>
+                    <td><span class="pill">@inv.Status</span></td>
+                    <td class="muted" style="font-size:12px">@inv.Uuid</td>
+                </tr>
+            }
+            </tbody>
         </table>
     }
 </div>
