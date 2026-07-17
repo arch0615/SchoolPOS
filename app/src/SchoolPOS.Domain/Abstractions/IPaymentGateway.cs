@@ -3,6 +3,7 @@ namespace SchoolPOS.Domain.Abstractions;
 /// <summary>Datos para crear una preferencia de pago (checkout) con split de comisión.</summary>
 public sealed record PaymentIntent(
     Guid TopUpId,
+    Guid SchoolId,
     decimal Amount,
     decimal CommissionAmount,
     string Currency,

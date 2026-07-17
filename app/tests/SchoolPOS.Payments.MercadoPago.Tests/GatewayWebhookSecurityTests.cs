@@ -1,5 +1,6 @@
 using FluentAssertions;
 using SchoolPOS.Domain.Abstractions;
+using SchoolPOS.Domain.Entities;
 using SchoolPOS.Payments.MercadoPago;
 
 namespace SchoolPOS.Payments.MercadoPago.Tests;
@@ -13,9 +14,27 @@ public class GatewayWebhookSecurityTests
             => throw new InvalidOperationException("No debe consultarse el pago cuando la firma es inválida.");
     }
 
+    private sealed class NullStore : ISchoolPaymentAccountStore
+    {
+        public Task<SchoolPaymentAccount?> GetAsync(Guid schoolId, CancellationToken ct = default)
+            => Task.FromResult<SchoolPaymentAccount?>(null);
+        public Task SaveAsync(Guid schoolId, string provider, string providerUserId, string accessToken,
+            string? refreshToken, DateTime expiresAtUtc, CancellationToken ct = default) => Task.CompletedTask;
+    }
+
+    private sealed class NullOAuth : IMercadoPagoOAuth
+    {
+        public string BuildAuthorizationUrl(string state, string redirectUri) => string.Empty;
+        public Task<OAuthTokens> ExchangeCodeAsync(string code, string redirectUri, CancellationToken ct = default)
+            => throw new NotSupportedException();
+        public Task<OAuthTokens> RefreshAsync(string refreshToken, CancellationToken ct = default)
+            => throw new NotSupportedException();
+    }
+
     private static MercadoPagoGateway NewGateway() =>
         new(new HttpClient(new ThrowingHandler()) { BaseAddress = new Uri("https://api.mercadopago.com") },
-            new MercadoPagoOptions { AccessToken = "token", WebhookSecret = "secreto" });
+            new MercadoPagoOptions { AccessToken = "token", WebhookSecret = "secreto" },
+            new NullStore(), new NullOAuth());
 
     [Fact]
     public async Task Invalid_signature_returns_null_and_never_calls_the_api()

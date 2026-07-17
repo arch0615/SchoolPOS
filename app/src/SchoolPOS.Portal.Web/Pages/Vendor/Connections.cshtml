@@ -1,0 +1,54 @@
+@page
+@model SchoolPOS.Portal.Web.Pages.Vendor.ConnectionsModel
+@{
+    ViewData["Title"] = "Conexiones de pago";
+}
+@if (Model.Connected == 1) { <div class="msg ok">Cuenta de Mercado Pago conectada correctamente.</div> }
+@if (Model.Error == 1) { <div class="msg error">No se pudo completar la conexión. Intenta de nuevo.</div> }
+
+<div class="card">
+    <div class="pill">Panel del proveedor</div>
+    <h1 style="margin-top:8px">Conexiones de Mercado Pago</h1>
+    <p class="muted">Cada escuela conecta su propia cuenta de Mercado Pago (OAuth). Así el pago se
+        cobra a nombre de la escuela y la comisión se separa automáticamente a tu cuenta.</p>
+    <p><a href="/Vendor">← Volver a comisiones</a></p>
+</div>
+
+<div class="card">
+    @if (Model.Schools.Count == 0)
+    {
+        <p class="muted">No hay escuelas registradas.</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr><th>Escuela</th><th>Estado</th><th>Cuenta (user id)</th><th style="text-align:right">Acción</th></tr>
+            </thead>
+            <tbody>
+            @foreach (var s in Model.Schools)
+            {
+                <tr>
+                    <td>@s.Name</td>
+                    <td>
+                        @if (s.Connected)
+                        {
+                            <span class="pill" style="background:#eafaf1;color:#1e7d48">Conectada</span>
+                        }
+                        else
+                        {
+                            <span class="pill" style="background:#fdecea;color:#c0392b">Sin conectar</span>
+                        }
+                    </td>
+                    <td class="muted">@s.ProviderUserId</td>
+                    <td style="text-align:right">
+                        <a class="btn ghost" style="padding:6px 12px;min-width:0" href="/oauth/mercadopago/start?schoolId=@s.SchoolId">
+                            @(s.Connected ? "Reconectar" : "Conectar Mercado Pago")
+                        </a>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</div>

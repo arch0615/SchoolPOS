@@ -54,7 +54,8 @@ public sealed class TopUpService : ITopUpService
 
         // Llamada externa a la pasarela FUERA de cualquier transacción de DB.
         var preference = await _gateway.CreatePreferenceAsync(new PaymentIntent(
-            topUp.Id, amount, commission, school.Currency, $"Recarga de saldo {amount:0.00} {school.Currency}"), ct);
+            topUp.Id, schoolId, amount, commission, school.Currency,
+            $"Recarga de saldo {amount:0.00} {school.Currency}"), ct);
 
         topUp.GatewayRef = preference.GatewayRef;
         _db.TopUps.Add(topUp);

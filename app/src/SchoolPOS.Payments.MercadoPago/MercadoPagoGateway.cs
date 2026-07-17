@@ -16,11 +16,17 @@ public sealed class MercadoPagoGateway : IPaymentGateway
 {
     private readonly HttpClient _http;
     private readonly MercadoPagoOptions _options;
+    private readonly ISchoolPaymentAccountStore _accounts;
+    private readonly IMercadoPagoOAuth _oauth;
 
-    public MercadoPagoGateway(HttpClient http, MercadoPagoOptions options)
+    public MercadoPagoGateway(
+        HttpClient http, MercadoPagoOptions options,
+        ISchoolPaymentAccountStore accounts, IMercadoPagoOAuth oauth)
     {
         _http = http;
         _options = options;
+        _accounts = accounts;
+        _oauth = oauth;
         if (_http.BaseAddress is null && !string.IsNullOrEmpty(_options.BaseUrl))
             _http.BaseAddress = new Uri(_options.BaseUrl);
     }
@@ -51,11 +57,14 @@ public sealed class MercadoPagoGateway : IPaymentGateway
             auto_return = "approved",
         };
 
+        // El pago se crea con el token del VENDEDOR (la escuela); marketplace_fee → proveedor.
+        var sellerToken = await ResolveSchoolTokenAsync(intent.SchoolId, ct);
+
         using var request = new HttpRequestMessage(HttpMethod.Post, "/checkout/preferences")
         {
             Content = JsonContent.Create(body),
         };
-        Authorize(request);
+        Authorize(request, sellerToken);
 
         using var response = await _http.SendAsync(request, ct);
         response.EnsureSuccessStatusCode();
@@ -77,9 +86,10 @@ public sealed class MercadoPagoGateway : IPaymentGateway
         if (string.IsNullOrEmpty(request.ResourceId))
             return null;
 
-        // 2) Consultar el pago server-side (no confiar en el cuerpo del webhook).
+        // 2) Consultar el pago server-side (no confiar en el cuerpo del webhook). Se usa el token de
+        //    la app (marketplace); en algunos casos MP requiere el del vendedor — validar en integración.
         using var httpRequest = new HttpRequestMessage(HttpMethod.Get, $"/v1/payments/{request.ResourceId}");
-        Authorize(httpRequest);
+        Authorize(httpRequest, _options.AccessToken);
 
         using var response = await _http.SendAsync(httpRequest, ct);
         if (!response.IsSuccessStatusCode)
@@ -98,8 +108,35 @@ public sealed class MercadoPagoGateway : IPaymentGateway
         return new PaymentNotification(payment.ExternalReference, status);
     }
 
-    private void Authorize(HttpRequestMessage request) =>
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.AccessToken);
+    /// <summary>
+    /// Devuelve el access token del vendedor (escuela) conectado por OAuth, refrescándolo si venció.
+    /// Si la escuela no ha conectado su cuenta, usa el token de la app como respaldo (modo de una
+    /// sola cuenta) o falla si tampoco existe.
+    /// </summary>
+    private async Task<string> ResolveSchoolTokenAsync(Guid schoolId, CancellationToken ct)
+    {
+        var account = await _accounts.GetAsync(schoolId, ct);
+        if (account is null)
+        {
+            if (!string.IsNullOrEmpty(_options.AccessToken))
+                return _options.AccessToken;
+            throw new InvalidOperationException(
+                $"La escuela {schoolId} no ha conectado su cuenta de Mercado Pago (OAuth).");
+        }
+
+        if (account.ExpiresAtUtc <= DateTime.UtcNow.AddMinutes(1) && !string.IsNullOrEmpty(account.RefreshToken))
+        {
+            var refreshed = await _oauth.RefreshAsync(account.RefreshToken!, ct);
+            await _accounts.SaveAsync(schoolId, "MercadoPago", refreshed.ProviderUserId,
+                refreshed.AccessToken, refreshed.RefreshToken, refreshed.ExpiresAtUtc, ct);
+            return refreshed.AccessToken;
+        }
+
+        return account.AccessToken;
+    }
+
+    private static void Authorize(HttpRequestMessage request, string token) =>
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
     private sealed record PreferenceResponse(
         [property: JsonPropertyName("id")] string Id,

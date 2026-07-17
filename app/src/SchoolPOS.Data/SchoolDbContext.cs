@@ -46,6 +46,9 @@ public class SchoolDbContext : DbContext
     // Facturación de comisión (CFDI)
     public DbSet<CommissionInvoice> CommissionInvoices => Set<CommissionInvoice>();
 
+    // Cuentas de pago conectadas por OAuth (marketplace)
+    public DbSet<SchoolPaymentAccount> SchoolPaymentAccounts => Set<SchoolPaymentAccount>();
+
     /// <summary>Precisión estándar del dinero en toda la DB.</summary>
     private const int MoneyPrecision = 18;
     private const int MoneyScale = 4;
@@ -81,6 +84,16 @@ public class SchoolDbContext : DbContext
             e.Property(x => x.Uuid).HasMaxLength(36);
             e.Property(x => x.Currency).HasMaxLength(3).IsRequired();
             e.HasIndex(x => new { x.SchoolId, x.PeriodFromUtc, x.PeriodToUtc });
+        });
+
+        b.Entity<SchoolPaymentAccount>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Provider).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ProviderUserId).HasMaxLength(100);
+            e.Property(x => x.AccessToken).HasMaxLength(1000).IsRequired();
+            e.Property(x => x.RefreshToken).HasMaxLength(1000);
+            e.HasIndex(x => new { x.SchoolId, x.Provider }).IsUnique();
         });
 
         b.Entity<Student>(e =>

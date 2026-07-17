@@ -46,6 +46,24 @@ builder.Services.AddSingleton(new PortalOptions
     VendorAccessCode = config["Portal:VendorAccessCode"] ?? "vendor-demo",
 });
 
+// OAuth marketplace: sandbox (dev) o Mercado Pago real (cuando Payments:Provider = MercadoPago).
+builder.Services.AddSingleton(new OnboardingStateProtector(
+    config["MercadoPago:StateSecret"] ?? "dev-onboarding-state-secret"));
+if (string.Equals(paymentsProvider, "MercadoPago", StringComparison.OrdinalIgnoreCase))
+{
+    var oauthOptions = config.GetSection("MercadoPagoOAuth").Get<MercadoPagoOAuthOptions>() ?? new MercadoPagoOAuthOptions();
+    builder.Services.AddSingleton(oauthOptions);
+    builder.Services.AddHttpClient<IMercadoPagoOAuth, MercadoPagoOAuth>(client =>
+    {
+        if (!string.IsNullOrEmpty(oauthOptions.ApiBaseUrl))
+            client.BaseAddress = new Uri(oauthOptions.ApiBaseUrl);
+    });
+}
+else
+{
+    builder.Services.AddSingleton<IMercadoPagoOAuth, SandboxMercadoPagoOAuth>();
+}
+
 // Correo transaccional: SMTP real o emisor de log (desarrollo).
 var emailProvider = config["Email:Provider"] ?? "Log";
 if (string.Equals(emailProvider, "Smtp", StringComparison.OrdinalIgnoreCase))
@@ -143,6 +161,46 @@ app.MapPost("/api/payments/webhook", async (
         await topUps.ApplyConfirmedAsync(topUp.Id, ct);
     }
     return Results.Ok();
+});
+
+// ---- Onboarding OAuth marketplace (la escuela conecta su cuenta de Mercado Pago) ----
+app.MapGet("/oauth/mercadopago/start", (
+    HttpContext http, Guid schoolId, IMercadoPagoOAuth oauth, OnboardingStateProtector protector) =>
+{
+    var state = protector.Protect(schoolId, TimeSpan.FromMinutes(15));
+    var redirectUri = $"{http.Request.Scheme}://{http.Request.Host}/oauth/mercadopago/callback";
+    return Results.Redirect(oauth.BuildAuthorizationUrl(state, redirectUri));
+}).RequireAuthorization("Vendor");
+
+app.MapGet("/oauth/mercadopago/callback", async (
+    HttpContext http, string? code, string? state,
+    IMercadoPagoOAuth oauth, ISchoolPaymentAccountStore store, OnboardingStateProtector protector,
+    CancellationToken ct) =>
+{
+    // El state firmado prueba que el flujo lo inició nuestro portal (CSRF) y trae el schoolId.
+    if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(state) || !protector.TryUnprotect(state, out var schoolId))
+        return Results.Redirect("/Vendor/Connections?error=1");
+
+    var redirectUri = $"{http.Request.Scheme}://{http.Request.Host}/oauth/mercadopago/callback";
+    var tokens = await oauth.ExchangeCodeAsync(code, redirectUri, ct);
+    await store.SaveAsync(schoolId, "MercadoPago", tokens.ProviderUserId,
+        tokens.AccessToken, tokens.RefreshToken, tokens.ExpiresAtUtc, ct);
+    return Results.Redirect("/Vendor/Connections?connected=1");
+});
+
+// Página de consentimiento simulada (solo desarrollo — reemplaza al checkout real de Mercado Pago).
+app.MapGet("/oauth/mercadopago/sandbox", (string state, string redirect_uri) =>
+{
+    var authorize = $"{redirect_uri}?code=SBX-CODE&state={Uri.EscapeDataString(state)}";
+    var html = $$"""
+        <!doctype html><html lang="es"><head><meta charset="utf-8"><title>Conectar Mercado Pago (simulación)</title></head>
+        <body style="font-family:system-ui;max-width:460px;margin:60px auto;text-align:center">
+          <h1>Mercado Pago (simulación)</h1>
+          <p>La escuela autoriza al proveedor a crear pagos a su nombre con split de comisión.</p>
+          <p><a href="{{authorize}}" style="background:#009ee3;color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none">Autorizar</a></p>
+        </body></html>
+        """;
+    return Results.Content(html, "text/html");
 });
 
 app.Run();

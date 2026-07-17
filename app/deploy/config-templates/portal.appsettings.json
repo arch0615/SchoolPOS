@@ -51,8 +51,16 @@
     "FromEmail": "soporte@bulldogti.com",
     "FromName": "Tienda Escolar"
   },
+  "MercadoPagoOAuth": {
+    "// NOTA": "OAuth marketplace: cada escuela conecta su cuenta. ClientId = App ID; AuthBaseUrl por país (.com.mx).",
+    "ClientId": "<APP-ID-MERCADO-PAGO>",
+    "ClientSecret": "<CLIENT-SECRET — usar variable de entorno, NO subir al repo>",
+    "AuthBaseUrl": "https://auth.mercadopago.com.mx",
+    "ApiBaseUrl": "https://api.mercadopago.com"
+  },
   "MercadoPago": {
-    "AccessToken": "<TOKEN-DEL-VENDEDOR-OAUTH-MARKETPLACE>",
+    "StateSecret": "<SECRETO-ALEATORIO-PARA-EL-STATE-OAUTH>",
+    "AccessToken": "<TOKEN-DE-LA-APP (respaldo/consulta de pagos)>",
     "WebhookSecret": "<CLAVE-SECRETA-WEBHOOK>",
     "NotificationUrl": "https://<tu-dominio>/api/payments/webhook",
     "SuccessUrl": "https://<tu-dominio>/Payments/Result?status=approved",
