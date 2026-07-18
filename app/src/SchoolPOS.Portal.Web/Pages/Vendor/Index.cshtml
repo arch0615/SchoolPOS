@@ -28,11 +28,11 @@
     </div>
     <div class="card">
         <div class="muted">Total recargado</div>
-        <div class="balance" style="color:#1e5aa8">@Model.Rollup.TotalRecharged.ToString("C2")</div>
+        <div class="balance" style="color:var(--orange)">@Model.Rollup.TotalRecharged.ToString("C2")</div>
     </div>
     <div class="card">
         <div class="muted">Recargas</div>
-        <div class="balance" style="color:#23303e">@Model.Rollup.TopUpCount</div>
+        <div class="balance" style="color:#3a3a3a">@Model.Rollup.TopUpCount</div>
         <div class="muted">tasa media @((Model.AverageRate * 100).ToString("0.##"))%</div>
     </div>
 </div>
@@ -62,7 +62,7 @@
                     <td>@s.SchoolName</td>
                     <td style="text-align:right">@s.TopUpCount</td>
                     <td style="text-align:right">@s.TotalRecharged.ToString("C2")</td>
-                    <td style="text-align:right;font-weight:700;color:#2e8b57">@s.TotalCommission.ToString("C2")</td>
+                    <td style="text-align:right;font-weight:700;color:var(--green)">@s.TotalCommission.ToString("C2")</td>
                     <td style="text-align:right">
                         <form method="post" asp-page-handler="Issue" style="display:inline">
                             <input type="hidden" name="schoolId" value="@s.SchoolId" />
@@ -75,11 +75,11 @@
             }
             </tbody>
             <tfoot>
-                <tr style="border-top:2px solid #dfe5ec">
+                <tr style="border-top:2px solid #efe3c4">
                     <td style="font-weight:700">Total</td>
                     <td style="text-align:right;font-weight:700">@Model.Rollup.TopUpCount</td>
                     <td style="text-align:right;font-weight:700">@Model.Rollup.TotalRecharged.ToString("C2")</td>
-                    <td style="text-align:right;font-weight:700;color:#2e8b57">@Model.Rollup.TotalCommission.ToString("C2")</td>
+                    <td style="text-align:right;font-weight:700;color:var(--green)">@Model.Rollup.TotalCommission.ToString("C2")</td>
                     <td></td>
                 </tr>
             </tfoot>

@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:SchoolPOS.Pos.Desktop.ViewModels"
         xmlns:views="clr-namespace:SchoolPOS.Pos.Desktop.Views"
-        Title="Punto de Venta Escolar" Height="720" Width="1180"
+        Title="LoncherApp — Punto de Venta" Height="720" Width="1180"
         WindowStartupLocation="CenterScreen" Background="{StaticResource SurfaceBrush}">
 
     <Window.Resources>
@@ -46,9 +46,22 @@
         <Border Grid.Column="0" Background="{StaticResource PrimaryBrush}">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Top" Margin="0,20,0,10">
-                    <TextBlock Text="Tienda Escolar" Foreground="White" FontSize="18"
-                               FontWeight="Bold" Margin="18,0,0,2" />
-                    <TextBlock Text="POS" Foreground="#BBD3F0" FontSize="12" Margin="18,0,0,16" />
+                    <StackPanel Margin="16,0,12,14">
+                        <StackPanel Orientation="Horizontal">
+                            <Viewbox Width="30" Height="30" VerticalAlignment="Center">
+                                <Canvas Width="64" Height="64">
+                                    <Path Data="M32 21 C 27 13, 17 14, 15 24 C 13 33, 18 51, 27 51 C 30 51, 30 49, 32 49 C 34 49, 34 51, 37 51 C 46 51, 51 33, 49 24 C 47 14, 37 13, 32 21 Z"
+                                          Stroke="White" StrokeThickness="4.5" StrokeLineJoin="Round" />
+                                    <Path Data="M33 19 C 35 12, 41 9, 46 12" Stroke="White" StrokeThickness="3.2"
+                                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                    <Path Data="M31 19 C 24 9, 15 11, 20 18 C 24 23, 30 22, 31 19 Z" Fill="White" />
+                                </Canvas>
+                            </Viewbox>
+                            <TextBlock Text="LoncherApp" Foreground="White" FontSize="19" FontWeight="Bold"
+                                       VerticalAlignment="Center" Margin="8,0,0,0" />
+                        </StackPanel>
+                        <TextBlock Text="Punto de Venta" Foreground="#DCEFD0" FontSize="12" Margin="2,3,0,0" />
+                    </StackPanel>
                     <Button Content="🏠  Inicio" Style="{StaticResource NavButton}" Command="{Binding ShowDashboardCommand}" />
                     <Button Content="🛒  Venta" Style="{StaticResource NavButton}" Command="{Binding ShowSalesCommand}" />
                     <Button Content="📦  Inventario" Style="{StaticResource NavButton}"
@@ -64,9 +77,9 @@
 
                 <StackPanel DockPanel.Dock="Bottom" Margin="18,10">
                     <TextBlock Text="{Binding OperatorName}" Foreground="White" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding RoleName}" Foreground="#BBD3F0" FontSize="12" Margin="0,0,0,8" />
+                    <TextBlock Text="{Binding RoleName}" Foreground="#DCEFD0" FontSize="12" Margin="0,0,0,8" />
                     <Button Content="Cerrar sesión" Command="{Binding SignOutCommand}"
-                            Background="#154680" Foreground="White" BorderThickness="0" Padding="10,8" />
+                            Background="{StaticResource PrimaryDarkBrush}" Foreground="White" BorderThickness="0" Padding="10,8" />
                 </StackPanel>
                 <Grid />
             </DockPanel>

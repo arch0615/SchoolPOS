@@ -5,11 +5,17 @@
         <!-- Convertidores -->
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
 
-        <!-- Paleta y estilos base -->
-        <SolidColorBrush x:Key="PrimaryBrush" Color="#1E5AA8" />
-        <SolidColorBrush x:Key="AccentBrush" Color="#2E8B57" />
+        <!-- Paleta de marca LoncherApp -->
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#57A839" />
+        <SolidColorBrush x:Key="PrimaryDarkBrush" Color="#3F7F28" />
+        <SolidColorBrush x:Key="AccentBrush" Color="#F19234" />
+        <SolidColorBrush x:Key="OrangeBrush" Color="#EFA43B" />
+        <SolidColorBrush x:Key="LeafBrush" Color="#5FB03A" />
         <SolidColorBrush x:Key="DangerBrush" Color="#C0392B" />
-        <SolidColorBrush x:Key="SurfaceBrush" Color="#F4F6F9" />
+        <SolidColorBrush x:Key="SurfaceBrush" Color="#FAF6EC" />
+        <SolidColorBrush x:Key="CreamBrush" Color="#FBF3DA" />
+        <SolidColorBrush x:Key="InkBrush" Color="#3A3A3A" />
+        <SolidColorBrush x:Key="MutedBrush" Color="#9A8F76" />
 
         <Style TargetType="Button">
             <Setter Property="Padding" Value="12,8" />
