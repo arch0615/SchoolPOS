@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 210" role="img" aria-label="LoncherApp — Facilitando la venta de loncheras escolares">
+  <title>LoncherApp</title>
+  <!-- apple / lunchbox mark, centered -->
+  <g transform="translate(158, 6) scale(1.06)" fill="none" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M32 21 C 27 13, 17 14, 15 24 C 13 33, 18 51, 27 51 C 30 51, 30 49, 32 49 C 34 49, 34 51, 37 51 C 46 51, 51 33, 49 24 C 47 14, 37 13, 32 21 Z"
+          stroke="#EFA43B" stroke-width="4.5"/>
+    <path d="M33 19 C 35 12, 41 9, 46 12" stroke="#EFA43B" stroke-width="3.2"/>
+    <path d="M31 19 C 24 9, 15 11, 20 18 C 24 23, 30 22, 31 19 Z" fill="#5FB03A" stroke="none"/>
+  </g>
+  <!-- wordmark -->
+  <text x="190" y="140" text-anchor="middle" font-family="'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="46" font-weight="800" letter-spacing="-0.5">
+    <tspan fill="#57A839">Loncher</tspan><tspan fill="#F19234">App</tspan>
+  </text>
+  <!-- tagline -->
+  <text x="190" y="176" text-anchor="middle" font-family="'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="16" font-weight="600" fill="#F67426">
+    Facilitando la venta de loncheras escolares
+  </text>
+</svg>
