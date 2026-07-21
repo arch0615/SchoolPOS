@@ -15,6 +15,9 @@ artifacts/
 .vscode/*
 !.vscode/extensions.json
 
+# ---- Claude Code local settings ----
+.claude/
+
 # ---- Test / coverage ----
 [Tt]est[Rr]esult*/
 coverage*.json
