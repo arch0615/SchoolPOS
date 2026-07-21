@@ -9,27 +9,38 @@
         </Grid.RowDefinitions>
 
         <DockPanel Grid.Row="0">
-            <TextBlock Text="Inicio" FontSize="24" FontWeight="Bold" Foreground="#333" />
             <Button Content="Actualizar" Command="{Binding RefreshCommand}" HorizontalAlignment="Right"
                     DockPanel.Dock="Right" />
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Viewbox Width="26" Height="26" Margin="0,0,10,0">
+                    <Canvas Width="64" Height="64">
+                        <Path Data="M32 21 C 27 13, 17 14, 15 24 C 13 33, 18 51, 27 51 C 30 51, 30 49, 32 49 C 34 49, 34 51, 37 51 C 46 51, 51 33, 49 24 C 47 14, 37 13, 32 21 Z"
+                              Stroke="#EFA43B" StrokeThickness="4.5" StrokeLineJoin="Round" />
+                        <Path Data="M33 19 C 35 12, 41 9, 46 12" Stroke="#EFA43B" StrokeThickness="3.2"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                        <Path Data="M31 19 C 24 9, 15 11, 20 18 C 24 23, 30 22, 31 19 Z" Fill="#5FB03A" />
+                    </Canvas>
+                </Viewbox>
+                <TextBlock Text="Inicio" FontSize="24" FontWeight="Bold" Foreground="{StaticResource InkBrush}" />
+            </StackPanel>
         </DockPanel>
 
         <!-- Tarjetas de indicadores -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,18,0,0">
             <Border Background="White" CornerRadius="8" Padding="20" Margin="0,0,16,0" Width="220">
                 <StackPanel>
-                    <TextBlock Text="Ventas de hoy" Foreground="#888" />
+                    <TextBlock Text="Ventas de hoy" Foreground="{StaticResource MutedBrush}" />
                     <TextBlock Text="{Binding TodaySalesTotal, StringFormat='{}{0:C2}'}"
-                               FontSize="28" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" />
-                    <TextBlock Text="{Binding TodaySalesCount, StringFormat='{}{0} operaciones'}" Foreground="#888" />
+                               FontSize="28" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" />
+                    <TextBlock Text="{Binding TodaySalesCount, StringFormat='{}{0} operaciones'}" Foreground="{StaticResource MutedBrush}" />
                 </StackPanel>
             </Border>
             <Border Background="White" CornerRadius="8" Padding="20" Width="220">
                 <StackPanel>
-                    <TextBlock Text="Bajo inventario" Foreground="#888" />
+                    <TextBlock Text="Bajo inventario" Foreground="{StaticResource MutedBrush}" />
                     <TextBlock Text="{Binding LowStockCount}" FontSize="28" FontWeight="Bold"
                                Foreground="{StaticResource DangerBrush}" />
-                    <TextBlock Text="productos por debajo del mínimo" Foreground="#888" TextWrapping="Wrap" />
+                    <TextBlock Text="productos por debajo del mínimo" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" />
                 </StackPanel>
             </Border>
         </StackPanel>
