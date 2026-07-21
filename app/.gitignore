@@ -1,0 +1,38 @@
+# ---- .NET build output ----
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+publish/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+
+# ---- Secrets & per-school config (NEVER commit) ----
+appsettings.*.Local.json
+appsettings.Production.json
+secrets.json
+*.pfx
+.env
+.env.*
+
+# ---- Fiscal credentials (CSD) & client credential docs (NEVER commit) ----
+*.cer
+*.key
+*.sdg
+CSD_*/
+Info1.docx
+clave privada.txt
+Usuario*.txt
+
+# ---- Local dev databases (SQLite) ----
+*.db
+*.db-shm
+*.db-wal
+
+# ---- OS noise ----
+.DS_Store
+Thumbs.db

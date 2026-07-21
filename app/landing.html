@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inicio · LoncherApp</title>
+    <link rel="icon" href="/img/favicon.svg" type="image/svg+xml" />
+    <style>
+        /* LoncherApp brand palette */
+        :root {
+            --green: #57a839; --green-dark: #47912f;
+            --orange: #f19234; --orange-dark: #e07d1c;
+            --cream: #fbf3da; --cream-line: #efe3c4;
+            --ink: #3a3a3a; --muted: #9a8f76;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: system-ui, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: #faf6ec; }
+        a { color: var(--green-dark); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        header { background: var(--cream); border-bottom: 1px solid var(--cream-line); }
+        .bar { max-width: 900px; margin: 0 auto; display: flex; align-items: center; padding: 12px 20px; gap: 16px; }
+        .bar .brand { display: inline-flex; align-items: center; }
+        .bar .brand img { height: 34px; display: block; }
+        .bar nav { margin-left: auto; display: flex; gap: 18px; align-items: center; }
+        .bar nav a, .bar nav form button { color: var(--green-dark); background: none; border: 0; font-size: 14px; font-weight: 600; cursor: pointer; padding: 0; }
+        .bar nav a:hover, .bar nav form button:hover { color: var(--orange-dark); text-decoration: none; }
+        main { max-width: 900px; margin: 0 auto; padding: 24px 20px 48px; }
+        .card { background: #fff; border-radius: 12px; padding: 22px; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(90,70,20,.07); }
+        h1 { font-size: 26px; margin: 0 0 6px; color: #2f2f2f; }
+        h2 { font-size: 18px; margin: 0 0 12px; color: #2f2f2f; }
+        label { display: block; font-size: 13px; font-weight: 600; margin: 10px 0 4px; color: #6a6250; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #d9d0bb; border-radius: 6px; font-size: 15px; }
+        input:focus, select:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(87,168,57,.15); }
+        .btn { display: inline-block; background: var(--green); color: #fff; border: 0; border-radius: 8px;
+               padding: 11px 18px; font-size: 15px; font-weight: 700; cursor: pointer; }
+        .btn:hover { background: var(--green-dark); }
+        .btn.accent { background: var(--orange); }
+        .btn.accent:hover { background: var(--orange-dark); }
+        .btn.danger { background: #c0392b; }
+        .btn.ghost { background: #eef4e8; color: var(--green-dark); }
+        .btn.ghost:hover { background: #e3ecd9; }
+        .row { display: flex; gap: 16px; flex-wrap: wrap; }
+        .row > * { flex: 1; min-width: 220px; }
+        .balance { font-size: 34px; font-weight: 800; color: var(--green); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid #f1ead9; font-size: 14px; }
+        th { color: var(--muted); font-weight: 600; }
+        .msg { padding: 10px 14px; border-radius: 8px; margin: 8px 0; }
+        .msg.error { background: #fdecea; color: #c0392b; }
+        .msg.ok { background: #eafaf1; color: #1e7d48; }
+        .muted { color: var(--muted); font-size: 13px; }
+        .pill { display:inline-block; padding:2px 8px; border-radius:10px; background:#f3ecda; color:#8a7d5f; font-size:12px; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="bar">
+            <a class="brand" href="/"><img src="/img/loncherapp-logo.svg" alt="LoncherApp" /></a>
+            <nav>
+                    <a href="/Account/Login">Ingresar</a>
+                    <a href="/Account/Register">Registrarse</a>
+            </nav>
+        </div>
+    </header>
+    <main>
+        <div class="card" style="text-align:center;background:var(--cream);border:1px solid var(--cream-line)">
+    <img src="/img/loncherapp-hero.svg" alt="LoncherApp — Facilitando la venta de loncheras escolares"
+         style="width:100%;max-width:340px;height:auto;margin:6px auto 4px" />
+</div>
+<div class="card">
+    <h1>Recarga el saldo escolar en línea</h1>
+    <p class="muted">Portal para padres y estudiantes. Recarga saldo de forma segura y tu hijo compra en la
+        tienda escolar sin efectivo. Consulta el saldo y los movimientos cuando quieras.</p>
+    <div style="margin-top:16px">
+        <a class="btn" href="/Account/Register">Crear cuenta</a>
+        <a class="btn ghost" href="/Account/Login">Ya tengo cuenta</a>
+    </div>
+</div>
+<div class="row">
+    <div class="card"><h2>💳 Recarga simple</h2><p class="muted">Elige un monto y paga en línea. El saldo se abona al 100%.</p></div>
+    <div class="card"><h2>👨‍👩‍👧 Varios hijos</h2><p class="muted">Vincula a tus hijos por matrícula y cambia entre sus cuentas.</p></div>
+    <div class="card"><h2>📊 Transparencia</h2><p class="muted">Revisa recargas y consumos con su historial detallado.</p></div>
+</div>
+
+    </main>
+    <footer style="max-width:900px;margin:0 auto;padding:8px 20px 30px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <span class="muted" style="font-size:12px">LoncherApp · Facilitando la venta de loncheras escolares</span>
+        <a class="muted" href="/Vendor/Login" style="font-size:12px">Acceso proveedor</a>
+    </footer>
+</body>
+</html>
