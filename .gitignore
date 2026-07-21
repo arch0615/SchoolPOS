@@ -53,3 +53,12 @@ Usuario*.txt
 # ---- OS noise ----
 .DS_Store
 Thumbs.db
+
+# ---- Internal planning docs (kept local, not published) ----
+FEATURES.md
+INTEGRATIONS.md
+chatHistory.md
+decisions.md
+requirements.md
+workplan.md
+client answer/
