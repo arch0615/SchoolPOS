@@ -18,6 +18,12 @@ public sealed record VendorCommissionRollup(
     int TopUpCount,
     IReadOnlyList<SchoolCommissionSummary> Schools);
 
+/// <summary>Punto diario de la serie de comisión (recargado y comisión capturados ese día, UTC).</summary>
+public sealed record CommissionDailyPoint(
+    DateOnly Date,
+    decimal Recharged,
+    decimal Commission);
+
 /// <summary>
 /// Reportes de comisión sobre recargas. Solo considera recargas <b>capturadas</b> (confirmadas o
 /// aplicadas): las pendientes o fallidas no representan comisión cobrada. La comisión es el ingreso
@@ -32,4 +38,11 @@ public interface ICommissionReportService
     /// <summary>Resumen de una escuela (total recargado y comisión), FR-COM-4.</summary>
     Task<SchoolCommissionSummary> GetSchoolSummaryAsync(
         Guid schoolId, DateTime? fromUtc, DateTime? toUtc, CancellationToken ct = default);
+
+    /// <summary>
+    /// Serie diaria de comisión y recargado (todas las escuelas) entre <paramref name="fromUtc"/> y
+    /// <paramref name="toUtc"/>, con los días sin recargas rellenados en cero para una curva continua.
+    /// </summary>
+    Task<IReadOnlyList<CommissionDailyPoint>> GetDailySeriesAsync(
+        DateTime fromUtc, DateTime toUtc, CancellationToken ct = default);
 }

@@ -1,0 +1,43 @@
+@model SchoolPOS.Portal.Web.ViewModels.MiniTrend
+@{
+    @* Mini área+línea de una sola serie. Coordenadas enteras: sin problemas de cultura. *@
+    var pts = Model.Points;
+    var n = pts.Count;
+    var color = Model.ColorHex;
+    var maxV = n > 0 ? (double)pts.Max(p => p.Value) : 0.0;
+    var top = maxV <= 0 ? 1.0 : maxV * 1.15;
+    int W = 560, H = 132, padL = 52, padR = 14, padT = 12, padB = 26;
+    int plotW = W - padL - padR, plotH = H - padT - padB;
+    int baseY = padT + plotH;
+    var yMid = top / 2;
+    System.Func<int, int> X = i => padL + (n <= 1 ? plotW / 2 : (int)System.Math.Round((double)i / (n - 1) * plotW));
+    System.Func<double, int> Y = v => padT + (int)System.Math.Round((1 - v / top) * plotH);
+    var linePts = string.Join(" ", Enumerable.Range(0, n).Select(i => $"{X(i)},{Y((double)pts[i].Value)}"));
+    var areaD = $"M {X(0)},{baseY} " + string.Join(" ", Enumerable.Range(0, n).Select(i => $"L {X(i)},{Y((double)pts[i].Value)}")) + $" L {X(n - 1)},{baseY} Z";
+    var showDots = n <= 45;
+}
+<div style="margin-top:6px">
+    <div class="muted" style="font-weight:600;color:var(--text);font-size:14px;margin-bottom:2px">@Model.Title</div>
+    <svg viewBox="0 0 @W @H" width="100%" height="@H" role="img" aria-label="@Model.Title">
+        <line x1="@padL" y1="@Y(0)" x2="@(W - padR)" y2="@Y(0)" stroke="#eef2f7" stroke-width="1"></line>
+        <line x1="@padL" y1="@Y(yMid)" x2="@(W - padR)" y2="@Y(yMid)" stroke="#eef2f7" stroke-width="1"></line>
+        <line x1="@padL" y1="@Y(top)" x2="@(W - padR)" y2="@Y(top)" stroke="#eef2f7" stroke-width="1"></line>
+        <text x="@(padL - 8)" y="@(Y(0) + 4)" text-anchor="end" font-size="11" fill="#64748b">@(0m.ToString("C0"))</text>
+        <text x="@(padL - 8)" y="@(Y(yMid) + 4)" text-anchor="end" font-size="11" fill="#64748b">@(((decimal)yMid).ToString("C0"))</text>
+        <text x="@(padL - 8)" y="@(Y(top) + 4)" text-anchor="end" font-size="11" fill="#64748b">@(((decimal)top).ToString("C0"))</text>
+        <path d="@areaD" fill="@color" fill-opacity="0.12"></path>
+        <polyline points="@linePts" fill="none" stroke="@color" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></polyline>
+        <text x="@X(0)" y="@(H - 8)" text-anchor="start" font-size="11" fill="#64748b">@pts[0].Date.ToString("dd/MM")</text>
+        <text x="@X((n - 1) / 2)" y="@(H - 8)" text-anchor="middle" font-size="11" fill="#64748b">@pts[(n - 1) / 2].Date.ToString("dd/MM")</text>
+        <text x="@X(n - 1)" y="@(H - 8)" text-anchor="end" font-size="11" fill="#64748b">@pts[n - 1].Date.ToString("dd/MM")</text>
+        @if (showDots)
+        {
+            @for (int i = 0; i < n; i++)
+            {
+                <circle cx="@X(i)" cy="@Y((double)pts[i].Value)" r="2.5" fill="@color">
+                    <title>@pts[i].Date.ToString("dd/MM/yyyy"): @pts[i].Value.ToString("C2")</title>
+                </circle>
+            }
+        }
+    </svg>
+</div>

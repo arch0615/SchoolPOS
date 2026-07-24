@@ -63,6 +63,28 @@ public sealed class CommissionReportService : ICommissionReportService
             Round(rows.Sum(r => r.CommissionAmount)));
     }
 
+    public async Task<IReadOnlyList<CommissionDailyPoint>> GetDailySeriesAsync(
+        DateTime fromUtc, DateTime toUtc, CancellationToken ct = default)
+    {
+        var rows = await CapturedTopUps(fromUtc, toUtc)
+            .Select(t => new { t.CreatedAtUtc, t.Amount, t.CommissionAmount })
+            .ToListAsync(ct);
+
+        var byDay = rows
+            .GroupBy(r => DateOnly.FromDateTime(r.CreatedAtUtc))
+            .ToDictionary(
+                g => g.Key,
+                g => (Recharged: Round(g.Sum(x => x.Amount)), Commission: Round(g.Sum(x => x.CommissionAmount))));
+
+        var points = new List<CommissionDailyPoint>();
+        for (var d = DateOnly.FromDateTime(fromUtc.Date); d <= DateOnly.FromDateTime(toUtc.Date); d = d.AddDays(1))
+        {
+            var v = byDay.TryGetValue(d, out var agg) ? agg : (Recharged: 0m, Commission: 0m);
+            points.Add(new CommissionDailyPoint(d, v.Recharged, v.Commission));
+        }
+        return points;
+    }
+
     private IQueryable<Domain.Entities.TopUp> CapturedTopUps(DateTime? fromUtc, DateTime? toUtc)
     {
         var query = _db.TopUps.AsNoTracking().Where(t => Captured.Contains(t.Status));

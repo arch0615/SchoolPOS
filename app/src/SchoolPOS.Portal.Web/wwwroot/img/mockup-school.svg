@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 360" width="520" height="360" role="img" aria-label="Panel de la escuela: ventas, recargas y conciliación">
+  <defs>
+    <filter id="ss" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="8" stdDeviation="14" flood-color="#1e293b" flood-opacity="0.14"/></filter>
+  </defs>
+  <rect x="14" y="14" width="492" height="332" rx="16" fill="#ffffff" filter="url(#ss)"/>
+  <path d="M14 30 a16 16 0 0 1 16 -16 h460 a16 16 0 0 1 16 16 v14 h-492 z" fill="#f1f5f9"/>
+  <circle cx="34" cy="28" r="4" fill="#ef4444"/><circle cx="48" cy="28" r="4" fill="#f59e0b"/><circle cx="62" cy="28" r="4" fill="#10b981"/>
+  <rect x="86" y="21" width="360" height="14" rx="7" fill="#e2e8f0"/>
+  <text x="34" y="72" font-family="system-ui, Arial" font-size="14" font-weight="700" fill="#111827">Resumen de la escuela</text>
+  <!-- KPI tiles -->
+  <g font-family="system-ui, Arial">
+    <rect x="30" y="86" width="145" height="64" rx="12" fill="#eff6ff"/>
+    <text x="44" y="110" font-size="11" fill="#64748b">Ventas del día</text><text x="44" y="134" font-size="20" font-weight="800" fill="#2563eb">$12,450</text>
+    <rect x="188" y="86" width="145" height="64" rx="12" fill="#fef3c7"/>
+    <text x="202" y="110" font-size="11" fill="#92400e">Recargas</text><text x="202" y="134" font-size="20" font-weight="800" fill="#d97706">$8,900</text>
+    <rect x="346" y="86" width="145" height="64" rx="12" fill="#dcfce7"/>
+    <text x="360" y="110" font-size="11" fill="#166534">Conciliado</text><text x="360" y="134" font-size="20" font-weight="800" fill="#16a34a">100%</text>
+  </g>
+  <!-- bar chart -->
+  <rect x="30" y="166" width="290" height="164" rx="12" fill="#f8fafc"/>
+  <text x="46" y="190" font-family="system-ui, Arial" font-size="12" font-weight="700" fill="#111827">Ventas por día</text>
+  <g fill="#2563eb">
+    <rect x="52" y="270" width="24" height="44" rx="4"/>
+    <rect x="92" y="248" width="24" height="66" rx="4"/>
+    <rect x="132" y="228" width="24" height="86" rx="4"/>
+    <rect x="172" y="256" width="24" height="58" rx="4"/>
+    <rect x="212" y="214" width="24" height="100" rx="4"/>
+    <rect x="252" y="238" width="24" height="76" rx="4"/>
+  </g>
+  <!-- donut -->
+  <rect x="332" y="166" width="159" height="164" rx="12" fill="#f8fafc"/>
+  <text x="348" y="190" font-family="system-ui, Arial" font-size="12" font-weight="700" fill="#111827">Formas de pago</text>
+  <g transform="translate(411 258)">
+    <circle r="40" fill="none" stroke="#e2e8f0" stroke-width="16"/>
+    <circle r="40" fill="none" stroke="#2563eb" stroke-width="16" stroke-dasharray="176 76" transform="rotate(-90)"/>
+    <circle r="40" fill="none" stroke="#f59e0b" stroke-width="16" stroke-dasharray="76 176" stroke-dashoffset="-176" transform="rotate(-90)"/>
+    <text y="5" text-anchor="middle" font-family="system-ui, Arial" font-size="15" font-weight="800" fill="#2563eb">70%</text>
+  </g>
+</svg>

@@ -21,11 +21,16 @@
 }
 else
 {
-    <div class="card">
+    <section class="balance-card">
         <div class="row" style="align-items:center">
             <div>
-                <h2 style="margin-bottom:2px">Estudiante</h2>
-                <form method="get" style="max-width:320px">
+                <div style="opacity:.85;font-size:14px">Saldo disponible</div>
+                <div class="balance">@((Model.Selected?.Balance ?? 0).ToString("C2"))</div>
+                <div style="opacity:.9;font-size:13px;margin-top:2px">@Model.Selected?.FullName · @Model.Selected?.EnrollmentNo</div>
+            </div>
+            <div style="text-align:right">
+                <div style="opacity:.85;font-size:13px;margin-bottom:6px">Cambiar estudiante</div>
+                <form method="get">
                     <select name="studentId" onchange="this.form.submit()">
                         @foreach (var s in Model.Students)
                         {
@@ -36,12 +41,8 @@ else
                     </select>
                 </form>
             </div>
-            <div style="text-align:right">
-                <div class="muted">Saldo disponible</div>
-                <div class="balance">@((Model.Selected?.Balance ?? 0).ToString("C2"))</div>
-            </div>
         </div>
-    </div>
+    </section>
 
     <div class="row">
         <div class="card">
@@ -81,7 +82,7 @@ else
                     <tr>
                         <td>@m.CreatedAtUtc.ToString("dd/MM/yyyy HH:mm")</td>
                         <td><span class="pill">@m.Type</span></td>
-                        <td style="text-align:right;color:@(m.Amount < 0 ? "#c0392b" : "#1e7d48")">@m.Amount.ToString("C2")</td>
+                        <td style="text-align:right;color:@(m.Amount < 0 ? "var(--danger)" : "var(--success)")">@m.Amount.ToString("C2")</td>
                         <td style="text-align:right">@m.BalanceAfter.ToString("C2")</td>
                     </tr>
                 }

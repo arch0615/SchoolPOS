@@ -62,3 +62,9 @@ decisions.md
 requirements.md
 workplan.md
 client answer/
+WEB-PAGES-CONFIG.md
+WEB-PORTAL-ANALYSIS.md
+WEB-UI-DESIGN-SPEC.md
+
+# ---- Local exports (DB files, schema dumps) ----
+export/

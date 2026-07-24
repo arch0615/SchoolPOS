@@ -27,6 +27,11 @@ public class IndexModel : PageModel
 
     public IReadOnlyList<InvoiceRow> Invoices { get; private set; } = Array.Empty<InvoiceRow>();
 
+    /// <summary>Serie diaria de comisión para la gráfica de tendencia (ventana acotada a 92 días).</summary>
+    public IReadOnlyList<CommissionDailyPoint> Series { get; private set; } = Array.Empty<CommissionDailyPoint>();
+    public DateTime SeriesFrom { get; private set; }
+    public DateTime SeriesTo { get; private set; }
+
     [BindProperty(SupportsGet = true)] public DateTime? From { get; set; }
     [BindProperty(SupportsGet = true)] public DateTime? To { get; set; }
 
@@ -41,6 +46,15 @@ public class IndexModel : PageModel
     {
         var toUtc = To?.Date.AddDays(1).AddTicks(-1); // fin del día inclusivo
         Rollup = await _reports.GetVendorRollupAsync(From?.Date, toUtc);
+
+        // Serie diaria para la gráfica de tendencia: usa el rango elegido o, por defecto, los
+        // últimos 30 días. Se acota a 92 días para mantener la curva legible.
+        var end = To?.Date ?? DateTime.UtcNow.Date;
+        var start = From?.Date ?? end.AddDays(-29);
+        if ((end - start).TotalDays > 92) start = end.AddDays(-92);
+        SeriesFrom = start;
+        SeriesTo = end;
+        Series = await _reports.GetDailySeriesAsync(start, end.AddDays(1).AddTicks(-1));
 
         Invoices = await (
             from ci in _db.CommissionInvoices.AsNoTracking()
