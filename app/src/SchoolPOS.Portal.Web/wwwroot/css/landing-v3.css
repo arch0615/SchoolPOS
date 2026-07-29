@@ -30,6 +30,7 @@ header .bar .lnav { margin:0; }
     background:linear-gradient(90deg, rgba(238,245,255,.96) 0%, rgba(238,245,255,.55) 42%, rgba(238,245,255,0) 68%), url("/img/logo.png") center right / cover no-repeat; }
 .hero-orb { display:none; }
 .hero-grid { position:relative; z-index:1; display:grid; grid-template-columns:1.02fr .98fr; gap:40px; align-items:center; min-height:440px; }
+.hero-copy { padding-left:170px; }
 .hero-copy h1 { font-size:46px; line-height:1.08; margin:14px 0 16px; }
 .hero-copy h1 em { color:var(--lp-blue); font-style:normal; }
 .hero-copy p { font-size:18px; color:var(--lp-muted); max-width:480px; margin:0 0 26px; }
@@ -178,6 +179,7 @@ header .bar .lnav { margin:0; }
 @media (max-width:900px) {
     .hero-grid,.benefits-grid,.product-grid { grid-template-columns:1fr; }
     .hero-visual { order:-1; }
+    .hero-copy { padding-left:0; }
     .hero-copy h1 { font-size:34px; }
     .proof-grid { grid-template-columns:1fr 1fr; }
     .proof:nth-child(2) { border-right:0; }

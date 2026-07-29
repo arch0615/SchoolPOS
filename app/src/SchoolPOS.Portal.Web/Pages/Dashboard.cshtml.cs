@@ -10,13 +10,8 @@ namespace SchoolPOS.Portal.Web.Pages;
 public class DashboardModel : PageModel
 {
     private readonly IGuardianService _guardians;
-    private readonly PortalOptions _options;
 
-    public DashboardModel(IGuardianService guardians, PortalOptions options)
-    {
-        _guardians = guardians;
-        _options = options;
-    }
+    public DashboardModel(IGuardianService guardians) => _guardians = guardians;
 
     public IReadOnlyList<LinkedStudent> Students { get; private set; } = Array.Empty<LinkedStudent>();
     public LinkedStudent? Selected { get; private set; }
@@ -29,26 +24,6 @@ public class DashboardModel : PageModel
     {
         await LoadAsync(studentId);
         return Page();
-    }
-
-    public async Task<IActionResult> OnPostLinkStudentAsync(string enrollmentNo)
-    {
-        if (string.IsNullOrWhiteSpace(enrollmentNo))
-        {
-            Error = "Ingrese una matrícula.";
-            return RedirectToPage();
-        }
-
-        try
-        {
-            await _guardians.LinkStudentByEnrollmentAsync(User.GetGuardianId(), _options.SchoolId, enrollmentNo);
-            Message = $"Estudiante {enrollmentNo} vinculado.";
-        }
-        catch (Exception ex)
-        {
-            Error = ex.Message;
-        }
-        return RedirectToPage();
     }
 
     private async Task LoadAsync(Guid? studentId)

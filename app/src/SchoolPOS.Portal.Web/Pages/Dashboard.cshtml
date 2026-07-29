@@ -11,12 +11,8 @@
 {
     <div class="card">
         <h1>Bienvenido</h1>
-        <p class="muted">Aún no has vinculado a ningún estudiante. Ingresa la matrícula para empezar.</p>
-        <form method="post" asp-page-handler="LinkStudent">
-            <label>Matrícula del estudiante</label>
-            <input name="enrollmentNo" placeholder="Ej. MAT-001" />
-            <div style="margin-top:12px"><button class="btn" type="submit">Vincular estudiante</button></div>
-        </form>
+        <p class="muted">Aún no has vinculado a ningún alumno. Vincula uno con su matrícula para ver su saldo y recargarlo.</p>
+        <div style="margin-top:12px"><a class="btn" href="/Students">Vincular un alumno</a></div>
     </div>
 }
 else
@@ -53,12 +49,9 @@ else
             </div>
         </div>
         <div class="card">
-            <h2>Vincular otro hijo</h2>
-            <form method="post" asp-page-handler="LinkStudent">
-                <label>Matrícula</label>
-                <input name="enrollmentNo" placeholder="Ej. MAT-002" />
-                <div style="margin-top:12px"><button class="btn ghost" type="submit">Vincular</button></div>
-            </form>
+            <h2>Mis alumnos</h2>
+            <p class="muted">@Model.Students.Count @(Model.Students.Count == 1 ? "alumno vinculado" : "alumnos vinculados"). Consulta su saldo o vincula uno nuevo.</p>
+            <div style="margin-top:12px"><a class="btn ghost" href="/Students">Ver mis alumnos</a></div>
         </div>
     </div>
 

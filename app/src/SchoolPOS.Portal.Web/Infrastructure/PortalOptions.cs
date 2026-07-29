@@ -19,4 +19,7 @@ public sealed class PortalOptions
 
     /// <summary>Montos sugeridos en la página de recarga (MXN).</summary>
     public decimal[] TopUpPresets { get; init; } = { 100m, 200m, 500m };
+
+    /// <summary>Saldo por debajo del cual se avisa al tutor (MXN).</summary>
+    public decimal LowBalanceThreshold { get; init; } = 50m;
 }

@@ -1,0 +1,65 @@
+@page
+@model SchoolPOS.Portal.Web.Pages.StudentsModel
+@{
+    ViewData["Title"] = "Mis alumnos";
+}
+
+@section Head {
+    <style>
+        .students { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-bottom: 18px; }
+        .student { background: var(--card); border-radius: var(--radius); padding: 20px;
+                   box-shadow: 0 2px 8px rgba(0,0,0,.05); display: flex; flex-direction: column; gap: 4px; }
+        .student .avatar { width: 46px; height: 46px; border-radius: 50%; background: var(--primary-tint);
+                           color: var(--primary-dark); font-weight: 700; font-size: 16px;
+                           display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+        .student .name { font-size: 17px; font-weight: 600; }
+        .student .amount { font-size: 26px; font-weight: 800; color: var(--primary); margin: 8px 0 2px; }
+        .student .actions { display: flex; gap: 8px; margin-top: 14px; }
+        .student .actions .btn { flex: 1; text-align: center; padding: 10px 12px; font-size: 14px; }
+        .warn { display: inline-block; padding: 2px 8px; border-radius: 10px; background: #fffbeb;
+                color: #b45309; font-size: 12px; font-weight: 600; }
+    </style>
+}
+
+@if (!string.IsNullOrEmpty(Model.Message)) { <div class="msg ok">@Model.Message</div> }
+@if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
+
+<h1>Mis alumnos</h1>
+
+@if (Model.Students.Count == 0)
+{
+    <p class="muted" style="margin-bottom:18px">Aún no has vinculado a ningún alumno. Ingresa su matrícula para empezar.</p>
+}
+else
+{
+    <p class="muted" style="margin-bottom:18px">Saldo de cada hijo vinculado a tu cuenta.</p>
+    <div class="students">
+        @foreach (var s in Model.Students)
+        {
+            <article class="student">
+                <div class="avatar" aria-hidden="true">@SchoolPOS.Portal.Web.Pages.StudentsModel.Initials(s.FullName)</div>
+                <div class="name">@s.FullName</div>
+                <div class="muted">Matrícula @s.EnrollmentNo</div>
+                <div class="amount">@s.Balance.ToString("C2")</div>
+                @if (s.Balance < Model.LowBalanceThreshold)
+                {
+                    <div><span class="warn">⚠ Saldo bajo</span></div>
+                }
+                <div class="actions">
+                    <a class="btn accent" href="/Wallet?studentId=@s.StudentId">Recargar</a>
+                    <a class="btn ghost" href="/History?studentId=@s.StudentId">Movimientos</a>
+                </div>
+            </article>
+        }
+    </div>
+}
+
+<div class="card">
+    <h2>Vincular un alumno</h2>
+    <p class="muted">Pide la matrícula en la escuela. Al vincularla verás su saldo y podrás recargarlo.</p>
+    <form method="post" asp-page-handler="LinkStudent">
+        <label>Matrícula</label>
+        <input name="enrollmentNo" placeholder="Ej. MAT-001" required />
+        <div style="margin-top:12px"><button class="btn" type="submit">Vincular</button></div>
+    </form>
+</div>
