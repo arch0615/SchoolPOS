@@ -1,0 +1,104 @@
+@page
+@using SchoolPOS.Portal.Web.Pages
+@model SchoolPOS.Portal.Web.Pages.TransactionsModel
+@{
+    ViewData["Title"] = "Movimientos";
+
+    // Conserva alumno y rango al cambiar de pestaña.
+    Func<MovementFilter, string> tabUrl = k =>
+        $"/Transactions?Kind={k}" +
+        (Model.Selected is null ? "" : $"&StudentId={Model.Selected.StudentId}") +
+        (Model.From is null ? "" : $"&From={Model.From:yyyy-MM-dd}") +
+        (Model.To is null ? "" : $"&To={Model.To:yyyy-MM-dd}");
+}
+
+@section Head {
+    <style>
+        .tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+        .tabs a { padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line);
+                  background: #fff; color: var(--muted); font-size: 14px; font-weight: 600; }
+        .tabs a:hover { border-color: var(--primary); color: var(--primary); text-decoration: none; }
+        .tabs a.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+        .totals { display: flex; gap: 24px; flex-wrap: wrap; }
+        .totals .t span { display: block; font-size: 13px; color: var(--muted); font-weight: 600; }
+        .totals .t strong { font-size: 20px; font-weight: 800; }
+    </style>
+}
+
+<h1>Movimientos</h1>
+
+<div class="card">
+    <form method="get" class="row" style="align-items:flex-end">
+        <input type="hidden" name="Kind" value="@Model.Kind" />
+        <div>
+            <label>Alumno</label>
+            <select name="StudentId" onchange="this.form.submit()">
+                @foreach (var s in Model.Students)
+                {
+                    <option value="@s.StudentId" selected="@(Model.Selected?.StudentId == s.StudentId)">@s.FullName · @s.EnrollmentNo</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label>Desde</label>
+            <input type="date" name="From" value="@(Model.From?.ToString("yyyy-MM-dd"))" />
+        </div>
+        <div>
+            <label>Hasta</label>
+            <input type="date" name="To" value="@(Model.To?.ToString("yyyy-MM-dd"))" />
+        </div>
+        <div style="max-width:140px">
+            <label>&nbsp;</label>
+            <button class="btn" type="submit">Filtrar</button>
+        </div>
+    </form>
+</div>
+
+@if (Model.Selected is null)
+{
+    <div class="card">
+        <p class="muted">Aún no has vinculado a ningún alumno.</p>
+        <p style="margin-top:12px"><a class="btn" href="/Students">Vincular un alumno</a></p>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="totals">
+            <div class="t"><span>Abonos del periodo</span><strong style="color:var(--success)">@Model.TotalIn.ToString("C2")</strong></div>
+            <div class="t"><span>Consumos del periodo</span><strong style="color:var(--danger)">@Model.TotalOut.ToString("C2")</strong></div>
+            <div class="t"><span>Saldo actual</span><strong style="color:var(--primary)">@Model.Selected.Balance.ToString("C2")</strong></div>
+        </div>
+    </div>
+
+    <nav class="tabs">
+        <a href="@tabUrl(MovementFilter.All)" class="@(Model.Kind == MovementFilter.All ? "on" : "")">Todo</a>
+        <a href="@tabUrl(MovementFilter.TopUps)" class="@(Model.Kind == MovementFilter.TopUps ? "on" : "")">Recargas</a>
+        <a href="@tabUrl(MovementFilter.Purchases)" class="@(Model.Kind == MovementFilter.Purchases ? "on" : "")">Consumos</a>
+    </nav>
+
+    <div class="card">
+        @if (Model.Movements.Count == 0)
+        {
+            <p class="muted">Sin movimientos en el rango seleccionado.</p>
+        }
+        else
+        {
+            <table>
+                <thead><tr><th>Fecha (UTC)</th><th>Tipo</th><th>Referencia</th><th style="text-align:right">Importe</th><th style="text-align:right">Saldo</th></tr></thead>
+                <tbody>
+                @foreach (var m in Model.Movements)
+                {
+                    <tr>
+                        <td>@m.CreatedAtUtc.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td><span class="pill">@TransactionsModel.TypeLabel(m.Type)</span></td>
+                        <td class="muted">@m.Reference</td>
+                        <td style="text-align:right;color:@(m.Amount < 0 ? "var(--danger)" : "var(--success)")">@m.Amount.ToString("C2")</td>
+                        <td style="text-align:right">@m.BalanceAfter.ToString("C2")</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+    </div>
+}
