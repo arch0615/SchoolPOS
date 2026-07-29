@@ -1,0 +1,33 @@
+# systemd unit for the SchoolPOS / LoncherApp web portal (Kestrel behind nginx)
+# Install at: /etc/systemd/system/schoolpos-portal.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now schoolpos-portal
+# Adjust WorkingDirectory / ExecStart paths and the User to match your deploy.
+
+[Unit]
+Description=SchoolPOS / LoncherApp Web Portal
+After=network.target
+
+[Service]
+# Where you published the app (dotnet publish -c Release -o /var/www/loncherapp)
+WorkingDirectory=/var/www/loncherapp
+ExecStart=/usr/bin/dotnet /var/www/loncherapp/SchoolPOS.Portal.Web.dll
+Restart=always
+RestartSec=5
+SyslogIdentifier=schoolpos-portal
+User=www-data
+
+# Bind Kestrel to loopback only; nginx terminates TLS and proxies in.
+Environment=ASPNETCORE_URLS=http://127.0.0.1:5170
+Environment=ASPNETCORE_ENVIRONMENT=Production
+# Trust nginx's X-Forwarded-* headers (so the app knows requests are HTTPS)
+Environment=ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+Environment=DOTNET_NOLOGO=1
+Environment=DOTNET_CLI_TELEMETRY_OPTOUT=1
+# Non-secret config: appsettings.Production.json next to the DLL (loaded because
+# ASPNETCORE_ENVIRONMENT=Production). Secrets: injected from this env-file (chmod 600,
+# root-only). Env vars override the JSON. The file must exist before starting.
+EnvironmentFile=/etc/schoolpos/loncherapp.env
+
+[Install]
+WantedBy=multi-user.target
