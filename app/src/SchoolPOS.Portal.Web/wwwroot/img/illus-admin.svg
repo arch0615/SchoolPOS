@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 300" width="440" height="300" role="img" aria-label="Administradora escolar revisando el panel en su laptop">
+  <rect x="8" y="8" width="424" height="284" rx="20" fill="#e8f6ee"/>
+  <ellipse cx="220" cy="262" rx="176" ry="24" fill="#d3efdd"/>
+  <!-- desk -->
+  <rect x="60" y="248" width="320" height="10" rx="5" fill="#cfe6d6"/>
+  <!-- person -->
+  <g>
+    <path d="M96 258 v-58 q0 -34 42 -34 q42 0 42 34 v58 Z" fill="#2f6fed"/>
+    <circle cx="138" cy="150" r="26" fill="#f2c9a0"/>
+    <path d="M110 150 q0 -32 28 -32 q28 0 28 32 q0 20 -6 30 q-6 -22 -10 -30 q-12 6 -24 0 q-8 8 -10 30 q-8 -12 -6 -30Z" fill="#3a2a1a"/>
+  </g>
+  <!-- laptop -->
+  <g>
+    <rect x="196" y="182" width="150" height="96" rx="8" fill="#0f2f4a"/>
+    <rect x="204" y="190" width="134" height="80" rx="4" fill="#ffffff"/>
+    <rect x="212" y="198" width="60" height="9" rx="4" fill="#2f6fed"/>
+    <rect x="212" y="214" width="118" height="10" rx="4" fill="#e6eef9"/>
+    <g fill="#2f6fed"><rect x="212" y="238" width="14" height="24" rx="2"/><rect x="232" y="230" width="14" height="32" rx="2"/><rect x="252" y="244" width="14" height="18" rx="2"/></g>
+    <circle cx="308" cy="244" r="16" fill="none" stroke="#e6eef9" stroke-width="6"/><circle cx="308" cy="244" r="16" fill="none" stroke="#22c55e" stroke-width="6" stroke-dasharray="70 30" transform="rotate(-90 308 244)"/>
+    <rect x="180" y="278" width="182" height="8" rx="4" fill="#0f2f4a"/>
+  </g>
+</svg>

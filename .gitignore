@@ -68,3 +68,6 @@ WEB-UI-DESIGN-SPEC.md
 
 # ---- Local exports (DB files, schema dumps) ----
 export/
+
+# ---- Design reference images (kept local; the used copies live in wwwroot/img) ----
+/*.png

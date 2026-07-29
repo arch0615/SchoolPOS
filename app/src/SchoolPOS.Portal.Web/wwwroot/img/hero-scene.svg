@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 580 480" width="580" height="480" role="img" aria-label="Madre y estudiante frente a la escuela con la app de saldo escolar">
+  <defs>
+    <linearGradient id="hg-card" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2f6fed"/><stop offset="1" stop-color="#5b9bff"/></linearGradient>
+    <linearGradient id="hg-roof" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b7bf0"/><stop offset="1" stop-color="#2f6fed"/></linearGradient>
+    <linearGradient id="hg-shield" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2f6fed"/><stop offset="1" stop-color="#1e57c8"/></linearGradient>
+    <filter id="hg-sh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#1e3a6b" flood-opacity="0.18"/></filter>
+  </defs>
+
+  <!-- soft ground -->
+  <ellipse cx="250" cy="430" rx="250" ry="42" fill="#e3edfb"/>
+
+  <!-- trees -->
+  <g>
+    <rect x="40" y="250" width="10" height="70" rx="4" fill="#7a5a3a"/><circle cx="45" cy="240" r="34" fill="#6cc06a"/><circle cx="72" cy="256" r="24" fill="#57ab55"/>
+    <rect x="298" y="250" width="10" height="70" rx="4" fill="#7a5a3a"/><circle cx="303" cy="240" r="30" fill="#6cc06a"/>
+  </g>
+
+  <!-- school building -->
+  <g>
+    <rect x="96" y="212" width="216" height="150" rx="8" fill="#fbeecf"/>
+    <rect x="76" y="252" width="40" height="110" rx="6" fill="#f6e3ba"/>
+    <rect x="292" y="252" width="40" height="110" rx="6" fill="#f6e3ba"/>
+    <path d="M86 212 L204 158 L322 212 Z" fill="url(#hg-roof)"/>
+    <rect x="150" y="150" width="8" height="26" fill="#7a5a3a"/><path d="M158 150 h26 l-6 8 l6 8 h-26 z" fill="#e5484d"/>
+    <circle cx="204" cy="196" r="12" fill="#fff"/><circle cx="204" cy="196" r="12" fill="none" stroke="#2f6fed" stroke-width="2"/><path d="M204 196 v-6 M204 196 l5 3" stroke="#2f6fed" stroke-width="2" stroke-linecap="round"/>
+    <!-- columns -->
+    <g fill="#ffffff">
+      <rect x="120" y="250" width="14" height="90" rx="3"/><rect x="156" y="250" width="14" height="90" rx="3"/><rect x="238" y="250" width="14" height="90" rx="3"/><rect x="274" y="250" width="14" height="90" rx="3"/>
+    </g>
+    <!-- door -->
+    <rect x="186" y="280" width="36" height="60" rx="18" fill="#2f6fed"/><rect x="186" y="280" width="36" height="60" rx="18" fill="none" stroke="#1e57c8" stroke-width="2"/>
+  </g>
+
+  <!-- CHILD -->
+  <g>
+    <rect x="150" y="352" width="40" height="56" rx="14" fill="#3f6fb5"/>            <!-- backpack behind -->
+    <circle cx="168" cy="332" r="16" fill="#f2c9a0"/>
+    <path d="M152 330 a16 16 0 0 1 32 0 q-16 -12 -32 0 Z" fill="#3a2a1a"/>
+    <path d="M150 356 q18 -14 36 0 v34 a18 18 0 0 1 -36 0 Z" fill="#ffffff"/>       <!-- shirt -->
+    <rect x="156" y="392" width="10" height="26" rx="4" fill="#2b3f5c"/><rect x="170" y="392" width="10" height="26" rx="4" fill="#2b3f5c"/>
+    <rect x="176" y="356" width="16" height="40" rx="7" fill="#2f6fed"/>            <!-- backpack strap -->
+  </g>
+
+  <!-- PARENT (woman with phone) -->
+  <g>
+    <path d="M62 300 q-6 40 4 78 h64 q10 -40 2 -78 q-36 -20 -70 0 Z" fill="#e9ddc6"/>  <!-- sweater -->
+    <circle cx="98" cy="278" r="20" fill="#f2c9a0"/>
+    <path d="M76 280 q0 -30 22 -30 q24 0 24 30 q-6 -6 -14 -6 q0 10 -10 10 q-14 0 -22 -4 Z" fill="#6b4a2f"/> <!-- hair -->
+    <rect x="86" y="376" width="12" height="40" rx="5" fill="#33507a"/><rect x="100" y="376" width="12" height="40" rx="5" fill="#33507a"/>
+    <!-- arm + phone -->
+    <path d="M120 320 q26 6 30 34" stroke="#e9ddc6" stroke-width="14" fill="none" stroke-linecap="round"/>
+    <rect x="140" y="348" width="26" height="42" rx="6" fill="#26324a"/><rect x="144" y="352" width="18" height="30" rx="3" fill="#5b9bff"/>
+    <!-- bag -->
+    <path d="M96 316 l40 14" stroke="#8a5a3c" stroke-width="4"/><rect x="120" y="326" width="34" height="30" rx="8" fill="#8a5a3c"/>
+  </g>
+
+  <!-- floating credit card -->
+  <g transform="rotate(-14 512 178)" filter="url(#hg-sh)">
+    <rect x="470" y="150" width="86" height="56" rx="10" fill="url(#hg-card)"/>
+    <rect x="482" y="166" width="18" height="14" rx="3" fill="#ffd76a"/>
+    <rect x="482" y="190" width="50" height="5" rx="2.5" fill="#ffffff" opacity="0.7"/>
+  </g>
+
+  <!-- shield check badge -->
+  <g filter="url(#hg-sh)">
+    <circle cx="352" cy="104" r="26" fill="url(#hg-shield)"/>
+    <path d="M341 104 l7 7 l14 -15" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- PHONE with wallet UI -->
+  <g filter="url(#hg-sh)">
+    <rect x="378" y="126" width="150" height="286" rx="26" fill="#ffffff"/>
+    <rect x="438" y="140" width="30" height="7" rx="3.5" fill="#eef2f7"/>
+    <!-- balance card -->
+    <rect x="396" y="158" width="114" height="72" rx="14" fill="url(#hg-card)"/>
+    <text x="410" y="182" font-family="system-ui, Arial" font-size="11" fill="#dbe8ff">Saldo</text>
+    <text x="410" y="208" font-family="system-ui, Arial" font-size="22" font-weight="700" fill="#ffffff">$125.50</text>
+    <rect x="470" y="170" width="26" height="18" rx="4" fill="#ffffff" opacity="0.85"/><rect x="474" y="174" width="10" height="10" rx="2" fill="#ffd76a"/>
+    <!-- recharge button -->
+    <rect x="396" y="240" width="114" height="26" rx="13" fill="#2f6fed"/>
+    <text x="453" y="257" text-anchor="middle" font-family="system-ui, Arial" font-size="12" font-weight="700" fill="#ffffff">+ Recargar</text>
+    <!-- transactions -->
+    <text x="396" y="288" font-family="system-ui, Arial" font-size="10" fill="#64748b">Movimientos recientes</text>
+    <g font-family="system-ui, Arial" font-size="10">
+      <circle cx="404" cy="304" r="7" fill="#e8f0ff"/><text x="418" y="307" fill="#334155">Lonchera</text><text x="502" y="307" text-anchor="end" fill="#ef4444" font-weight="700">-$5.50</text>
+      <circle cx="404" cy="326" r="7" fill="#e8f0ff"/><text x="418" y="329" fill="#334155">Librería</text><text x="502" y="329" text-anchor="end" fill="#ef4444" font-weight="700">-$18.00</text>
+      <circle cx="404" cy="348" r="7" fill="#e8f0ff"/><text x="418" y="351" fill="#334155">Transporte</text><text x="502" y="351" text-anchor="end" fill="#ef4444" font-weight="700">-$12.00</text>
+      <circle cx="404" cy="370" r="7" fill="#e8f0ff"/><text x="418" y="373" fill="#334155">Cuota</text><text x="502" y="373" text-anchor="end" fill="#ef4444" font-weight="700">-$8.00</text>
+    </g>
+  </g>
+
+  <!-- decorative dots -->
+  <g fill="#bcd4ff">
+    <circle cx="540" cy="70" r="3"/><circle cx="554" cy="70" r="3"/><circle cx="540" cy="84" r="3"/><circle cx="554" cy="84" r="3"/><circle cx="540" cy="98" r="3"/><circle cx="554" cy="98" r="3"/>
+  </g>
+  <circle cx="60" cy="120" r="16" fill="#cfe0ff" opacity="0.6"/>
+  <circle cx="330" cy="360" r="10" fill="#ffe1a8" opacity="0.7"/>
+</svg>

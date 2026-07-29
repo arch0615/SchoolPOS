@@ -3,355 +3,171 @@
 @{
     ViewData["Title"] = "Inicio";
 }
-<style>
-    .lp-wrap { max-width:1100px; margin:0 auto; padding:0 24px; }
-    .lp-band { padding:56px 0; }
-    .lp-eyebrow { display:inline-block; background:var(--primary-tint); color:var(--primary-dark);
-                  font-weight:700; font-size:13px; padding:5px 12px; border-radius:999px; }
-    .btn.lg { padding:14px 22px; font-size:16px; }
+@section Head {
+    <link rel="stylesheet" href="/css/landing-v3.css" asp-append-version="true" />
+    <style>
+        .bar { max-width:1160px; height:72px; }
+        .bar nav { gap:22px; }
+        .bar .lnav { gap:26px; }
+        .bar .lnav a { font-weight:700; }
+        .bar .lnav a:first-child { color:#2563eb; }
+    </style>
+}
 
-    /* HERO */
-    .hero-band { background:linear-gradient(135deg,#eff6ff,#ffffff); padding:40px 0 52px; position:relative; overflow:hidden; }
-    .hero-band::before { content:""; position:absolute; width:280px; height:280px; border-radius:50%; background:#dbeafe; opacity:.5; top:-90px; right:-60px; }
-    .hero-band::after { content:""; position:absolute; width:160px; height:160px; border-radius:50%; background:#fde68a; opacity:.35; bottom:-60px; left:-40px; }
-    .lp-hero { display:grid; grid-template-columns:1.05fr .95fr; gap:40px; align-items:center; position:relative; z-index:1; }
-    .lp-hero h1 { font-size:44px; line-height:1.1; letter-spacing:-.6px; margin:14px 0 14px; }
-    .lp-hero .sub { font-size:18px; color:var(--muted); line-height:1.55; margin:0 0 24px; max-width:520px; }
-    .lp-cta { display:flex; gap:12px; flex-wrap:wrap; }
-    .lp-badges { list-style:none; padding:0; margin:22px 0 0; display:flex; gap:18px; flex-wrap:wrap; }
-    .lp-badges li { display:flex; align-items:center; gap:8px; color:#334155; font-size:14px; font-weight:600; }
-    .lp-badges svg { width:18px; height:18px; stroke:var(--success); fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
-    .float img { width:100%; height:auto; }
-
-    /* STATS */
-    .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; text-align:center; }
-    .stat .n { font-size:40px; font-weight:800; color:var(--primary); letter-spacing:-1px; line-height:1.1; }
-    .stat .l { color:var(--muted); font-size:14px; font-weight:600; margin-top:4px; }
-
-    /* SECTION HEADS */
-    .sec-head { text-align:center; max-width:640px; margin:0 auto 32px; }
-    .sec-head h2 { font-size:30px; margin:0 0 8px; letter-spacing:-.4px; }
-    .sec-head p { color:var(--muted); font-size:16px; margin:0; }
-
-    /* ICON TILES */
-    .lp-ico { width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center; background:var(--primary-tint); margin-bottom:12px; }
-    .lp-ico svg { width:24px; height:24px; stroke:var(--primary); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
-    .lp-ico.amber { background:#fef3c7; } .lp-ico.amber svg { stroke:#d97706; }
-    .lp-ico.green { background:#dcfce7; } .lp-ico.green svg { stroke:#16a34a; }
-    .lp-card h3 { margin:0 0 6px; font-size:17px; } .lp-card p { margin:0; color:var(--muted); font-size:14px; line-height:1.5; }
-
-    /* STEPS */
-    .steps { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
-    .step { position:relative; } .step .num { position:absolute; top:14px; right:16px; font-size:32px; font-weight:800; color:#eef2f7; }
-
-    /* SPLIT (benefits) */
-    .split { display:grid; grid-template-columns:1fr 1fr; gap:44px; align-items:center; }
-    .split img { width:100%; height:auto; }
-    .flist { list-style:none; padding:0; margin:0; }
-    .flist li { display:flex; gap:12px; align-items:flex-start; margin-bottom:16px; }
-    .flist .ck { flex:0 0 26px; width:26px; height:26px; border-radius:50%; background:var(--primary-tint); display:flex; align-items:center; justify-content:center; }
-    .flist .ck svg { width:15px; height:15px; stroke:var(--primary); fill:none; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; }
-    .flist b { display:block; font-size:15px; } .flist span { color:var(--muted); font-size:14px; }
-
-    /* SECURITY (dark) */
-    .security-band { background:#0f2f6b; color:#fff; }
-    .security-band .sec-head h2 { color:#fff; } .security-band .sec-head p { color:#c7d7f5; }
-    .sec-cards { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
-    .sec-card { background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.16); border-radius:14px; padding:20px; }
-    .sec-card .lp-ico { background:rgba(255,255,255,.14); } .sec-card .lp-ico svg { stroke:#fff; }
-    .sec-card h3 { margin:0 0 5px; font-size:16px; } .sec-card p { margin:0; color:#c7d7f5; font-size:13px; line-height:1.5; }
-
-    /* PREVIEW */
-    .preview { position:relative; max-width:780px; margin:0 auto; }
-    .preview img { width:100%; height:auto; display:block; }
-    .flabel { position:absolute; background:#fff; box-shadow:0 8px 24px rgba(15,23,42,.14); border-radius:999px;
-              padding:9px 15px; font-size:13px; font-weight:700; color:#111827; display:flex; align-items:center; gap:7px; }
-    .flabel::before { content:""; width:9px; height:9px; border-radius:50%; background:var(--success); }
-    .flabel.a { top:6%; left:-22px; } .flabel.b { top:44%; right:-26px; } .flabel.b::before { background:var(--primary); }
-    .flabel.c { bottom:8%; left:8%; } .flabel.c::before { background:var(--warning); }
-
-    /* PHONES */
-    .phones { display:flex; justify-content:center; gap:26px; flex-wrap:wrap; }
-    .phone { width:186px; height:auto; }
-
-    /* TESTIMONIALS */
-    .tcards { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
-    .tcard .stars { color:#f59e0b; letter-spacing:2px; font-size:14px; margin-bottom:8px; }
-    .tcard .quote { font-size:15px; line-height:1.55; color:#334155; margin:0 0 16px; }
-    .tcard .who { display:flex; align-items:center; gap:10px; }
-    .avatar { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; font-size:15px; }
-    .who b { display:block; font-size:14px; } .who span { color:var(--muted); font-size:12px; }
-
-    /* FAQ */
-    .lp-faq details { border-bottom:1px solid var(--line); padding:16px 2px; }
-    .lp-faq summary { cursor:pointer; font-weight:600; font-size:16px; list-style:none; display:flex; justify-content:space-between; align-items:center; }
-    .lp-faq summary::-webkit-details-marker { display:none; }
-    .lp-faq summary::after { content:"+"; color:var(--primary); font-size:22px; font-weight:400; }
-    .lp-faq details[open] summary::after { content:"–"; }
-    .lp-faq p { color:var(--muted); margin:10px 0 2px; line-height:1.55; }
-
-    /* CTA + FOOTER */
-    .cta-band { background:linear-gradient(135deg,#2563eb,#3b82f6); color:#fff; text-align:center; }
-    .cta-band h2 { font-size:30px; margin:0 0 8px; } .cta-band p { margin:0 0 22px; opacity:.9; font-size:17px; }
-    .cta-band .btn { background:#fff; color:var(--primary-dark); } .cta-band .btn.ghost { background:transparent; color:#fff; border:1px solid rgba(255,255,255,.6); }
-    footer.lpf { background:#0b1b3a; color:#94a3b8; padding:46px 0 26px; }
-    footer.lpf .cols { display:grid; grid-template-columns:1.6fr 1fr 1fr 1fr; gap:28px; }
-    footer.lpf h4 { color:#fff; font-size:14px; margin:0 0 12px; } footer.lpf a { display:block; color:#94a3b8; font-size:14px; margin-bottom:8px; }
-    footer.lpf a:hover { color:#fff; text-decoration:none; }
-    footer.lpf .brand { color:#fff; font-weight:800; font-size:18px; margin-bottom:8px; }
-    footer.lpf .legal { border-top:1px solid rgba(255,255,255,.12); margin-top:28px; padding-top:18px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; font-size:13px; }
-
-    /* animation */
-    .reveal-ready .reveal { opacity:0; transform:translateY(18px); transition:opacity .6s ease, transform .6s ease; }
-    .reveal-ready .reveal.in { opacity:1; transform:none; }
-    @@media (prefers-reduced-motion: no-preference) {
-        .float img { animation:floaty 5.5s ease-in-out infinite; }
-    }
-    @@keyframes floaty { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
-    @@media (prefers-reduced-motion: reduce) {
-        .reveal-ready .reveal { opacity:1; transform:none; transition:none; }
-    }
-    @@media (max-width:860px) {
-        .lp-hero, .split { grid-template-columns:1fr; }
-        .lp-hero .art { order:-1; }
-        .lp-hero h1 { font-size:34px; }
-        .stats, .steps, .sec-cards, .tcards { grid-template-columns:1fr 1fr; }
-        footer.lpf .cols { grid-template-columns:1fr 1fr; }
-        .flabel { display:none; }
-    }
-    @@media (max-width:520px) {
-        .stats, .steps, .sec-cards, .tcards, footer.lpf .cols { grid-template-columns:1fr; }
-        .lp-cta .btn { flex:1; text-align:center; }
-    }
-</style>
-
-<!-- ===== HERO ===== -->
-<section class="hero-band">
-    <div class="lp-wrap lp-hero">
-        <div class="reveal in">
-            <span class="lp-eyebrow">Pagos escolares inteligentes</span>
-            <h1>Pagos escolares simples y seguros para tu familia</h1>
-            <p class="sub">Administra el saldo escolar de tu hijo, recárgalo en línea y sigue cada gasto
-                desde una sola plataforma segura. Sin filas, sin efectivo.</p>
-            <div class="lp-cta">
-                <a class="btn lg" href="/Account/Register">Crear cuenta</a>
-                <a class="btn ghost lg" href="/Account/Login">Ingresar</a>
+<div class="landing-v3">
+    <!-- HERO -->
+    <section class="hero" id="inicio">
+        <div class="hero-orb orb-a"></div><div class="hero-orb orb-b"></div>
+        <div class="landing-container hero-grid">
+            <div class="hero-visual reveal">
+                <div class="school-scene"><img src="/img/hero-scene.svg" alt="Madre y estudiante frente a la escuela usando la app de saldo" /></div>
             </div>
-            <ul class="lp-badges">
-                <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Pago seguro con Mercado Pago</li>
-                <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Saldo abonado al 100%</li>
-            </ul>
+            <div class="hero-copy reveal">
+                <span class="eyebrow">Pagos escolares inteligentes</span>
+                <h1>Pagos escolares,<br /><em>simples</em> para las familias.</h1>
+                <p>Administra el saldo escolar de tu hijo, recarga en línea y sigue cada gasto desde una sola plataforma segura.</p>
+                <div class="hero-actions">
+                    <a class="landing-btn primary" href="/Account/Register">Crear cuenta</a>
+                    <a class="landing-btn secondary" href="/Account/Login">Ingresar</a>
+                </div>
+                <div class="hero-note"><span>✓</span> Sin efectivo &nbsp;·&nbsp; <span>✓</span> Saldo abonado al 100%</div>
+            </div>
         </div>
-        <div class="art float"><img src="/img/hero-illustration.svg" alt="Recarga de saldo escolar desde el teléfono" /></div>
-    </div>
-</section>
+    </section>
 
-<!-- ===== STATS ===== -->
-<section class="lp-band"><div class="lp-wrap stats reveal">
-    <div class="stat"><div class="n"><span data-count="10000" data-suffix="+">10,000+</span></div><div class="l">Estudiantes atendidos</div></div>
-    <div class="stat"><div class="n"><span data-count="500" data-suffix="+">500+</span></div><div class="l">Familias conectadas</div></div>
-    <div class="stat"><div class="n"><span data-count="99.9" data-dec="1" data-suffix="%">99.9%</span></div><div class="l">Confiabilidad de pagos</div></div>
-    <div class="stat"><div class="n">24/7</div><div class="l">Acceso en línea</div></div>
-</div></section>
-
-<!-- ===== HOW IT WORKS ===== -->
-<section id="como-funciona" class="lp-band" style="background:#f8fafc">
-    <div class="lp-wrap">
-        <div class="sec-head reveal"><h2>Cómo funcionan los pagos escolares</h2><p>De la recarga a la compra, en cuatro pasos.</p></div>
-        <div class="steps reveal">
-            <div class="card lp-card step"><span class="num">1</span>
-                <div class="lp-ico"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg></div>
-                <h3>Crea tu cuenta</h3><p>Regístrate como padre o tutor en minutos.</p></div>
-            <div class="card lp-card step"><span class="num">2</span>
-                <div class="lp-ico amber"><svg viewBox="0 0 24 24"><path d="M20 7H4V5h16z"/><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M12 11v6M9 14h6"/></svg></div>
-                <h3>Vincula a tu hijo</h3><p>Asócialo con su número de matrícula.</p></div>
-            <div class="card lp-card step"><span class="num">3</span>
-                <div class="lp-ico green"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
-                <h3>Recarga saldo</h3><p>Paga con Mercado Pago; se abona al 100%.</p></div>
-            <div class="card lp-card step"><span class="num">4</span>
-                <div class="lp-ico"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
-                <h3>Sigue los gastos</h3><p>Consulta recargas y consumos en tiempo real.</p></div>
+    <!-- HOW IT WORKS -->
+    <section class="landing-section" id="como-funciona">
+        <div class="landing-container">
+            <div class="section-heading reveal"><span></span><h2>Cómo funcionan los pagos escolares</h2><span></span></div>
+            <div class="step-grid reveal">
+                <article class="step-card"><b>1</b>
+                    <div class="step-art"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg></div>
+                    <h3>Crea tu cuenta</h3><p>Regístrate como padre o tutor en pocos minutos.</p></article>
+                <article class="step-card"><b>2</b>
+                    <div class="step-art"><svg viewBox="0 0 24 24"><path d="M20 7H4V5h16z"/><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M12 11v6M9 14h6"/></svg></div>
+                    <h3>Vincula a tu hijo</h3><p>Usa su matrícula para conectarlo con su escuela.</p></article>
+                <article class="step-card"><b>3</b>
+                    <div class="step-art"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+                    <h3>Recarga saldo</h3><p>Agrega fondos de forma segura con Mercado Pago.</p></article>
+                <article class="step-card"><b>4</b>
+                    <div class="step-art"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+                    <h3>Sigue los gastos</h3><p>Revisa compras y movimientos en tiempo real.</p></article>
+            </div>
         </div>
-    </div>
-</section>
+    </section>
 
-<!-- ===== PARENT BENEFITS ===== -->
-<section id="padres" class="lp-band"><div class="lp-wrap split reveal">
-    <div><img src="/img/mockup-parent.svg" alt="Panel del padre con saldo y movimientos" /></div>
-    <div>
-        <span class="lp-eyebrow">Para padres</span>
-        <h2 style="font-size:28px;margin:12px 0 16px;letter-spacing:-.4px">Todo el control, desde tu teléfono</h2>
-        <ul class="flist">
-            <li><span class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><div><b>Recarga cuando quieras</b><span>En segundos, desde casa o el trabajo.</span></div></li>
-            <li><span class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><div><b>Saldo en tiempo real</b><span>Consulta cuánto le queda a tu hijo.</span></div></li>
-            <li><span class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><div><b>Historial de consumos</b><span>Mira qué compra y cuándo.</span></div></li>
-            <li><span class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><div><b>Varios hijos</b><span>Administra todas sus cuentas en un lugar.</span></div></li>
-        </ul>
-    </div>
-</div></section>
-
-<!-- ===== SCHOOL BENEFITS ===== -->
-<section id="escuelas" class="lp-band" style="background:#f8fafc"><div class="lp-wrap split reveal">
-    <div>
-        <span class="lp-eyebrow">Para escuelas</span>
-        <h2 style="font-size:28px;margin:12px 0 16px;letter-spacing:-.4px">Menos efectivo, más control</h2>
-        <ul class="flist">
-            <li><span class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><div><b>Cobro sin efectivo</b><span>La tienda escolar vende contra saldo.</span></div></li>
-            <li><span class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><div><b>Registros automáticos</b><span>Cada venta y recarga queda registrada.</span></div></li>
-            <li><span class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><div><b>Conciliación al día</b><span>Compara sistema contra caja real.</span></div></li>
-            <li><span class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><div><b>Reportes en tiempo real</b><span>Ventas, inventario y tesorería.</span></div></li>
-        </ul>
-    </div>
-    <div><img src="/img/mockup-school.svg" alt="Panel de administración de la escuela" /></div>
-</div></section>
-
-<!-- ===== SECURITY ===== -->
-<section id="seguridad" class="lp-band security-band"><div class="lp-wrap">
-    <div class="sec-head reveal"><h2>Pagos seguros, siempre</h2><p>Tus pagos se procesan de forma segura con proveedores de confianza.</p></div>
-    <div class="sec-cards reveal">
-        <div class="sec-card"><div class="lp-ico"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><h3>Pagos cifrados</h3><p>Procesados por Mercado Pago; no guardamos tu tarjeta.</p></div>
-        <div class="sec-card"><div class="lp-ico"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></div><h3>Verificación server-side</h3><p>Cada recarga se confirma con webhook, no con el navegador.</p></div>
-        <div class="sec-card"><div class="lp-ico"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div><h3>Transacciones verificadas</h3><p>Cada movimiento del saldo es atómico y auditado.</p></div>
-        <div class="sec-card"><div class="lp-ico"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><h3>Comprobantes</h3><p>Recibos por cada recarga y CFDI para la escuela.</p></div>
-    </div>
-</div></section>
-
-<!-- ===== DASHBOARD PREVIEW ===== -->
-<section class="lp-band"><div class="lp-wrap">
-    <div class="sec-head reveal"><h2>Todo en un panel</h2><p>Saldo, estudiantes y movimientos, en una sola vista.</p></div>
-    <div class="preview reveal">
-        <img src="/img/mockup-parent.svg" alt="Panel del padre" />
-        <span class="flabel a">Recarga instantánea</span>
-        <span class="flabel b">Saldo en tiempo real</span>
-        <span class="flabel c">Historial de pagos</span>
-    </div>
-</div></section>
-
-<!-- ===== MOBILE ===== -->
-<section class="lp-band" style="background:#f8fafc"><div class="lp-wrap">
-    <div class="sec-head reveal"><h2>Diseñado para padres en movimiento</h2><p>Toda la experiencia funciona bien en el teléfono.</p></div>
-    <div class="phones reveal">
-        <!-- Phone 1: dashboard -->
-        <svg class="phone" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pantalla de saldo">
-            <rect x="4" y="4" width="192" height="392" rx="30" fill="#fff" stroke="#e5e7eb" stroke-width="2"/>
-            <rect x="74" y="16" width="52" height="8" rx="4" fill="#eef2f7"/>
-            <rect x="20" y="40" width="160" height="88" rx="16" fill="#2563eb"/>
-            <text x="34" y="68" font-family="system-ui" font-size="11" fill="#dbeafe">Saldo disponible</text>
-            <text x="34" y="98" font-family="system-ui" font-size="26" font-weight="700" fill="#fff">$850</text>
-            <rect x="34" y="108" width="86" height="10" rx="5" fill="#93c5fd"/>
-            <rect x="20" y="146" width="160" height="34" rx="10" fill="#f8fafc"/><rect x="34" y="159" width="70" height="8" rx="4" fill="#cbd5e1"/><text x="166" y="167" text-anchor="end" font-family="system-ui" font-size="11" fill="#16a34a" font-weight="700">+$400</text>
-            <rect x="20" y="188" width="160" height="34" rx="10" fill="#f8fafc"/><rect x="34" y="201" width="52" height="8" rx="4" fill="#cbd5e1"/><text x="166" y="209" text-anchor="end" font-family="system-ui" font-size="11" fill="#ef4444" font-weight="700">-$50</text>
-            <rect x="20" y="336" width="160" height="40" rx="12" fill="#2563eb"/><text x="100" y="361" text-anchor="middle" font-family="system-ui" font-size="13" font-weight="700" fill="#fff">Recargar</text>
-        </svg>
-        <!-- Phone 2: recharge -->
-        <svg class="phone" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pantalla de recarga">
-            <rect x="4" y="4" width="192" height="392" rx="30" fill="#fff" stroke="#e5e7eb" stroke-width="2"/>
-            <rect x="74" y="16" width="52" height="8" rx="4" fill="#eef2f7"/>
-            <text x="20" y="58" font-family="system-ui" font-size="15" font-weight="700" fill="#111827">Elige un monto</text>
-            <g font-family="system-ui" font-size="15" font-weight="700">
-                <rect x="20" y="74" width="76" height="52" rx="12" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/><text x="58" y="105" text-anchor="middle" fill="#2563eb">$100</text>
-                <rect x="104" y="74" width="76" height="52" rx="12" fill="#f8fafc"/><text x="142" y="105" text-anchor="middle" fill="#334155">$300</text>
-                <rect x="20" y="134" width="76" height="52" rx="12" fill="#f8fafc"/><text x="58" y="165" text-anchor="middle" fill="#334155">$500</text>
-                <rect x="104" y="134" width="76" height="52" rx="12" fill="#f8fafc"/><text x="142" y="165" text-anchor="middle" fill="#334155">$1000</text>
-            </g>
-            <rect x="20" y="206" width="160" height="12" rx="6" fill="#eef2f7"/>
-            <rect x="20" y="336" width="160" height="40" rx="12" fill="#2563eb"/><text x="100" y="361" text-anchor="middle" font-family="system-ui" font-size="13" font-weight="700" fill="#fff">Pagar con Mercado Pago</text>
-        </svg>
-        <!-- Phone 3: history -->
-        <svg class="phone" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pantalla de movimientos">
-            <rect x="4" y="4" width="192" height="392" rx="30" fill="#fff" stroke="#e5e7eb" stroke-width="2"/>
-            <rect x="74" y="16" width="52" height="8" rx="4" fill="#eef2f7"/>
-            <text x="20" y="58" font-family="system-ui" font-size="15" font-weight="700" fill="#111827">Movimientos</text>
-            <g font-family="system-ui" font-size="12">
-                <rect x="20" y="72" width="160" height="40" rx="10" fill="#f8fafc"/><circle cx="40" cy="92" r="10" fill="#dcfce7"/><text x="58" y="89" fill="#334155">Recarga</text><text x="52" y="103" fill="#94a3b8" font-size="10">14/07</text><text x="166" y="97" text-anchor="end" fill="#16a34a" font-weight="700">+$400</text>
-                <rect x="20" y="120" width="160" height="40" rx="10" fill="#f8fafc"/><circle cx="40" cy="140" r="10" fill="#fee2e2"/><text x="58" y="137" fill="#334155">Lonchera</text><text x="52" y="151" fill="#94a3b8" font-size="10">15/07</text><text x="166" y="145" text-anchor="end" fill="#ef4444" font-weight="700">-$50</text>
-                <rect x="20" y="168" width="160" height="40" rx="10" fill="#f8fafc"/><circle cx="40" cy="188" r="10" fill="#fee2e2"/><text x="58" y="185" fill="#334155">Jugo</text><text x="52" y="199" fill="#94a3b8" font-size="10">16/07</text><text x="166" y="193" text-anchor="end" fill="#ef4444" font-weight="700">-$18</text>
-                <rect x="20" y="216" width="160" height="40" rx="10" fill="#f8fafc"/><circle cx="40" cy="236" r="10" fill="#dcfce7"/><text x="58" y="233" fill="#334155">Recarga</text><text x="52" y="247" fill="#94a3b8" font-size="10">18/07</text><text x="166" y="241" text-anchor="end" fill="#16a34a" font-weight="700">+$300</text>
-            </g>
-        </svg>
-    </div>
-</div></section>
-
-<!-- ===== TESTIMONIALS ===== -->
-<section class="lp-band"><div class="lp-wrap">
-    <div class="sec-head reveal"><h2>Lo que dicen las familias y escuelas</h2></div>
-    <div class="tcards reveal">
-        <div class="card tcard"><div class="stars">★★★★★</div>
-            <p class="quote">"Administrar los pagos escolares de mis hijos ahora es mucho más fácil."</p>
-            <div class="who"><span class="avatar" style="background:#2563eb">MR</span><div><b>María Ramírez</b><span>Madre de familia</span></div></div></div>
-        <div class="card tcard"><div class="stars">★★★★★</div>
-            <p class="quote">"Redujimos por completo el manejo de efectivo en la tienda escolar."</p>
-            <div class="who"><span class="avatar" style="background:#16a34a">CE</span><div><b>Colegio El Roble</b><span>Administración</span></div></div></div>
-        <div class="card tcard"><div class="stars">★★★★★</div>
-            <p class="quote">"Puedo dar seguimiento a las comisiones con total claridad."</p>
-            <div class="who"><span class="avatar" style="background:#f59e0b">JL</span><div><b>Jorge Luna</b><span>Proveedor</span></div></div></div>
-    </div>
-</div></section>
-
-<!-- ===== FAQ ===== -->
-<section id="faq" class="lp-band" style="background:#f8fafc"><div class="lp-wrap" style="max-width:760px">
-    <div class="sec-head reveal"><h2>Preguntas frecuentes</h2></div>
-    <div class="card lp-faq reveal">
-        <details open><summary>¿Cómo me registro?</summary><p>Crea tu cuenta con tu nombre, correo y contraseña; después vinculas a tu hijo por su matrícula.</p></details>
-        <details><summary>¿Cómo vinculo a mi hijo?</summary><p>Desde tu panel ingresas el número de matrícula del estudiante y queda asociado a tu cuenta.</p></details>
-        <details><summary>¿Cómo recargo saldo?</summary><p>Eliges un monto y pagas con Mercado Pago. El estudiante recibe el 100% del monto.</p></details>
-        <details><summary>¿Es seguro el pago?</summary><p>Sí. El cobro lo procesa Mercado Pago y nunca almacenamos los datos de tu tarjeta.</p></details>
-        <details><summary>¿Puedo administrar a varios hijos?</summary><p>Sí. Vincula a cada hijo y cambia entre sus saldos desde el mismo panel.</p></details>
-    </div>
-</div></section>
-
-<!-- ===== FINAL CTA ===== -->
-<section class="lp-band cta-band"><div class="lp-wrap reveal">
-    <h2>¿Listo para simplificar los pagos escolares?</h2>
-    <p>Crea tu cuenta gratis y recarga en minutos.</p>
-    <div class="lp-cta" style="justify-content:center">
-        <a class="btn lg" href="/Account/Register">Crear cuenta de padre</a>
-        <a class="btn ghost lg" href="/Vendor/Login">Soy escuela / proveedor</a>
-    </div>
-</div></section>
-
-<!-- ===== FOOTER ===== -->
-<footer class="lpf"><div class="lp-wrap">
-    <div class="cols">
-        <div>
-            <div class="brand">LoncherApp</div>
-            <p style="margin:0;max-width:260px;font-size:14px">Facilitando la venta de loncheras escolares — pagos sin efectivo para escuelas y familias.</p>
+    <!-- BENEFITS -->
+    <section class="landing-section" id="padres">
+        <div class="landing-container benefits-grid">
+            <article class="benefit-panel parents reveal">
+                <div>
+                    <h3>Beneficios para padres</h3>
+                    <ul>
+                        <li>Recargas en línea cuando quieras</li>
+                        <li>Saldo y gastos en tiempo real</li>
+                        <li>Pagos seguros y protegidos</li>
+                        <li>Notificaciones importantes de la escuela</li>
+                        <li>Varios hijos en una sola cuenta</li>
+                    </ul>
+                </div>
+                <img src="/img/benefit-parents.png" alt="Beneficios para padres" />
+            </article>
+            <article class="benefit-panel schools reveal" id="escuelas">
+                <div>
+                    <h3>Beneficios para escuelas</h3>
+                    <ul>
+                        <li>Cobro sin efectivo</li>
+                        <li>Conciliación automática</li>
+                        <li>Reportes y analítica en tiempo real</li>
+                        <li>Mejor comunicación con los padres</li>
+                        <li>Menos carga administrativa</li>
+                    </ul>
+                </div>
+                <img src="/img/benefit-schools.png" alt="Beneficios para escuelas" />
+            </article>
         </div>
-        <div><h4>Producto</h4><a href="#como-funciona">Cómo funciona</a><a href="#padres">Para padres</a><a href="#escuelas">Para escuelas</a></div>
-        <div><h4>Recursos</h4><a href="#seguridad">Seguridad</a><a href="#faq">Preguntas</a><a href="/Account/Register">Crear cuenta</a></div>
-        <div><h4>Acceso</h4><a href="/Account/Login">Ingresar</a><a href="/Account/Register">Registrarse</a><a href="/Vendor/Login">Acceso proveedor</a></div>
-    </div>
-    <div class="legal">
-        <span>© 2026 LoncherApp · Todos los derechos reservados</span>
-        <span>Aviso de privacidad · Términos</span>
-    </div>
-</div></footer>
+    </section>
+
+    <!-- SECURITY -->
+    <section class="security-band" id="seguridad">
+        <div class="landing-container">
+            <div class="section-heading reveal"><span></span><h2>Tus pagos son 100% seguros</h2><span></span></div>
+            <div class="security-card reveal">
+                <div><i class="sec-blue"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></i>
+                    <p><strong>Seguridad de nivel bancario</strong><small>Cifrado SSL de 256 bits</small></p></div>
+                <div><i class="sec-green"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></i>
+                    <p><strong>Transacciones seguras</strong><small>Procesadas por Mercado Pago</small></p></div>
+                <div><i class="sec-purple"><svg viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C15.5 3.81 18 5 20 5a1 1 0 0 1 1 1z"/><circle cx="12" cy="11" r="2"/></svg></i>
+                    <p><strong>Privacidad protegida</strong><small>No almacenamos tu tarjeta</small></p></div>
+                <div><i class="sec-cyan"><svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/><path d="M9 13l2 2 4-4"/></svg></i>
+                    <p><strong>Plataforma confiable</strong><small>99.9% de disponibilidad</small></p></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TESTIMONIALS -->
+    <section class="landing-section">
+        <div class="landing-container">
+            <div class="section-heading reveal"><span></span><h2>Lo que dicen familias y escuelas</h2><span></span></div>
+            <div class="story-grid reveal">
+                <div class="story-card"><span class="stars">★★★★★</span>
+                    <p>“Administrar los pagos escolares de mis hijos ahora es mucho más fácil; recargo en segundos.”</p>
+                    <div class="story-who"><span class="story-avatar" style="background:#2563eb">SJ</span><div><strong>Sofía Jiménez</strong><small>Madre de familia</small></div></div></div>
+                <div class="story-card"><span class="stars">★★★★★</span>
+                    <p>“La plataforma es simple, segura y el soporte siempre ayuda. ¡Muy recomendada!”</p>
+                    <div class="story-who"><span class="story-avatar" style="background:#16a34a">MB</span><div><strong>Miguel Barrera</strong><small>Padre de familia</small></div></div></div>
+                <div class="story-card"><span class="stars">★★★★★</span>
+                    <p>“Desde que la usamos, la gestión de efectivo es 100% digital y la conciliación es automática.”</p>
+                    <div class="story-who"><span class="story-avatar" style="background:#f59e0b">JW</span><div><strong>Colegio Las Palmas</strong><small>Administración escolar</small></div></div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="landing-section" id="faq">
+        <div class="landing-container">
+            <div class="section-heading reveal"><span></span><h2>Preguntas frecuentes</h2><span></span></div>
+            <div class="faq-grid reveal">
+                <details><summary>¿Cómo creo una cuenta?</summary><p>Regístrate con tu nombre, correo y una contraseña; luego vincula a tu hijo por su matrícula.</p></details>
+                <details><summary>¿Mi información de pago está segura?</summary><p>Sí. Mercado Pago procesa el cobro y nunca almacenamos los datos de tu tarjeta.</p></details>
+                <details><summary>¿Hay una aplicación móvil?</summary><p>El portal funciona desde el navegador de tu teléfono, sin instalar nada.</p></details>
+                <details><summary>¿Cómo agrego dinero al saldo de mi hijo?</summary><p>Elige al estudiante, indica el monto y completa el pago en línea.</p></details>
+                <details><summary>¿Puedo seguir sus gastos?</summary><p>Sí. El historial muestra cada recarga y consumo registrado.</p></details>
+                <details><summary>¿Cómo se benefician las escuelas?</summary><p>Reducen el efectivo y conectan ventas, inventario, conciliación y reportes.</p></details>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="landing-footer">
+        <div class="landing-container footer-grid">
+            <div class="footer-brand">
+                <img src="/img/favicon.svg" alt="LoncherApp" />
+                <p>La forma inteligente y segura de administrar los pagos escolares para una mejor experiencia educativa.</p>
+                <div class="footer-social">
+                    <a href="#" aria-label="Facebook"><svg viewBox="0 0 24 24"><path d="M13 22v-8h3l1-4h-4V8c0-1 .3-2 2-2h2V2.1C18.4 2 17.3 2 16.5 2 13.9 2 12 3.7 12 6.6V10H9v4h3v8z"/></svg></a>
+                    <a href="#" aria-label="Twitter"><svg viewBox="0 0 24 24"><path d="M22 5.9c-.7.3-1.5.6-2.3.7.8-.5 1.5-1.3 1.8-2.3-.8.5-1.7.8-2.6 1a4 4 0 0 0-6.9 3.7A11.4 11.4 0 0 1 3.8 4.6a4 4 0 0 0 1.2 5.4c-.6 0-1.2-.2-1.8-.5a4 4 0 0 0 3.2 4 4 4 0 0 1-1.8.1 4 4 0 0 0 3.7 2.8A8 8 0 0 1 2 18.6 11.3 11.3 0 0 0 8.2 20c7.4 0 11.5-6.2 11.5-11.5V8c.8-.6 1.5-1.3 2.1-2.1z"/></svg></a>
+                    <a href="#" aria-label="Instagram"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.2"/></svg></a>
+                    <a href="#" aria-label="LinkedIn"><svg viewBox="0 0 24 24"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM10 9h3.8v1.7h.1c.5-1 1.8-2 3.7-2 4 0 4.7 2.6 4.7 5.9V21h-4v-5.3c0-1.3 0-2.9-1.8-2.9s-2 1.4-2 2.8V21h-4z"/></svg></a>
+                </div>
+            </div>
+            <div><h4>Enlaces</h4><a href="#inicio">Inicio</a><a href="#como-funciona">Cómo funciona</a><a href="#padres">Para padres</a><a href="#escuelas">Para escuelas</a><a href="#faq">Preguntas</a></div>
+            <div><h4>Empresa</h4><a href="#">Acerca de</a><a href="#contacto">Contacto</a><a href="#">Aviso de privacidad</a><a href="#">Términos</a></div>
+            <div><h4>Soporte</h4><a href="#faq">Centro de ayuda</a><a href="/Account/Login">Ingresar</a><a href="/Vendor/Login">Acceso proveedor</a><a href="#">soporte@loncherapp.com</a></div>
+        </div>
+        <div class="landing-container footer-copy">© 2026 LoncherApp · Todos los derechos reservados</div>
+    </footer>
+</div>
 
 <script>
-(function () {
+(() => {
     document.body.classList.add('reveal-ready');
-    if ('IntersectionObserver' in window) {
-        var io = new IntersectionObserver(function (es) {
-            es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
-        }, { threshold: 0.12 });
-        document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
-
-        var co = new IntersectionObserver(function (es) {
-            es.forEach(function (e) {
-                if (!e.isIntersecting) return;
-                var el = e.target, target = parseFloat(el.dataset.count), dec = el.dataset.dec ? 1 : 0, suf = el.dataset.suffix || '';
-                var start = null, dur = 1200;
-                function fmt(v) { return dec ? v.toFixed(1) : Math.round(v).toLocaleString('es-MX'); }
-                function tick(t) { if (!start) start = t; var p = Math.min((t - start) / dur, 1); el.textContent = fmt(p * target) + suf; if (p < 1) requestAnimationFrame(tick); else el.textContent = fmt(target) + suf; }
-                requestAnimationFrame(tick); co.unobserve(el);
-            });
-        }, { threshold: 0.6 });
-        document.querySelectorAll('[data-count]').forEach(function (el) { co.observe(el); });
-    } else {
-        document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
-    }
-    var hd = document.querySelector('header');
-    function onScroll() { if (hd) hd.classList.toggle('scrolled', window.scrollY > 8); }
+    const items = document.querySelectorAll('.landing-v3 .reveal');
+    if (!('IntersectionObserver' in window)) { items.forEach(x => x.classList.add('shown')); return; }
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('shown'); io.unobserve(e.target); } }), { threshold: .12 });
+    items.forEach(i => io.observe(i));
+    const hd = document.querySelector('header');
+    const onScroll = () => hd && hd.classList.toggle('scrolled', window.scrollY > 8);
     window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
 })();
 </script>

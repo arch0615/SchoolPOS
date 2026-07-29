@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 360" width="440" height="360" role="img" aria-label="App móvil: saldo del estudiante y perfil">
+  <defs>
+    <linearGradient id="mp-c" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2f6fed"/><stop offset="1" stop-color="#5b9bff"/></linearGradient>
+    <filter id="mp-sh" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#1e293b" flood-opacity="0.18"/></filter>
+  </defs>
+  <!-- back phone: profile -->
+  <g transform="rotate(6 300 190)" filter="url(#mp-sh)">
+    <rect x="238" y="52" width="150" height="286" rx="26" fill="#ffffff"/>
+    <rect x="298" y="66" width="30" height="7" rx="3.5" fill="#eef2f7"/>
+    <circle cx="313" cy="110" r="24" fill="#e8f0ff"/><circle cx="313" cy="102" r="9" fill="#93b4f5"/><path d="M299 122 a14 14 0 0 1 28 0Z" fill="#93b4f5"/>
+    <text x="313" y="156" text-anchor="middle" font-family="system-ui, Arial" font-size="12" font-weight="700" fill="#0f2f4a">Emma Johnson</text>
+    <rect x="258" y="176" width="110" height="30" rx="8" fill="#f4f7fc"/><text x="268" y="195" font-family="system-ui, Arial" font-size="10" fill="#64748b">Saldo</text><text x="358" y="195" text-anchor="end" font-family="system-ui, Arial" font-size="11" font-weight="700" fill="#2f6fed">$180</text>
+    <rect x="258" y="214" width="110" height="14" rx="7" fill="#eef2f7"/>
+    <rect x="258" y="236" width="86" height="14" rx="7" fill="#eef2f7"/>
+    <g fill="#2f6fed"><rect x="258" y="286" width="14" height="30" rx="3"/><rect x="278" y="276" width="14" height="40" rx="3"/><rect x="298" y="292" width="14" height="24" rx="3"/></g>
+  </g>
+  <!-- front phone: balance -->
+  <g transform="rotate(-6 150 200)" filter="url(#mp-sh)">
+    <rect x="70" y="70" width="152" height="290" rx="26" fill="#ffffff"/>
+    <rect x="130" y="84" width="32" height="7" rx="3.5" fill="#eef2f7"/>
+    <rect x="88" y="104" width="116" height="74" rx="14" fill="url(#mp-c)"/>
+    <text x="102" y="128" font-family="system-ui, Arial" font-size="11" fill="#dbe8ff">Saldo disponible</text>
+    <text x="102" y="154" font-family="system-ui, Arial" font-size="22" font-weight="700" fill="#fff">$125.50</text>
+    <rect x="176" y="116" width="18" height="14" rx="3" fill="#ffffff" opacity=".85"/>
+    <rect x="88" y="188" width="116" height="26" rx="13" fill="#2f6fed"/><text x="146" y="205" text-anchor="middle" font-family="system-ui, Arial" font-size="12" font-weight="700" fill="#fff">+ Recargar</text>
+    <g font-family="system-ui, Arial" font-size="10">
+      <rect x="88" y="226" width="116" height="30" rx="8" fill="#f4f7fc"/><circle cx="104" cy="241" r="7" fill="#e8f0ff"/><text x="118" y="244" fill="#334155">Lonchera</text><text x="196" y="244" text-anchor="end" fill="#ef4444" font-weight="700">-$5.50</text>
+      <rect x="88" y="262" width="116" height="30" rx="8" fill="#f4f7fc"/><circle cx="104" cy="277" r="7" fill="#e8f0ff"/><text x="118" y="280" fill="#334155">Librería</text><text x="196" y="280" text-anchor="end" fill="#ef4444" font-weight="700">-$18.00</text>
+      <rect x="88" y="298" width="116" height="30" rx="8" fill="#f4f7fc"/><circle cx="104" cy="313" r="7" fill="#e8f0ff"/><text x="118" y="316" fill="#334155">Transporte</text><text x="196" y="316" text-anchor="end" fill="#ef4444" font-weight="700">-$12.00</text>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 330" width="500" height="330" role="img" aria-label="Panel escolar en laptop: ventas, estudiantes y reportes">
+  <defs><filter id="lp-sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#1e293b" flood-opacity="0.16"/></filter></defs>
+  <g filter="url(#lp-sh)">
+    <rect x="60" y="20" width="380" height="248" rx="12" fill="#0f2f4a"/>
+    <rect x="70" y="30" width="360" height="228" rx="6" fill="#f5f8fc"/>
+  </g>
+  <!-- sidebar -->
+  <rect x="70" y="30" width="86" height="228" fill="#0f2f4a"/>
+  <rect x="84" y="46" width="58" height="10" rx="5" fill="#3b6fb0"/>
+  <rect x="84" y="76" width="58" height="20" rx="6" fill="#2f6fed"/>
+  <g fill="#24466a"><rect x="84" y="104" width="58" height="12" rx="4"/><rect x="84" y="124" width="46" height="12" rx="4"/><rect x="84" y="144" width="52" height="12" rx="4"/></g>
+  <!-- header -->
+  <text x="170" y="58" font-family="system-ui, Arial" font-size="13" font-weight="700" fill="#0f2f4a">Dashboard</text>
+  <!-- KPI tiles -->
+  <g font-family="system-ui, Arial">
+    <rect x="170" y="70" width="80" height="46" rx="9" fill="#eaf1ff"/><text x="182" y="90" font-size="9" fill="#64748b">Ventas</text><text x="182" y="106" font-size="14" font-weight="800" fill="#2f6fed">$24.3k</text>
+    <rect x="258" y="70" width="80" height="46" rx="9" fill="#e8f6ee"/><text x="270" y="90" font-size="9" fill="#166534">Recargas</text><text x="270" y="106" font-size="14" font-weight="800" fill="#16a34a">1,245</text>
+    <rect x="346" y="70" width="72" height="46" rx="9" fill="#fdf0e6"/><text x="358" y="90" font-size="9" fill="#9a3412">Alumnos</text><text x="358" y="106" font-size="14" font-weight="800" fill="#ea7317">1,342</text>
+  </g>
+  <!-- line chart -->
+  <rect x="170" y="126" width="166" height="120" rx="10" fill="#ffffff" stroke="#e6eef9"/>
+  <polyline points="182,224 206,206 230,214 254,188 278,198 302,168 326,180" fill="none" stroke="#2f6fed" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="182,232 206,222 230,228 254,214 278,220 302,204 326,212" fill="none" stroke="#c7dcff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- donut -->
+  <rect x="344" y="126" width="74" height="120" rx="10" fill="#ffffff" stroke="#e6eef9"/>
+  <g transform="translate(381 186)"><circle r="26" fill="none" stroke="#e6eef9" stroke-width="10"/><circle r="26" fill="none" stroke="#2f6fed" stroke-width="10" stroke-dasharray="120 44" transform="rotate(-90)"/><circle r="26" fill="none" stroke="#22c55e" stroke-width="10" stroke-dasharray="44 120" stroke-dashoffset="-120" transform="rotate(-90)"/></g>
+  <!-- base -->
+  <path d="M40 268 h420 l18 20 h-456 z" fill="#d7dee8"/>
+  <rect x="212" y="268" width="76" height="8" rx="4" fill="#b9c2cf"/>
+</svg>
