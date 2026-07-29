@@ -41,6 +41,7 @@ public static class DependencyInjection
         services.AddScoped<IPurchasingService, PurchasingService>();
         services.AddScoped<ITreasuryService, TreasuryService>();
         services.AddScoped<IGuardianService, GuardianService>();
+        services.AddScoped<INotificationPreferenceService, NotificationPreferenceService>();
         services.AddScoped<ICommissionReportService, CommissionReportService>();
         // CFDI de comisión: emisor simulado por defecto (dev). El host puede sustituirlo por SW.
         services.AddSingleton(new CfdiSettings());

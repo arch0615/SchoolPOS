@@ -17,6 +17,8 @@ public class SchoolDbContext : DbContext
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<Guardian> Guardians => Set<Guardian>();
     public DbSet<GuardianStudent> GuardianStudents => Set<GuardianStudent>();
+    public DbSet<GuardianNotificationPreference> GuardianNotificationPreferences =>
+        Set<GuardianNotificationPreference>();
     public DbSet<BalanceMovement> BalanceMovements => Set<BalanceMovement>();
     public DbSet<TopUp> TopUps => Set<TopUp>();
     public DbSet<User> Users => Set<User>();
@@ -160,6 +162,14 @@ public class SchoolDbContext : DbContext
                 .HasForeignKey(x => x.GuardianId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.Student).WithMany()
                 .HasForeignKey(x => x.StudentId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<GuardianNotificationPreference>(e =>
+        {
+            e.HasKey(x => x.GuardianId);
+            e.HasOne(x => x.Guardian).WithOne()
+                .HasForeignKey<GuardianNotificationPreference>(x => x.GuardianId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<User>(e =>
