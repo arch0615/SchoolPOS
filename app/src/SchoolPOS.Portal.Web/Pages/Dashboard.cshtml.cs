@@ -10,13 +10,11 @@ namespace SchoolPOS.Portal.Web.Pages;
 public class DashboardModel : PageModel
 {
     private readonly IGuardianService _guardians;
-    private readonly ITopUpService _topUps;
     private readonly PortalOptions _options;
 
-    public DashboardModel(IGuardianService guardians, ITopUpService topUps, PortalOptions options)
+    public DashboardModel(IGuardianService guardians, PortalOptions options)
     {
         _guardians = guardians;
-        _topUps = topUps;
         _options = options;
     }
 
@@ -51,26 +49,6 @@ public class DashboardModel : PageModel
             Error = ex.Message;
         }
         return RedirectToPage();
-    }
-
-    public async Task<IActionResult> OnPostTopUpAsync(Guid studentId, Guid accountId, decimal amount)
-    {
-        if (amount <= 0m)
-        {
-            Error = "El monto debe ser mayor a cero.";
-            return RedirectToPage(new { studentId });
-        }
-
-        // Control de acceso: la cuenta debe pertenecer a un hijo del tutor.
-        if (!await _guardians.OwnsStudentAsync(User.GetGuardianId(), studentId))
-        {
-            Error = "No tiene acceso a esa cuenta.";
-            return RedirectToPage();
-        }
-
-        var created = await _topUps.CreateAsync(_options.SchoolId, accountId, amount);
-        // Redirige al checkout de la pasarela (en sandbox, una página interna de simulación).
-        return Redirect(created.CheckoutUrl);
     }
 
     private async Task LoadAsync(Guid? studentId)

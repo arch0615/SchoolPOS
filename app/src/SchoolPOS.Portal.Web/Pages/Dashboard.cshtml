@@ -47,14 +47,10 @@ else
     <div class="row">
         <div class="card">
             <h2>Recargar saldo</h2>
-            <form method="post" asp-page-handler="TopUp">
-                <input type="hidden" name="studentId" value="@Model.Selected!.StudentId" />
-                <input type="hidden" name="accountId" value="@Model.Selected!.AccountId" />
-                <label>Monto (MXN)</label>
-                <input name="amount" type="number" min="1" step="1" value="100" />
-                <p class="muted">El estudiante recibe el 100% del monto recargado.</p>
-                <button class="btn accent" type="submit">Continuar al pago</button>
-            </form>
+            <p class="muted">Abona saldo con tarjeta, transferencia o efectivo. El estudiante recibe el 100% del monto recargado.</p>
+            <div style="margin-top:12px">
+                <a class="btn accent" href="/Wallet?studentId=@Model.Selected!.StudentId">Ir al monedero</a>
+            </div>
         </div>
         <div class="card">
             <h2>Vincular otro hijo</h2>

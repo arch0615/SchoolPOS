@@ -10,4 +10,13 @@ public sealed class PortalOptions
 
     /// <summary>Código de acceso al panel del proveedor (comisiones). Configurar por instalación.</summary>
     public string VendorAccessCode { get; init; } = "vendor-demo";
+
+    /// <summary>Monto mínimo de una recarga (MXN).</summary>
+    public decimal MinTopUp { get; init; } = 20m;
+
+    /// <summary>Monto máximo de una recarga (MXN).</summary>
+    public decimal MaxTopUp { get; init; } = 5000m;
+
+    /// <summary>Montos sugeridos en la página de recarga (MXN).</summary>
+    public decimal[] TopUpPresets { get; init; } = { 100m, 200m, 500m };
 }
