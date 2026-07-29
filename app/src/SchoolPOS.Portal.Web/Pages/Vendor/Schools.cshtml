@@ -1,0 +1,99 @@
+@page
+@model SchoolPOS.Portal.Web.Pages.Vendor.SchoolsModel
+@{
+    ViewData["Title"] = "Escuelas";
+    var fromStr = Model.From?.ToString("yyyy-MM-dd");
+    var toStr = Model.To?.ToString("yyyy-MM-dd");
+    var parts = new List<string>();
+    if (fromStr is not null) { parts.Add($"From={fromStr}"); }
+    if (toStr is not null) { parts.Add($"To={toStr}"); }
+    var qs = parts.Count > 0 ? "?" + string.Join("&", parts) : "";
+}
+
+@section Head {
+    <style>
+        .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+        .tag.ok { background: #ecfdf5; color: #047857; }
+        .tag.no { background: #fef2f2; color: #b91c1c; }
+        .tag.warn { background: #fffbeb; color: #b45309; }
+    </style>
+}
+
+<div class="card">
+    <div class="row" style="align-items:center">
+        <div>
+            <div class="pill">Panel del proveedor</div>
+            <h1 style="margin-top:8px;margin-bottom:0">Escuelas</h1>
+            <p class="muted">@Model.Rows.Count en total · @Model.ConnectedCount con cobro conectado · @Model.InvoiceReadyCount listas para facturar</p>
+        </div>
+        <form method="get" class="row" style="align-items:flex-end;max-width:420px">
+            <div><label>Desde</label><input type="date" name="From" value="@fromStr" /></div>
+            <div><label>Hasta</label><input type="date" name="To" value="@toStr" /></div>
+            <div style="max-width:120px"><label>&nbsp;</label><button class="btn" type="submit">Filtrar</button></div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    @if (Model.Rows.Count == 0)
+    {
+        <p class="muted">Aún no hay escuelas dadas de alta.</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Escuela</th>
+                    <th style="text-align:right">Comisión</th>
+                    <th>Cobro</th>
+                    <th>Datos fiscales</th>
+                    <th style="text-align:right">Recargas</th>
+                    <th style="text-align:right">Recargado</th>
+                    <th style="text-align:right">Comisión del periodo</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var r in Model.Rows)
+            {
+                <tr>
+                    <td>
+                        @r.Name
+                        <div class="muted" style="font-size:12px">@r.Currency</div>
+                    </td>
+                    <td style="text-align:right">@((r.CommissionRate * 100).ToString("0.##"))%</td>
+                    <td>
+                        @if (r.Connected)
+                        {
+                            <span class="tag ok">Conectado</span>
+                            <div class="muted" style="font-size:12px">@r.ConnectedAtUtc?.ToString("dd/MM/yyyy")</div>
+                        }
+                        else
+                        {
+                            <span class="tag no">Sin conectar</span>
+                        }
+                    </td>
+                    <td>
+                        @if (r.FiscalComplete)
+                        {
+                            <span class="tag ok">Completos</span>
+                        }
+                        else
+                        {
+                            <span class="tag warn">Incompletos</span>
+                        }
+                    </td>
+                    <td style="text-align:right">@r.TopUpCount</td>
+                    <td style="text-align:right">@r.TotalRecharged.ToString("C2")</td>
+                    <td style="text-align:right;font-weight:700;color:var(--success)">@r.TotalCommission.ToString("C2")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+        <p class="muted" style="margin-top:10px">
+            Sin cobro conectado la escuela no puede recibir recargas; sin datos fiscales completos no se le puede
+            emitir el CFDI de comisión. Conecta cuentas en <a href="/Vendor/Connections">Conexiones de pago</a> y
+            emite facturas desde <a href="/Vendor/Commissions@(qs)">Comisiones</a>.
+        </p>
+    }
+</div>

@@ -1,0 +1,152 @@
+@page
+@model SchoolPOS.Portal.Web.Pages.Vendor.DashboardModel
+@{
+    ViewData["Title"] = "Panel del proveedor";
+    var fromStr = Model.From?.ToString("yyyy-MM-dd");
+    var toStr = Model.To?.ToString("yyyy-MM-dd");
+
+    // El periodo elegido viaja a las demás páginas del proveedor.
+    var parts = new List<string>();
+    if (fromStr is not null) { parts.Add($"From={fromStr}"); }
+    if (toStr is not null) { parts.Add($"To={toStr}"); }
+    var qs = parts.Count > 0 ? "?" + string.Join("&", parts) : "";
+}
+
+<div class="card">
+    <div class="row" style="align-items:center">
+        <div>
+            <div class="pill">Panel del proveedor</div>
+            <h1 style="margin-top:8px;margin-bottom:0">Resumen</h1>
+            <p class="muted">Consolidado de todas las escuelas · sólo recargas capturadas</p>
+        </div>
+        <form method="get" class="row" style="align-items:flex-end;max-width:420px">
+            <div><label>Desde</label><input type="date" name="From" value="@fromStr" /></div>
+            <div><label>Hasta</label><input type="date" name="To" value="@toStr" /></div>
+            <div style="max-width:120px"><label>&nbsp;</label><button class="btn" type="submit">Filtrar</button></div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <div class="card">
+        <div class="muted">Escuelas</div>
+        <div class="balance" style="color:var(--text)">@Model.Rollup.Schools.Count</div>
+        <div class="muted"><a href="/Vendor/Schools@(qs)">Ver escuelas →</a></div>
+    </div>
+    <div class="card">
+        <div class="muted">Comisión total (tu ingreso)</div>
+        <div class="balance">@Model.Rollup.TotalCommission.ToString("C2")</div>
+        <div class="muted"><a href="/Vendor/Commissions@(qs)">Ver detalle →</a></div>
+    </div>
+    <div class="card">
+        <div class="muted">Total recargado</div>
+        <div class="balance" style="color:var(--warning)">@Model.Rollup.TotalRecharged.ToString("C2")</div>
+    </div>
+    <div class="card">
+        <div class="muted">Recargas</div>
+        <div class="balance" style="color:var(--text)">@Model.Rollup.TopUpCount</div>
+        <div class="muted">tasa media @((Model.AverageRate * 100).ToString("0.##"))%</div>
+    </div>
+</div>
+
+@if (Model.Rollup.Schools.Count > 0)
+{
+    @* Chart colors use committed hex (SVG presentation attrs don't accept var()). *@
+    var maxC = (double)Model.Rollup.Schools.Max(x => x.TotalCommission);
+    var barsH = 16 + Model.Rollup.Schools.Count * 38;
+
+    var recharged = (double)Model.Rollup.TotalRecharged;
+    var commission = (double)Model.Rollup.TotalCommission;
+    var net = Math.Max(0.0, recharged - commission);
+    var CIRC = 2 * Math.PI * 52;
+    var circ = (int)Math.Round(CIRC);
+    var commArc = (int)Math.Round(recharged > 0 ? commission / recharged * CIRC : 0);
+    if (commArc < 2 && commission > 0) { commArc = 2; }
+    var netArc = circ - commArc;
+
+    <div class="row">
+        <div class="card" style="flex:2 1 340px">
+            <h2>Comisión por escuela</h2>
+            <svg viewBox="0 0 560 @barsH" width="100%" height="@barsH" role="img" aria-label="Comisión por escuela">
+                @for (int i = 0; i < Model.Rollup.Schools.Count; i++)
+                {
+                    var s = Model.Rollup.Schools[i];
+                    var top = 8 + i * 38;
+                    var barW = maxC > 0 ? (int)Math.Round((double)s.TotalCommission / maxC * 330) : 0;
+                    if (barW < 2 && s.TotalCommission > 0) { barW = 2; }
+                    var name = s.SchoolName.Length > 20 ? s.SchoolName.Substring(0, 19) + "…" : s.SchoolName;
+                    <g>
+                        <text x="0" y="@(top + 21)" font-size="13" fill="#111827">@name</text>
+                        <rect x="150" y="@(top + 8)" width="330" height="18" rx="9" fill="#eef2f7"></rect>
+                        <rect x="150" y="@(top + 8)" width="@barW" height="18" rx="9" fill="#2563eb">
+                            <title>@s.SchoolName: @s.TotalCommission.ToString("C2")</title>
+                        </rect>
+                        <text x="555" y="@(top + 21)" font-size="12" font-weight="600" text-anchor="end" fill="#111827">@s.TotalCommission.ToString("C0")</text>
+                    </g>
+                }
+            </svg>
+            <p class="muted" style="margin-top:6px">Comisión capturada por escuela en el periodo.</p>
+        </div>
+
+        <div class="card" style="flex:1 1 240px">
+            <h2>Composición de recargas</h2>
+            <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">
+                <svg viewBox="0 0 120 120" width="140" height="140" role="img" aria-label="Composición de recargas: comisión contra neto a escuelas">
+                    <circle cx="60" cy="60" r="52" fill="none" stroke="#eef2f7" stroke-width="16"></circle>
+                    <g transform="rotate(-90 60 60)">
+                        <circle cx="60" cy="60" r="52" fill="none" stroke="#2563eb" stroke-width="16"
+                                stroke-dasharray="@commArc @(circ - commArc)" stroke-dashoffset="0">
+                            <title>Comisión: @Model.Rollup.TotalCommission.ToString("C2")</title>
+                        </circle>
+                        <circle cx="60" cy="60" r="52" fill="none" stroke="#f59e0b" stroke-width="16"
+                                stroke-dasharray="@(netArc - 2) @(circ - netArc + 2)" stroke-dashoffset="@(-commArc)">
+                            <title>Neto a escuelas: @net.ToString("C2")</title>
+                        </circle>
+                    </g>
+                    <text x="60" y="57" text-anchor="middle" font-size="20" font-weight="800" fill="#2563eb">@((Model.AverageRate * 100).ToString("0.#"))%</text>
+                    <text x="60" y="74" text-anchor="middle" font-size="10" fill="#64748b">comisión</text>
+                </svg>
+                <div style="font-size:14px;min-width:170px;flex:1">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                        <span style="width:12px;height:12px;border-radius:3px;background:#2563eb;display:inline-block"></span>
+                        Comisión <strong style="margin-left:auto">@Model.Rollup.TotalCommission.ToString("C2")</strong>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px">
+                        <span style="width:12px;height:12px;border-radius:3px;background:#f59e0b;display:inline-block"></span>
+                        Neto a escuelas <strong style="margin-left:auto">@net.ToString("C2")</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.Series.Count > 0 && Model.Series.Any(p => p.Recharged > 0m))
+{
+    @* Dos small multiples apilados: cada medida con su propio eje (evita el doble eje). *@
+    var recargaTrend = new SchoolPOS.Portal.Web.ViewModels.MiniTrend
+    {
+        Title = "Recargado (bruto)",
+        ColorHex = "#f59e0b",
+        Points = Model.Series.Select(p => new SchoolPOS.Portal.Web.ViewModels.MiniTrendPoint(p.Date, p.Recharged)).ToList()
+    };
+    var comisionTrend = new SchoolPOS.Portal.Web.ViewModels.MiniTrend
+    {
+        Title = "Comisión (tu ingreso)",
+        ColorHex = "#2563eb",
+        Points = Model.Series.Select(p => new SchoolPOS.Portal.Web.ViewModels.MiniTrendPoint(p.Date, p.Commission)).ToList()
+    };
+
+    <div class="card">
+        <h2>Tendencia diaria</h2>
+        <p class="muted" style="margin-top:-6px">@Model.SeriesFrom.ToString("dd/MM/yyyy") – @Model.SeriesTo.ToString("dd/MM/yyyy") · @Model.Series.Count días · cada gráfica tiene su propia escala</p>
+        <partial name="_MiniTrend" model="recargaTrend" />
+        <partial name="_MiniTrend" model="comisionTrend" />
+    </div>
+}
+else
+{
+    <div class="card">
+        <p class="muted">Sin recargas capturadas en el periodo seleccionado.</p>
+    </div>
+}

@@ -24,6 +24,6 @@ public class LoginModel : PageModel
         }
 
         await PortalSignIn.SignInVendorAsync(HttpContext);
-        return RedirectToPage("/Vendor/Index");
+        return RedirectToPage("/Vendor/Dashboard");
     }
 }

@@ -1,0 +1,95 @@
+@page
+@using SchoolPOS.Domain.Enums
+@using SchoolPOS.Portal.Web.Pages.Vendor
+@model SchoolPOS.Portal.Web.Pages.Vendor.InvoicesModel
+@{
+    ViewData["Title"] = "Facturas de comisión";
+}
+
+@section Head {
+    <style>
+        .st { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+        .st.stamped { background: #ecfdf5; color: #047857; }
+        .st.draft { background: #eff6ff; color: #1d4ed8; }
+        .st.failed { background: #fef2f2; color: #b91c1c; }
+        .st.cancelled { background: #f1f5f9; color: #475569; }
+    </style>
+}
+
+<div class="card">
+    <div class="row" style="align-items:center">
+        <div>
+            <div class="pill">Panel del proveedor</div>
+            <h1 style="margin-top:8px;margin-bottom:0">Facturas de comisión</h1>
+            <p class="muted">
+                @Model.StampedCount @(Model.StampedCount == 1 ? "timbrada" : "timbradas") por @Model.StampedTotal.ToString("C2")@(Model.FailedCount > 0 ? $" · {Model.FailedCount} {(Model.FailedCount == 1 ? "fallida" : "fallidas")}" : "")
+            </p>
+        </div>
+        <form method="get" class="row" style="align-items:flex-end;max-width:520px">
+            <div>
+                <label>Escuela</label>
+                <select name="SchoolId">
+                    <option value="">Todas</option>
+                    @foreach (var s in Model.Schools)
+                    {
+                        <option value="@s.Id" selected="@(Model.SchoolId == s.Id)">@s.Name</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label>Estado</label>
+                <select name="Status">
+                    <option value="">Todos</option>
+                    @foreach (var st in Enum.GetValues<CfdiStatus>())
+                    {
+                        <option value="@st" selected="@(Model.Status == st)">@InvoicesModel.StatusLabel(st)</option>
+                    }
+                </select>
+            </div>
+            <div style="max-width:120px"><label>&nbsp;</label><button class="btn" type="submit">Filtrar</button></div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    @if (Model.Invoices.Count == 0)
+    {
+        <p class="muted">No hay facturas que coincidan con el filtro.</p>
+        <p style="margin-top:12px"><a class="btn ghost" href="/Vendor/Commissions">Ir a comisiones para emitir</a></p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Escuela</th>
+                    <th>Periodo</th>
+                    <th style="text-align:right">Comisión</th>
+                    <th>Estado</th>
+                    <th>Folio fiscal (UUID)</th>
+                    <th>Emitida</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var inv in Model.Invoices)
+            {
+                <tr>
+                    <td>@inv.SchoolName</td>
+                    <td>@inv.PeriodFrom.ToString("dd/MM/yyyy") – @inv.PeriodTo.ToString("dd/MM/yyyy")</td>
+                    <td style="text-align:right">@inv.Amount.ToString("C2") <span class="muted">@inv.Currency</span></td>
+                    <td>
+                        <span class="st @inv.Status.ToString().ToLowerInvariant()">@InvoicesModel.StatusLabel(inv.Status)</span>
+                        @if (inv.Status == CfdiStatus.Failed && !string.IsNullOrEmpty(inv.Error))
+                        {
+                            <div class="muted" style="font-size:12px">@inv.Error</div>
+                        }
+                    </td>
+                    <td class="muted" style="font-size:12px">@inv.Uuid</td>
+                    <td class="muted" style="font-size:12px">@((inv.StampedAtUtc ?? inv.CreatedAtUtc).ToString("dd/MM/yyyy HH:mm"))</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+        <p class="muted" style="margin-top:10px">Se muestran las 100 más recientes que coinciden con el filtro.</p>
+    }
+</div>
