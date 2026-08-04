@@ -1,4 +1,6 @@
 @page
+@using System.Globalization
+@using System.Text.Json
 @using SchoolPOS.Portal.Web.Pages
 @model SchoolPOS.Portal.Web.Pages.TransactionsModel
 @{
@@ -12,23 +14,67 @@
         (Model.To is null ? "" : $"&To={Model.To:yyyy-MM-dd}");
 }
 
+@functions {
+    static readonly TimeZoneInfo MxTz = ResolveTz();
+    static readonly CultureInfo EsMx = CultureInfo.GetCultureInfo("es-MX");
+
+    static TimeZoneInfo ResolveTz()
+    {
+        foreach (var id in new[] { "America/Mexico_City", "Central Standard Time (Mexico)" })
+            try { return TimeZoneInfo.FindSystemTimeZoneById(id); } catch { }
+        return TimeZoneInfo.Utc;
+    }
+
+    static DateTime Local(DateTime utc) =>
+        TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), MxTz);
+
+    static string DayHeading(DateTime localDate)
+    {
+        var today = Local(DateTime.UtcNow).Date;
+        if (localDate == today) return "Hoy";
+        if (localDate == today.AddDays(-1)) return "Ayer";
+        // es-MX da el día y el mes en minúscula ("lunes, 28 de julio de 2026"); sólo se
+        // capitaliza la primera letra — los meses y "de" van en minúscula en español.
+        var s = localDate.ToString("dddd, dd 'de' MMMM 'de' yyyy", EsMx);
+        return char.ToUpper(s[0], EsMx) + s.Substring(1);
+    }
+
+    // Ícono + tono del recuadro según el tipo de movimiento.
+    static (string ico, string tone) TypeVisual(string t) => t switch
+    {
+        nameof(SchoolPOS.Domain.Enums.MovementType.TopUp)      => ("💰", "in"),
+        nameof(SchoolPOS.Domain.Enums.MovementType.Sale)       => ("🛒", "out"),
+        nameof(SchoolPOS.Domain.Enums.MovementType.Refund)     => ("↩", "in"),
+        nameof(SchoolPOS.Domain.Enums.MovementType.Adjustment) => ("⚙", "neutral"),
+        _ => ("•", "neutral"),
+    };
+
+    static string Signed(decimal amount) =>
+        (amount >= 0 ? "+" : "") + amount.ToString("C2");
+}
+
 @section Head {
     <style>
-        .tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
-        .tabs a { padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line);
-                  background: #fff; color: var(--muted); font-size: 14px; font-weight: 600; }
-        .tabs a:hover { border-color: var(--primary); color: var(--primary); text-decoration: none; }
-        .tabs a.on { background: var(--primary); border-color: var(--primary); color: #fff; }
-        .totals { display: flex; gap: 24px; flex-wrap: wrap; }
-        .totals .t span { display: block; font-size: 13px; color: var(--muted); font-weight: 600; }
-        .totals .t strong { font-size: 20px; font-weight: 800; }
+        .tx-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+        .filter-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+        .filter-row > div { min-width: 150px; }
     </style>
 }
 
-<h1>Movimientos</h1>
+<div class="tx-head">
+    <div>
+        <div class="eyebrow2">Movimientos</div>
+        <h1 style="margin:8px 0 0">Estado de cuenta</h1>
+        <p class="sub">Recargas y consumos del monedero, día por día.</p>
+    </div>
+    @if (Model.Selected is not null && Model.Movements.Count > 0)
+    {
+        <button type="button" class="btn ghost" id="csv-btn"><span aria-hidden="true">⬇</span> Descargar CSV</button>
+    }
+</div>
 
 <div class="card">
-    <form method="get" class="row" style="align-items:flex-end">
+    <form method="get" class="filter-row">
         <input type="hidden" name="Kind" value="@Model.Kind" />
         <div>
             <label>Alumno</label>
@@ -47,7 +93,7 @@
             <label>Hasta</label>
             <input type="date" name="To" value="@(Model.To?.ToString("yyyy-MM-dd"))" />
         </div>
-        <div style="max-width:140px">
+        <div style="max-width:140px;min-width:0">
             <label>&nbsp;</label>
             <button class="btn" type="submit">Filtrar</button>
         </div>
@@ -57,21 +103,22 @@
 @if (Model.Selected is null)
 {
     <div class="card">
-        <p class="muted">Aún no has vinculado a ningún alumno.</p>
-        <p style="margin-top:12px"><a class="btn" href="/Students">Vincular un alumno</a></p>
+        <div class="empty">
+            <div class="em" aria-hidden="true">🎒</div>
+            <p>Aún no has vinculado a ningún alumno.</p>
+            <p style="margin-top:14px"><a class="btn" href="/Students">Vincular un alumno</a></p>
+        </div>
     </div>
 }
 else
 {
-    <div class="card">
-        <div class="totals">
-            <div class="t"><span>Abonos del periodo</span><strong style="color:var(--success)">@Model.TotalIn.ToString("C2")</strong></div>
-            <div class="t"><span>Consumos del periodo</span><strong style="color:var(--danger)">@Model.TotalOut.ToString("C2")</strong></div>
-            <div class="t"><span>Saldo actual</span><strong style="color:var(--primary)">@Model.Selected.Balance.ToString("C2")</strong></div>
-        </div>
+    <div class="kpi-grid">
+        <div class="kpi green"><div class="n">@Model.TotalIn.ToString("C2")</div><div class="l">Abonos del periodo</div></div>
+        <div class="kpi"><div class="n" style="color:#dc2626">@Model.TotalOut.ToString("C2")</div><div class="l">Consumos del periodo</div></div>
+        <div class="kpi accent"><div class="n">@Model.Selected.Balance.ToString("C2")</div><div class="l">Saldo actual · @Model.Selected.FullName</div></div>
     </div>
 
-    <nav class="tabs">
+    <nav class="chips" style="margin-bottom:14px">
         <a href="@tabUrl(MovementFilter.All)" class="@(Model.Kind == MovementFilter.All ? "on" : "")">Todo</a>
         <a href="@tabUrl(MovementFilter.TopUps)" class="@(Model.Kind == MovementFilter.TopUps ? "on" : "")">Recargas</a>
         <a href="@tabUrl(MovementFilter.Purchases)" class="@(Model.Kind == MovementFilter.Purchases ? "on" : "")">Consumos</a>
@@ -80,25 +127,83 @@ else
     <div class="card">
         @if (Model.Movements.Count == 0)
         {
-            <p class="muted">Sin movimientos en el rango seleccionado.</p>
+            <div class="empty">
+                <div class="em" aria-hidden="true">🧾</div>
+                <p>Sin movimientos en el rango seleccionado.</p>
+            </div>
         }
         else
         {
-            <table>
-                <thead><tr><th>Fecha (UTC)</th><th>Tipo</th><th>Referencia</th><th style="text-align:right">Importe</th><th style="text-align:right">Saldo</th></tr></thead>
-                <tbody>
-                @foreach (var m in Model.Movements)
+            @* Orden más reciente primero y agrupado por día local (America/Mexico_City). *@
+            var ordered = Model.Movements
+                .Select(m => new { m, L = Local(m.CreatedAtUtc) })
+                .OrderByDescending(x => x.L)
+                .ToList();
+            var groups = ordered.GroupBy(x => x.L.Date).OrderByDescending(g => g.Key);
+            var csv = ordered.Select(x => new
+            {
+                fecha = x.L.ToString("yyyy-MM-dd HH:mm"),
+                tipo = TransactionsModel.TypeLabel(x.m.Type),
+                referencia = x.m.Reference ?? "",
+                importe = x.m.Amount.ToString("0.00", CultureInfo.InvariantCulture),
+                saldo = x.m.BalanceAfter.ToString("0.00", CultureInfo.InvariantCulture),
+            }).ToList();
+
+            <div class="stmt">
+                @foreach (var g in groups)
                 {
-                    <tr>
-                        <td>@m.CreatedAtUtc.ToString("dd/MM/yyyy HH:mm")</td>
-                        <td><span class="pill">@TransactionsModel.TypeLabel(m.Type)</span></td>
-                        <td class="muted">@m.Reference</td>
-                        <td style="text-align:right;color:@(m.Amount < 0 ? "var(--danger)" : "var(--success)")">@m.Amount.ToString("C2")</td>
-                        <td style="text-align:right">@m.BalanceAfter.ToString("C2")</td>
-                    </tr>
+                    var net = g.Sum(x => x.m.Amount);
+                    <div class="day-head">
+                        <span class="d">@DayHeading(g.Key)</span>
+                        <span class="net @(net >= 0 ? "amt-in" : "amt-out")">Neto @Signed(net)</span>
+                    </div>
+                    @foreach (var x in g)
+                    {
+                        var v = TypeVisual(x.m.Type);
+                        <div class="stmt-row">
+                            <div class="stmt-ico @v.tone" aria-hidden="true">@v.ico</div>
+                            <div class="stmt-main">
+                                <div class="ttl">@TransactionsModel.TypeLabel(x.m.Type)</div>
+                                <div class="sub2">@x.L.ToString("HH:mm")@(string.IsNullOrEmpty(x.m.Reference) ? "" : $" · Ref. {x.m.Reference}")</div>
+                            </div>
+                            <div class="stmt-amt">
+                                <div class="a @(x.m.Amount >= 0 ? "amt-in" : "amt-out")">@Signed(x.m.Amount)</div>
+                                <div class="b">Saldo @x.m.BalanceAfter.ToString("C2")</div>
+                            </div>
+                        </div>
+                    }
                 }
-                </tbody>
-            </table>
+            </div>
+
+            <script id="stmt-json" type="application/json">@Html.Raw(JsonSerializer.Serialize(csv))</script>
+            <script>
+                (function () {
+                    var btn = document.getElementById('csv-btn');
+                    if (!btn) return;
+                    function cell(v) {
+                        v = String(v == null ? '' : v);
+                        // Evita fórmulas en Excel, pero deja los números con signo (-25.00) como números.
+                        if (/^[=+@@]/.test(v) || /^-(?!\d)/.test(v)) v = "'" + v;
+                        if (/[",\n]/.test(v)) v = '"' + v.replace(/"/g, '""') + '"';
+                        return v;
+                    }
+                    btn.addEventListener('click', function () {
+                        var data = JSON.parse(document.getElementById('stmt-json').textContent || '[]');
+                        var head = ['Fecha', 'Tipo', 'Referencia', 'Importe', 'Saldo'];
+                        var lines = [head.join(',')];
+                        data.forEach(function (r) {
+                            lines.push([r.fecha, r.tipo, r.referencia, r.importe, r.saldo].map(cell).join(','));
+                        });
+                        var csv = '﻿' + lines.join('\r\n');       // BOM para acentos en Excel
+                        var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                        var a = document.createElement('a');
+                        a.href = URL.createObjectURL(blob);
+                        a.download = 'movimientos.csv';
+                        document.body.appendChild(a); a.click();
+                        document.body.removeChild(a); URL.revokeObjectURL(a.href);
+                    });
+                })();
+            </script>
         }
     </div>
 }

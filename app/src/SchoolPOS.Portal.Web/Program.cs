@@ -106,6 +106,8 @@ builder.Services.AddAuthorization(options =>
 {
     // Panel del proveedor: requiere identidad de proveedor (comisiones vendor-wide).
     options.AddPolicy("Vendor", policy => policy.RequireClaim(ClaimsExtensions.PortalRoleClaim, "vendor"));
+    // Panel de la tienda escolar: operador del POS, limitado a su propia escuela.
+    options.AddPolicy("School", policy => policy.RequireClaim(ClaimsExtensions.PortalRoleClaim, "school"));
 });
 builder.Services.AddRazorPages();
 

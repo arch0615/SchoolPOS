@@ -1,0 +1,168 @@
+@using System.Globalization
+@using SchoolPOS.Domain.Enums
+@using SchoolPOS.Portal.Web.Infrastructure
+@model StoreDashboardData
+
+@functions {
+    static readonly TimeZoneInfo Tz = ResolveTz();
+    static readonly CultureInfo EsMx = CultureInfo.GetCultureInfo("es-MX");
+    static TimeZoneInfo ResolveTz()
+    {
+        foreach (var id in new[] { "America/Mexico_City", "Central Standard Time (Mexico)" })
+            try { return TimeZoneInfo.FindSystemTimeZoneById(id); } catch { }
+        return TimeZoneInfo.Utc;
+    }
+    static string LocalMoment(DateTime utc)
+    {
+        var l = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), Tz);
+        var today = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, Tz).Date;
+        if (l.Date == today) return $"Hoy · {l:HH:mm}";
+        if (l.Date == today.AddDays(-1)) return $"Ayer · {l:HH:mm}";
+        return l.ToString("dd MMM · HH:mm", EsMx);
+    }
+    static string Tender(TenderType t) => t == TenderType.Cash ? "Efectivo" : "Saldo";
+    static (string label, string cls) SaleState(SaleStatus s) => s switch
+    {
+        SaleStatus.Completed => ("Completada", "ok"),
+        SaleStatus.PartiallyRefunded => ("Parcial", "warn"),
+        SaleStatus.Refunded => ("Devuelta", "no"),
+        _ => (s.ToString(), "info"),
+    };
+}
+
+<div class="kpi-grid">
+    <div class="kpi green"><div class="n">@Model.SalesToday.ToString("C2")</div><div class="l">Ventas de hoy</div></div>
+    <div class="kpi"><div class="n">@Model.TicketsToday</div><div class="l">Tickets de hoy</div></div>
+    <div class="kpi"><div class="n">@Model.AvgTicket.ToString("C2")</div><div class="l">Ticket promedio</div></div>
+    <div class="kpi accent">
+        <div class="n">@(Model.CashSessionOpen ? Model.CashInDrawer.ToString("C2") : "—")</div>
+        <div class="l">@(Model.CashSessionOpen ? "Efectivo en caja" : "Caja cerrada")</div>
+    </div>
+    <div class="kpi"><div class="n">@Model.InventoryValue.ToString("C2")</div><div class="l">Valor de inventario</div></div>
+    <div class="kpi"><div class="n">@Model.ActiveProducts</div><div class="l">Productos activos</div></div>
+    <div class="kpi @(Model.LowStockCount > 0 ? "amber" : "")"><div class="n">@Model.LowStockCount</div><div class="l">Alertas de stock bajo</div></div>
+</div>
+
+<div class="row">
+    <div class="card">
+        <h2>Ventas últimos 7 días</h2>
+        @{ var max = Model.Trend7d.Count == 0 ? 0m : Model.Trend7d.Max(d => d.Total); if (max <= 0m) { max = 1m; } }
+        <div class="trend">
+            @foreach (var d in Model.Trend7d)
+            {
+                var h = (int)Math.Round((double)(d.Total / max) * 100);
+                <div class="col @(d.IsToday ? "today" : "")">
+                    <div class="val">@(d.Total > 0 ? d.Total.ToString("0") : "")</div>
+                    <div class="bar" style="height:@(Math.Max(h, 2))%"></div>
+                    <div class="cap">@d.Label</div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Ventas por categoría <span class="muted" style="font-weight:500;font-size:13px">· 30 días</span></h2>
+        @if (Model.Categories.Count == 0)
+        {
+            <div class="empty"><div class="em" aria-hidden="true">🥪</div><p>Aún no hay ventas.</p></div>
+        }
+        else
+        {
+            <div class="catbar">
+                @foreach (var c in Model.Categories)
+                {
+                    <div class="row2">
+                        <span class="nm">@c.Name</span>
+                        <span class="track"><span class="fill" style="width:@c.Pct.ToString("0.#", CultureInfo.InvariantCulture)%"></span></span>
+                        <span class="amt">@c.Amount.ToString("C0")</span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<div class="row">
+    <div class="card">
+        <h2>Más vendidos <span class="muted" style="font-weight:500;font-size:13px">· 30 días</span></h2>
+        @if (Model.TopProducts.Count == 0)
+        {
+            <div class="empty"><div class="em" aria-hidden="true">🛒</div><p>Aún no hay ventas registradas.</p></div>
+        }
+        else
+        {
+            <table>
+                <thead><tr><th>Producto</th><th style="text-align:right">Vendidos</th><th style="text-align:right">Importe</th></tr></thead>
+                <tbody>
+                @foreach (var t in Model.TopProducts)
+                {
+                    <tr><td>@t.Name</td><td style="text-align:right">@t.Qty.ToString("0.##")</td><td style="text-align:right;font-weight:700">@t.Amount.ToString("C2")</td></tr>
+                }
+                </tbody>
+            </table>
+        }
+    </div>
+
+    <div class="card">
+        <h2>Stock bajo</h2>
+        @if (Model.LowStock.Count == 0)
+        {
+            <div class="empty"><div class="em" aria-hidden="true">✅</div><p>Sin alertas de inventario.</p></div>
+        }
+        else
+        {
+            <table>
+                <thead><tr><th>Producto</th><th style="text-align:right">Existencia</th><th style="text-align:right">Mínimo</th></tr></thead>
+                <tbody>
+                @foreach (var p in Model.LowStock)
+                {
+                    <tr><td>@p.Name</td><td style="text-align:right"><span class="status warn">@p.Stock.ToString("0.##")</span></td><td style="text-align:right" class="muted">@p.Min.ToString("0.##")</td></tr>
+                }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <h2>Resumen de caja</h2>
+    @if (!Model.CashSessionOpen)
+    {
+        <p class="muted">No hay una sesión de caja abierta.</p>
+    }
+    else
+    {
+        <div class="cash-grid">
+            <div><div class="cl">Estado</div><div class="cv"><span class="status ok">Abierta</span></div></div>
+            <div><div class="cl">Fondo inicial</div><div class="cv">@Model.OpeningFloat.ToString("C2")</div></div>
+            <div><div class="cl">Ventas en efectivo hoy</div><div class="cv">@Model.CashSalesToday · @Model.CashSalesAmount.ToString("C2")</div></div>
+            <div><div class="cl">Efectivo esperado en caja</div><div class="cv" style="color:var(--primary);font-weight:800">@Model.CashInDrawer.ToString("C2")</div></div>
+        </div>
+    }
+</div>
+
+<div class="card">
+    <h2>Ventas recientes</h2>
+    @if (Model.RecentSales.Count == 0)
+    {
+        <div class="empty"><div class="em" aria-hidden="true">🧾</div><p>Sin ventas todavía. Aparecerán aquí conforme el POS registre ventas.</p></div>
+    }
+    else
+    {
+        <table>
+            <thead><tr><th>Fecha</th><th>Pago</th><th>Estado</th><th style="text-align:right">Total</th></tr></thead>
+            <tbody>
+            @foreach (var s in Model.RecentSales)
+            {
+                var st = SaleState(s.Status);
+                <tr>
+                    <td>@LocalMoment(s.CreatedAtUtc)</td>
+                    <td>@Tender(s.Tender)</td>
+                    <td><span class="status @st.cls">@st.label</span></td>
+                    <td style="text-align:right;font-weight:700">@s.Total.ToString("C2")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</div>

@@ -1,0 +1,15 @@
+@page
+@model SchoolPOS.Portal.Web.Pages.School.StoreModel
+@{
+    ViewData["Title"] = "Mi tienda";
+}
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow2">Tienda escolar</div>
+        <h1 style="margin:8px 0 0">Mi tienda</h1>
+        <p class="sub">Resumen de ventas, caja e inventario de tu escuela.</p>
+    </div>
+</div>
+
+<partial name="_StoreDashboard" model="Model.Data" />

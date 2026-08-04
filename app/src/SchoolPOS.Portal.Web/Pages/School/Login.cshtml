@@ -1,0 +1,53 @@
+@page
+@model SchoolPOS.Portal.Web.Pages.School.LoginModel
+@{
+    ViewData["Title"] = "Acceso tienda escolar";
+}
+@section Head {
+    <link rel="stylesheet" href="/css/auth.css" asp-append-version="true" />
+}
+
+<div class="auth-wrap">
+    <div class="auth-card">
+        <aside class="auth-brand">
+            <div class="logo"><span class="dot">🛒</span> LoncherApp</div>
+            <h2>Tienda escolar</h2>
+            <p class="tag">Consulta las ventas, la caja y el inventario de tu escuela en tiempo real.</p>
+            <ul>
+                <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Ventas y ticket promedio del día</li>
+                <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Efectivo en caja y stock bajo</li>
+                <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Solo los datos de tu propia escuela</li>
+            </ul>
+        </aside>
+
+        <div class="auth-form">
+            <h1>Acceso de la tienda</h1>
+            <p class="sub">Entra con tu usuario de operador del POS.</p>
+
+            @if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
+
+            <form method="post">
+                @if (Model.Schools.Count > 1)
+                {
+                    <label>Escuela</label>
+                    <select name="SchoolId" aria-label="Escuela">
+                        @foreach (var s in Model.Schools)
+                        {
+                            <option value="@s.Id" selected="@(Model.SchoolId == s.Id)">@s.Name</option>
+                        }
+                    </select>
+                }
+                else
+                {
+                    <input type="hidden" name="SchoolId" value="@Model.SchoolId" />
+                }
+                <label>Usuario</label>
+                <input asp-for="Username" autocomplete="username" autofocus />
+                <label>Contraseña</label>
+                <input asp-for="Password" type="password" autocomplete="current-password" placeholder="••••••••" />
+                <button class="btn" type="submit">Entrar</button>
+                <p class="alt"><a href="/">← Volver al inicio</a></p>
+            </form>
+        </div>
+    </div>
+</div>

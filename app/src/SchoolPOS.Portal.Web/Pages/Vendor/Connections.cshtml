@@ -2,53 +2,61 @@
 @model SchoolPOS.Portal.Web.Pages.Vendor.ConnectionsModel
 @{
     ViewData["Title"] = "Conexiones de pago";
+    var connected = Model.Schools.Count(s => s.Connected);
 }
 @if (Model.Connected == 1) { <div class="msg ok">Cuenta de Mercado Pago conectada correctamente.</div> }
 @if (Model.Error == 1) { <div class="msg error">No se pudo completar la conexión. Intenta de nuevo.</div> }
 
-<div class="card">
-    <div class="pill">Panel del proveedor</div>
-    <h1 style="margin-top:8px">Conexiones de Mercado Pago</h1>
-    <p class="muted">Cada escuela conecta su propia cuenta de Mercado Pago (OAuth). Así el pago se
-        cobra a nombre de la escuela y la comisión se separa automáticamente a tu cuenta.</p>
-    <p><a href="/Vendor">← Volver a comisiones</a></p>
+<div class="page-head">
+    <div>
+        <div class="eyebrow2">Panel del proveedor</div>
+        <h1 style="margin:8px 0 0">Conexiones de Mercado Pago</h1>
+        <p class="sub">@connected de @Model.Schools.Count escuelas con cobro conectado. Cada escuela conecta su propia
+            cuenta (OAuth): el pago se cobra a su nombre y la comisión se separa automáticamente a tu cuenta.</p>
+    </div>
+    <a class="btn ghost" href="/Vendor">← Volver a comisiones</a>
 </div>
 
-<div class="card">
-    @if (Model.Schools.Count == 0)
-    {
-        <p class="muted">No hay escuelas registradas.</p>
-    }
-    else
-    {
-        <table>
-            <thead>
-                <tr><th>Escuela</th><th>Estado</th><th>Cuenta (user id)</th><th style="text-align:right">Acción</th></tr>
-            </thead>
-            <tbody>
-            @foreach (var s in Model.Schools)
-            {
-                <tr>
-                    <td>@s.Name</td>
-                    <td>
-                        @if (s.Connected)
+@if (Model.Schools.Count == 0)
+{
+    <div class="card"><p class="muted">No hay escuelas registradas.</p></div>
+}
+else
+{
+    <div class="conn-grid">
+        @foreach (var s in Model.Schools)
+        {
+            <article class="conn">
+                <div class="top">
+                    <h3>@s.Name</h3>
+                    @if (s.Connected)
+                    {
+                        <span class="status ok">● Conectada</span>
+                    }
+                    else
+                    {
+                        <span class="status no">● Sin conectar</span>
+                    }
+                </div>
+                <div class="muted" style="font-size:13px;min-height:38px">
+                    @if (s.Connected)
+                    {
+                        <div>Cuenta: <strong>@s.ProviderUserId</strong></div>
+                        @if (s.ConnectedAtUtc is not null)
                         {
-                            <span class="pill" style="background:#eafaf1;color:#1e7d48">Conectada</span>
+                            <div>Conectada el @s.ConnectedAtUtc.Value.ToString("dd/MM/yyyy")</div>
                         }
-                        else
-                        {
-                            <span class="pill" style="background:#fdecea;color:#c0392b">Sin conectar</span>
-                        }
-                    </td>
-                    <td class="muted">@s.ProviderUserId</td>
-                    <td style="text-align:right">
-                        <a class="btn ghost" style="padding:6px 12px;min-width:0" href="/oauth/mercadopago/start?schoolId=@s.SchoolId">
-                            @(s.Connected ? "Reconectar" : "Conectar Mercado Pago")
-                        </a>
-                    </td>
-                </tr>
-            }
-            </tbody>
-        </table>
-    }
-</div>
+                    }
+                    else
+                    {
+                        <div>La escuela aún no puede recibir recargas hasta conectar su cuenta.</div>
+                    }
+                </div>
+                <a class="btn @(s.Connected ? "ghost" : "accent")" style="margin-top:14px;width:100%"
+                   href="/oauth/mercadopago/start?schoolId=@s.SchoolId">
+                    @(s.Connected ? "Reconectar" : "Conectar Mercado Pago")
+                </a>
+            </article>
+        }
+    </div>
+}

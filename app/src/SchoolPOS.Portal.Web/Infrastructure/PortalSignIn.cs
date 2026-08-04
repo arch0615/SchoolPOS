@@ -32,4 +32,18 @@ public static class PortalSignIn
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         return http.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
     }
+
+    /// <summary>Emite la cookie de una tienda escolar: operador del POS, limitado a su escuela.</summary>
+    public static Task SignInSchoolAsync(HttpContext http, User user)
+    {
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(ClaimTypes.Name, user.Username),
+            new(ClaimsExtensions.PortalRoleClaim, "school"),
+            new(ClaimsExtensions.SchoolIdClaim, user.SchoolId.ToString()),
+        };
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        return http.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+    }
 }

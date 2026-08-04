@@ -4,25 +4,16 @@
     ViewData["Title"] = "Monedero";
 }
 
-@section Head {
-    <style>
-        .amounts { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
-        .amounts button { flex: 1 1 0; min-width: 90px; padding: 14px 10px; border: 1px solid var(--line);
-                          background: #fff; border-radius: 12px; font-size: 16px; font-weight: 700;
-                          color: var(--text); cursor: pointer; }
-        .amounts button:hover { border-color: var(--primary); color: var(--primary); }
-        .amounts button[aria-pressed="true"] { border-color: var(--primary); background: var(--primary-tint); color: var(--primary-dark); }
-        .method { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--primary);
-                  background: var(--primary-tint); border-radius: 12px; }
-        .method .ico { font-size: 22px; }
-        .method strong { display: block; font-size: 15px; }
-    </style>
-}
-
 @if (!string.IsNullOrEmpty(Model.Message)) { <div class="msg ok">@Model.Message</div> }
 @if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
 
-<h1>Monedero</h1>
+<div class="page-head">
+    <div>
+        <div class="eyebrow2">Monedero</div>
+        <h1 style="margin:8px 0 0">Recargar saldo</h1>
+        <p class="sub">Agrega saldo al monedero de tu hijo en segundos.</p>
+    </div>
+</div>
 
 @if (Model.Selected is null)
 {
@@ -60,13 +51,13 @@ else
     </section>
 
     <div class="card">
-        <h2>Recargar saldo</h2>
+        <h2>Elige el monto</h2>
         <form method="post" asp-page-handler="TopUp">
             <input type="hidden" name="studentId" value="@Model.Selected.StudentId" />
             <input type="hidden" name="accountId" value="@Model.Selected.AccountId" />
 
             <label id="lbl-monto">Monto (MXN)</label>
-            <div class="amounts" role="group" aria-labelledby="lbl-monto">
+            <div class="amount-pad" role="group" aria-labelledby="lbl-monto">
                 @foreach (var p in Model.Presets)
                 {
                     <button type="button" class="preset" data-amount="@p.ToString("0.##")" aria-pressed="false">@p.ToString("C0")</button>
@@ -78,8 +69,8 @@ else
             <p class="muted">Entre @Model.MinTopUp.ToString("C2") y @Model.MaxTopUp.ToString("C2"). El estudiante recibe el 100% del monto recargado.</p>
 
             <label>Método de pago</label>
-            <div class="method">
-                <span class="ico" aria-hidden="true">💳</span>
+            <div class="method-card">
+                <span class="mico" aria-hidden="true">💳</span>
                 <span>
                     <strong>Mercado Pago</strong>
                     <span class="muted">Tarjeta, transferencia o efectivo en tiendas</span>

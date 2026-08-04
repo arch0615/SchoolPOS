@@ -7,11 +7,16 @@ namespace SchoolPOS.Portal.Web.Pages.Account;
 
 public class LogoutModel : PageModel
 {
-    public async Task<IActionResult> OnPostAsync()
+    // POST desde el botón "Salir" del encabezado.
+    public Task<IActionResult> OnPostAsync() => SignOutAndRedirectAsync();
+
+    // GET directo a /Account/Logout: también cierra la sesión antes de ir al inicio.
+    public Task<IActionResult> OnGetAsync() => SignOutAndRedirectAsync();
+
+    private async Task<IActionResult> SignOutAndRedirectAsync()
     {
+        // Un solo esquema de cookie para padres y proveedores: cerrarlo borra la sesión de ambos.
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return RedirectToPage("/Index");
     }
-
-    public IActionResult OnGet() => RedirectToPage("/Index");
 }

@@ -2,82 +2,185 @@
 @model SchoolPOS.Portal.Web.Pages.DashboardModel
 @{
     ViewData["Title"] = "Mi panel";
+    var firstName = (User.Identity?.Name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+    var esMx = new System.Globalization.CultureInfo("es-MX");
+    var todayStr = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, MxTz).ToString("dddd, dd 'de' MMMM", esMx);
+    var total = Model.Students.Sum(s => s.Balance);
+    var gastado = Model.Movements.Where(m => m.Amount < 0).Sum(m => -m.Amount);
+    var lastTop = Model.Movements.Where(m => m.Amount > 0).OrderByDescending(m => m.CreatedAtUtc).FirstOrDefault();
+    const decimal lowThreshold = 50m;
+    var lowKids = Model.Students.Where(s => s.Balance < lowThreshold).ToList();
+}
+@functions {
+    static readonly TimeZoneInfo MxTz = ResolveTz();
+    static TimeZoneInfo ResolveTz()
+    {
+        foreach (var id in new[] { "America/Mexico_City", "Central Standard Time (Mexico)" })
+            try { return TimeZoneInfo.FindSystemTimeZoneById(id); } catch { }
+        return TimeZoneInfo.Utc;
+    }
+    static string LocalDate(DateTime utc)
+    {
+        var l = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), MxTz);
+        var today = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, MxTz).Date;
+        if (l.Date == today) return $"Hoy · {l:HH:mm}";
+        if (l.Date == today.AddDays(-1)) return $"Ayer · {l:HH:mm}";
+        return l.ToString("dd MMM · HH:mm", new System.Globalization.CultureInfo("es-MX"));
+    }
+    static string TypeLabel(string t) => t switch
+    {
+        "TopUp" => "Recarga", "Sale" => "Compra", "Refund" => "Reembolso", "Adjustment" => "Ajuste", _ => t
+    };
+    static string Initials(string name)
+    {
+        var p = (name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (p.Length == 0) return "?";
+        return (p[0].Substring(0, 1) + (p.Length > 1 ? p[1].Substring(0, 1) : "")).ToUpper();
+    }
+}
+
+@section Head {
+    <style>
+        .dash-greet { display:flex; align-items:baseline; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+        .dash-greet h1 { font-size:24px; margin:0; }
+        .dash-greet .date { color:var(--muted); font-size:14px; text-transform:capitalize; }
+        .lowbal { background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; border-radius:12px; padding:11px 14px;
+                  font-size:14px; font-weight:600; margin-bottom:16px; }
+        .hero { background:linear-gradient(135deg,#2563eb,#3b82f6); color:#fff; border-radius:20px; padding:26px 28px; margin-bottom:18px; }
+        .hero .lbl { opacity:.85; font-size:14px; }
+        .hero .bal { font-size:42px; font-weight:800; line-height:1.05; margin:2px 0; letter-spacing:-1px; }
+        .hero .who { opacity:.92; font-size:14px; }
+        .hero-actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:18px; }
+        .hero .btn-w { background:#fff; color:var(--primary); border-radius:11px; padding:12px 20px; font-weight:700; font-size:15px; text-decoration:none; }
+        .hero .btn-w:hover { background:#eff6ff; }
+        .achip { background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.45); color:#fff; border-radius:999px;
+                 padding:9px 14px; font-weight:700; font-size:14px; text-decoration:none; }
+        .achip:hover { background:rgba(255,255,255,.3); text-decoration:none; }
+        .hero-mini { display:flex; gap:26px; flex-wrap:wrap; margin-top:18px; padding-top:16px; border-top:1px solid rgba(255,255,255,.25); }
+        .hero-mini div { font-size:13px; opacity:.9; } .hero-mini strong { display:block; font-size:16px; opacity:1; }
+
+        .sec-title { font-size:14px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin:0 0 10px; }
+        .kids { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+        .kid { display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--line); border-radius:14px;
+               padding:10px 14px; text-decoration:none; color:var(--text); min-width:190px; transition:.12s; }
+        .kid:hover { border-color:#c7d7f2; text-decoration:none; }
+        .kid.is-active { border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+        .kid-av { width:40px; height:40px; border-radius:50%; background:var(--primary-tint); color:var(--primary-dark);
+                  font-weight:800; display:flex; align-items:center; justify-content:center; font-size:15px; flex:0 0 40px; }
+        .kid-info strong { display:block; font-size:14px; } .kid-info small { color:var(--muted); font-size:13px; }
+        .kid.add { color:var(--primary); font-weight:700; }
+        .kid.add .kid-av { background:var(--primary); color:#fff; }
+
+        .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; }
+        .stat { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 18px; }
+        .stat .n { font-size:22px; font-weight:800; letter-spacing:-.5px; } .stat .l { color:var(--muted); font-size:13px; margin-top:2px; }
+
+        .mv { list-style:none; margin:0; padding:0; }
+        .mv li { display:flex; align-items:center; gap:12px; padding:12px 2px; border-bottom:1px solid var(--line); }
+        .mv li:last-child { border-bottom:0; }
+        .mv-ico { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:800; flex:0 0 40px; }
+        .mv-ico.pos { background:#e7f9ee; color:#16a34a; } .mv-ico.neg { background:#fef2f2; color:#dc2626; }
+        .mv-main { flex:1; min-width:0; } .mv-main strong { font-size:14px; display:block; } .mv-main small { color:var(--muted); font-size:12px; }
+        .mv-amt { font-weight:800; font-size:15px; white-space:nowrap; }
+        .mv-amt.pos { color:#16a34a; } .mv-amt.neg { color:#dc2626; }
+        .empty { text-align:center; padding:34px 16px; color:var(--muted); }
+        .empty .big { font-size:34px; }
+        @@media (max-width:640px) { .stats { grid-template-columns:1fr 1fr; } .kid { min-width:0; flex:1 1 46%; } }
+        /* Blue panel border matching the page container (topbar) blue. */
+        main.content .card { border-color:#2663db; }
+    </style>
 }
 
 @if (!string.IsNullOrEmpty(Model.Message)) { <div class="msg ok">@Model.Message</div> }
 @if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
 
+<div class="dash-greet">
+    <h1>Hola@(string.IsNullOrEmpty(firstName) ? "" : $", {firstName}") 👋</h1>
+    <span class="date">@todayStr</span>
+</div>
+
 @if (Model.Students.Count == 0)
 {
-    <div class="card">
-        <h1>Bienvenido</h1>
-        <p class="muted">Aún no has vinculado a ningún alumno. Vincula uno con su matrícula para ver su saldo y recargarlo.</p>
-        <div style="margin-top:12px"><a class="btn" href="/Students">Vincular un alumno</a></div>
+    <div class="card empty">
+        <div class="big">🎒</div>
+        <h2 style="justify-content:center">Vincula a tu primer alumno</h2>
+        <p class="muted">Conéctalo con su matrícula para ver su saldo y recargarlo en segundos.</p>
+        <div style="margin-top:14px"><a class="btn" href="/Students">Vincular un alumno</a></div>
     </div>
 }
 else
 {
-    <section class="balance-card">
-        <div class="row" style="align-items:center">
-            <div>
-                <div style="opacity:.85;font-size:14px">Saldo disponible</div>
-                <div class="balance">@((Model.Selected?.Balance ?? 0).ToString("C2"))</div>
-                <div style="opacity:.9;font-size:13px;margin-top:2px">@Model.Selected?.FullName · @Model.Selected?.EnrollmentNo</div>
-            </div>
-            <div style="text-align:right">
-                <div style="opacity:.85;font-size:13px;margin-bottom:6px">Cambiar estudiante</div>
-                <form method="get">
-                    <select name="studentId" onchange="this.form.submit()">
-                        @foreach (var s in Model.Students)
-                        {
-                            <option value="@s.StudentId" selected="@(Model.Selected?.StudentId == s.StudentId)">
-                                @s.FullName · @s.EnrollmentNo
-                            </option>
-                        }
-                    </select>
-                </form>
-            </div>
+    if (lowKids.Count > 0)
+    {
+        <div class="lowbal">⚠️ Saldo bajo: @string.Join(", ", lowKids.Select(k => $"{k.FullName} ({k.Balance:C2})")). Considera recargar.</div>
+    }
+
+    <!-- Balance hero -->
+    <section class="hero">
+        <div class="lbl">Saldo disponible</div>
+        <div class="bal">@((Model.Selected?.Balance ?? 0).ToString("C2"))</div>
+        <div class="who">@Model.Selected?.FullName · @Model.Selected?.EnrollmentNo</div>
+        <div class="hero-actions">
+            <a class="btn-w" href="/Wallet?studentId=@Model.Selected!.StudentId">Recargar saldo</a>
+            <a class="achip" href="/Wallet?studentId=@Model.Selected!.StudentId&amount=100">+ $100</a>
+            <a class="achip" href="/Wallet?studentId=@Model.Selected!.StudentId&amount=200">+ $200</a>
+            <a class="achip" href="/Wallet?studentId=@Model.Selected!.StudentId&amount=500">+ $500</a>
+        </div>
+        <div class="hero-mini">
+            <div>Gastado reciente<strong>@gastado.ToString("C2")</strong></div>
+            <div>Última recarga<strong>@(lastTop is null ? "—" : lastTop.Amount.ToString("C2"))</strong></div>
         </div>
     </section>
 
-    <div class="row">
-        <div class="card">
-            <h2>Recargar saldo</h2>
-            <p class="muted">Abona saldo con tarjeta, transferencia o efectivo. El estudiante recibe el 100% del monto recargado.</p>
-            <div style="margin-top:12px">
-                <a class="btn accent" href="/Wallet?studentId=@Model.Selected!.StudentId">Ir al monedero</a>
-            </div>
-        </div>
-        <div class="card">
-            <h2>Mis alumnos</h2>
-            <p class="muted">@Model.Students.Count @(Model.Students.Count == 1 ? "alumno vinculado" : "alumnos vinculados"). Consulta su saldo o vincula uno nuevo.</p>
-            <div style="margin-top:12px"><a class="btn ghost" href="/Students">Ver mis alumnos</a></div>
-        </div>
+    <!-- Child switcher -->
+    <p class="sec-title">Mis alumnos</p>
+    <div class="kids">
+        @foreach (var s in Model.Students)
+        {
+            <a class="kid @(Model.Selected?.StudentId == s.StudentId ? "is-active" : "")" href="/Dashboard?studentId=@s.StudentId">
+                <span class="kid-av">@Initials(s.FullName)</span>
+                <span class="kid-info"><strong>@s.FullName</strong><small>@s.Balance.ToString("C2")</small></span>
+            </a>
+        }
+        <a class="kid add" href="/Students">
+            <span class="kid-av">＋</span><span class="kid-info"><strong>Vincular</strong><small>otro alumno</small></span>
+        </a>
     </div>
 
+    <!-- Quick stats -->
+    <div class="stats">
+        <div class="stat"><div class="n">@total.ToString("C2")</div><div class="l">Saldo total</div></div>
+        <div class="stat"><div class="n">@Model.Students.Count</div><div class="l">@(Model.Students.Count == 1 ? "Alumno vinculado" : "Alumnos vinculados")</div></div>
+        <div class="stat"><div class="n">@gastado.ToString("C2")</div><div class="l">Gastado reciente</div></div>
+    </div>
+
+    <!-- Recent movements -->
     <div class="card">
-        <h2>Movimientos recientes</h2>
+        <div class="row" style="align-items:center;margin-bottom:6px">
+            <h2 style="margin:0">Movimientos recientes</h2>
+            <a href="/Transactions?StudentId=@Model.Selected!.StudentId" style="margin-left:auto;font-size:14px;font-weight:700">Ver todo →</a>
+        </div>
         @if (Model.Movements.Count == 0)
         {
-            <p class="muted">Sin movimientos todavía.</p>
+            <div class="empty"><div class="big">📭</div><p>Aún no hay movimientos para @Model.Selected?.FullName.</p>
+                <a class="btn" href="/Wallet?studentId=@Model.Selected!.StudentId">Hacer la primera recarga</a></div>
         }
         else
         {
-            <table>
-                <thead><tr><th>Fecha (UTC)</th><th>Tipo</th><th style="text-align:right">Importe</th><th style="text-align:right">Saldo</th></tr></thead>
-                <tbody>
+            <ul class="mv">
                 @foreach (var m in Model.Movements)
                 {
-                    <tr>
-                        <td>@m.CreatedAtUtc.ToString("dd/MM/yyyy HH:mm")</td>
-                        <td><span class="pill">@m.Type</span></td>
-                        <td style="text-align:right;color:@(m.Amount < 0 ? "var(--danger)" : "var(--success)")">@m.Amount.ToString("C2")</td>
-                        <td style="text-align:right">@m.BalanceAfter.ToString("C2")</td>
-                    </tr>
+                    var pos = m.Amount >= 0;
+                    <li>
+                        <span class="mv-ico @(pos ? "pos" : "neg")">@(pos ? "↑" : "↓")</span>
+                        <span class="mv-main">
+                            <strong>@TypeLabel(m.Type.ToString())</strong>
+                            <small>@LocalDate(m.CreatedAtUtc) · Saldo: @m.BalanceAfter.ToString("C2")</small>
+                        </span>
+                        <span class="mv-amt @(pos ? "pos" : "neg")">@(pos ? "+" : "")@m.Amount.ToString("C2")</span>
+                    </li>
                 }
-                </tbody>
-            </table>
-            <p style="margin-top:10px"><a href="/Transactions?StudentId=@Model.Selected!.StudentId">Ver historial completo →</a></p>
+            </ul>
         }
     </div>
 }

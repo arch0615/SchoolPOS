@@ -3,16 +3,35 @@
 @{
     ViewData["Title"] = "Acceso proveedor";
 }
-<div class="card" style="max-width:420px;margin:0 auto">
-    <div class="pill">Panel del proveedor</div>
-    <h1 style="margin-top:10px">Comisiones</h1>
-    <p class="muted">Acceso para el proveedor: consolidado de comisiones de todas las escuelas.</p>
+@section Head {
+    <link rel="stylesheet" href="/css/auth.css" asp-append-version="true" />
+}
 
-    @if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
+<div class="auth-wrap">
+    <div class="auth-card">
+        <aside class="auth-brand">
+            <div class="logo"><span class="dot">🍎</span> LoncherApp</div>
+            <h2>Panel del proveedor</h2>
+            <p class="tag">Consolidado de comisiones de todas tus escuelas, en un solo lugar.</p>
+            <ul>
+                <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Comisión total y por escuela</li>
+                <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Reportes en tiempo real</li>
+                <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Emisión de CFDI de comisión</li>
+            </ul>
+        </aside>
 
-    <form method="post">
-        <label>Código de acceso</label>
-        <input asp-for="AccessCode" type="password" />
-        <div style="margin-top:14px"><button class="btn" type="submit">Entrar</button></div>
-    </form>
+        <div class="auth-form">
+            <h1>Ingresar</h1>
+            <p class="sub">Acceso exclusivo del proveedor.</p>
+
+            @if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
+
+            <form method="post">
+                <label>Código de acceso</label>
+                <input asp-for="AccessCode" type="password" placeholder="••••••••" autofocus />
+                <button class="btn" type="submit">Entrar</button>
+                <p class="alt"><a href="/">← Volver al inicio</a></p>
+            </form>
+        </div>
+    </div>
 </div>

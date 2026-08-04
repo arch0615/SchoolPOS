@@ -65,6 +65,10 @@ client answer/
 WEB-PAGES-CONFIG.md
 WEB-PORTAL-ANALYSIS.md
 WEB-UI-DESIGN-SPEC.md
+DESIGN-REDESIGN-PLAN.md
+PAGES-FEATURES.md
+PAGES-LAYOUT-CSS.md
+REDESIGN-WORKPLAN.md
 
 # ---- Local exports (DB files, schema dumps) ----
 export/

@@ -198,3 +198,26 @@ header .bar .lnav { margin:0; }
     .proof { border-right:0; }
     .hero-copy h1 { font-size:30px; }
 }
+
+/* ===== Landing polish: off-white bg · shadowed topbar & logo · 3D hero title ===== */
+
+/* 1) Off-white page background (scoped to the landing page — this file only loads there;
+      `html body` outranks _Layout's `body { background }` regardless of load order). */
+html body { background:#faf8f3; }
+
+/* 2) Shadow box under the topbar (deepens slightly once scrolled). */
+header { box-shadow:0 6px 22px rgba(20,50,110,.10); }
+header.scrolled { box-shadow:0 10px 28px rgba(20,50,110,.15); }
+
+/* 3) Soft depth shadow on the logo image (drop-shadow follows the SVG glyph shapes). */
+header .brand img { filter:drop-shadow(0 3px 6px rgba(20,50,110,.28)); }
+
+/* 4) 3D extruded hero title — stacked offset copies + a soft ground shadow. */
+.hero-copy h1 {
+    text-shadow:
+        1px 1px 0 #ccd7ea,
+        2px 2px 0 #bccadf,
+        3px 3px 0 #acbdd6,
+        4px 4px 0 #9cb0ce,
+        5px 7px 12px rgba(15,36,64,.28);
+}

@@ -2,38 +2,56 @@
 @model SchoolPOS.Portal.Web.Pages.ProfileModel
 @{
     ViewData["Title"] = "Mi perfil";
+    var email = Model.Me?.Email ?? "";
+    var display = string.IsNullOrWhiteSpace(Model.FullName) ? email : Model.FullName;
+    var initial = string.IsNullOrWhiteSpace(display) ? "?" : display.Trim().Substring(0, 1).ToUpperInvariant();
 }
 @if (!string.IsNullOrEmpty(Model.Message)) { <div class="msg ok">@Model.Message</div> }
 @if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
 
-<div class="card">
-    <h1>Mi perfil</h1>
-    <p class="muted">Correo: <strong>@(Model.Me?.Email)</strong></p>
-</div>
-
-<div class="row">
-    <div class="card">
-        <h2>Datos personales</h2>
-        <form method="post" asp-page-handler="Profile">
-            <label>Nombre completo</label>
-            <input asp-for="FullName" />
-            <div style="margin-top:12px"><button class="btn" type="submit">Guardar</button></div>
-        </form>
-    </div>
-    <div class="card">
-        <h2>Cambiar contraseña</h2>
-        <form method="post" asp-page-handler="Password">
-            <label>Contraseña actual</label>
-            <input asp-for="CurrentPassword" type="password" />
-            <label>Nueva contraseña (mínimo 6)</label>
-            <input asp-for="NewPassword" type="password" />
-            <div style="margin-top:12px"><button class="btn accent" type="submit">Actualizar contraseña</button></div>
-        </form>
+<div class="page-head">
+    <div>
+        <div class="eyebrow2">Cuenta</div>
+        <h1 style="margin:8px 0 0">Mi perfil</h1>
+        <p class="sub">Administra tus datos, tu contraseña y tus avisos.</p>
     </div>
 </div>
 
-<div class="card">
-    <h2>Avisos</h2>
-    <p class="muted">Elige qué quieres que te avisemos: saldo bajo, recargas confirmadas, compras o un resumen diario.</p>
-    <div style="margin-top:12px"><a class="btn ghost" href="/Notifications">Configurar avisos</a></div>
+<div class="settings-grid">
+    <div class="card profile-sum">
+        <div class="pav" aria-hidden="true">@initial</div>
+        <div style="font-size:17px;font-weight:700">@(string.IsNullOrWhiteSpace(Model.FullName) ? "Sin nombre" : Model.FullName)</div>
+        <div class="muted" style="font-size:14px;word-break:break-word">@email</div>
+        <a class="btn ghost" href="/Notifications" style="margin-top:16px;width:100%">Configurar avisos</a>
+    </div>
+
+    <div class="stack">
+        <div class="card">
+            <h2>Datos personales</h2>
+            <p class="muted">Tu nombre aparece en el saludo y en los recibos.</p>
+            <form method="post" asp-page-handler="Profile">
+                <label>Nombre completo</label>
+                <input asp-for="FullName" placeholder="Ej. María López" />
+                <div style="margin-top:12px"><button class="btn" type="submit">Guardar</button></div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Seguridad</h2>
+            <p class="muted">Cambia tu contraseña cuando lo necesites.</p>
+            <form method="post" asp-page-handler="Password">
+                <label>Contraseña actual</label>
+                <input asp-for="CurrentPassword" type="password" placeholder="••••••••" />
+                <label>Nueva contraseña (mínimo 6)</label>
+                <input asp-for="NewPassword" type="password" placeholder="••••••••" />
+                <div style="margin-top:12px"><button class="btn accent" type="submit">Actualizar contraseña</button></div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Avisos</h2>
+            <p class="muted">Elige qué quieres que te avisemos: saldo bajo, recargas confirmadas, compras o un resumen diario.</p>
+            <div style="margin-top:12px"><a class="btn ghost" href="/Notifications">Configurar avisos</a></div>
+        </div>
+    </div>
 </div>

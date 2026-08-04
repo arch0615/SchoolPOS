@@ -3,16 +3,32 @@
 @{
     ViewData["Title"] = "Resultado del pago";
 }
-<div class="card" style="max-width:460px;margin:0 auto;text-align:center">
+<div class="card receipt">
     @if (Model.Approved)
     {
-        <h1 style="color:#2e8b57">✔ Pago aprobado</h1>
+        <div class="ricon ok" aria-hidden="true">✓</div>
+        <h1 style="margin:0">Pago aprobado</h1>
         <p class="muted">Tu recarga fue aplicada al saldo del estudiante.</p>
+        <div class="rows">
+            <div class="rrow"><span>Estado</span><strong style="color:#16a34a">Aprobado</strong></div>
+            <div class="rrow"><span>Método</span><strong>Mercado Pago</strong></div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+            <a class="btn accent" href="/Dashboard">Volver a mi panel</a>
+            <a class="btn ghost" href="/Transactions">Ver movimientos</a>
+        </div>
     }
     else
     {
-        <h1 style="color:#c0392b">✖ Pago no completado</h1>
+        <div class="ricon bad" aria-hidden="true">✕</div>
+        <h1 style="margin:0">Pago no completado</h1>
         <p class="muted">El pago fue rechazado o cancelado. No se aplicó ninguna recarga.</p>
+        <div class="rows">
+            <div class="rrow"><span>Estado</span><strong style="color:#dc2626">Rechazado</strong></div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+            <a class="btn accent" href="/Wallet">Intentar de nuevo</a>
+            <a class="btn ghost" href="/Dashboard">Volver a mi panel</a>
+        </div>
     }
-    <a class="btn" href="/Dashboard">Volver a mi panel</a>
 </div>
