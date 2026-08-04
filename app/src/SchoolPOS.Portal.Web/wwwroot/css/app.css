@@ -34,9 +34,10 @@ main .card input:focus, main .card select:focus { border-color:var(--primary); b
 /* --- status pills (unifies .status / .tag / .st across pages) --- */
 .status, .tag, .st { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700; line-height:1.55; }
 .status.ok,  .tag.ok,  .st.stamped   { background:#e7f9ee; color:#047857; }
-.status.no,  .tag.no,  .st.failed,.st.cancelled { background:#fef2f2; color:#b91c1c; }
+.status.no,  .tag.no,  .st.failed    { background:#fef2f2; color:#b91c1c; }
 .status.warn,.tag.warn               { background:#fff7ed; color:#b45309; }
 .status.info,.st.draft,.st.stamping  { background:#eff6ff; color:#1d4ed8; }
+.st.cancelled                        { background:#eef2f6; color:#475569; }
 
 /* --- KPI tiles --- */
 .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:18px; }

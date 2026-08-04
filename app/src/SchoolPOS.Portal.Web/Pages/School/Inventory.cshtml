@@ -1,0 +1,55 @@
+@page
+@model SchoolPOS.Portal.Web.Pages.School.InventoryModel
+@{
+    ViewData["Title"] = "Inventario";
+}
+<div class="page-head">
+    <div>
+        <div class="eyebrow2">Tienda escolar</div>
+        <h1 style="margin:8px 0 0">Inventario</h1>
+        <p class="sub">Productos y existencias de tu escuela.</p>
+    </div>
+</div>
+
+<div class="kpi-grid">
+    <div class="kpi"><div class="n">@Model.ActiveCount</div><div class="l">Productos activos</div></div>
+    <div class="kpi @(Model.LowCount > 0 ? "amber" : "")"><div class="n">@Model.LowCount</div><div class="l">Alertas de stock bajo</div></div>
+    <div class="kpi accent"><div class="n">@Model.InventoryValue.ToString("C2")</div><div class="l">Valor de inventario</div></div>
+    <div class="kpi"><div class="n">@Model.CategoryCount</div><div class="l">Categorías</div></div>
+</div>
+
+<div class="card">
+    <h2>Productos</h2>
+    @if (Model.Rows.Count == 0)
+    {
+        <div class="empty"><div class="em" aria-hidden="true">📦</div><p>Aún no hay productos registrados.</p></div>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr><th>Producto</th><th>Categoría</th><th style="text-align:right">Precio</th><th style="text-align:right">Existencia</th><th style="text-align:right">Mínimo</th><th>Estado</th></tr>
+            </thead>
+            <tbody>
+            @foreach (var p in Model.Rows)
+            {
+                <tr>
+                    <td>@p.Name</td>
+                    <td class="muted">@p.Category</td>
+                    <td style="text-align:right">@p.Price.ToString("C2")</td>
+                    <td style="text-align:right">
+                        @if (p.Low) { <span class="status warn">@p.Stock.ToString("0.##")</span> }
+                        else { @p.Stock.ToString("0.##") }
+                    </td>
+                    <td style="text-align:right" class="muted">@p.Min.ToString("0.##")</td>
+                    <td>
+                        @if (!p.Active) { <span class="status no">Inactivo</span> }
+                        else if (p.Low) { <span class="status warn">Stock bajo</span> }
+                        else { <span class="status ok">Activo</span> }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</div>

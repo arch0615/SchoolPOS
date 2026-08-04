@@ -1,0 +1,100 @@
+@page
+@using System.Globalization
+@using SchoolPOS.Portal.Web.Infrastructure
+@model SchoolPOS.Portal.Web.Pages.School.ReportsModel
+@{
+    ViewData["Title"] = "Reportes";
+}
+@functions {
+    static string DayLabel(DateTime d)
+    {
+        var s = d.ToString("ddd dd MMM", MxTime.EsMx);
+        return string.IsNullOrEmpty(s) ? s : char.ToUpper(s[0], MxTime.EsMx) + s[1..];
+    }
+}
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow2">Tienda escolar</div>
+        <h1 style="margin:8px 0 0">Reportes</h1>
+        <p class="sub">Ventas de tu escuela · @Model.FromDate.ToString("dd/MM/yyyy") – @Model.ToDate.ToString("dd/MM/yyyy")</p>
+    </div>
+</div>
+
+<div class="card">
+    <form method="get" class="filter-bar">
+        <div><label>Desde</label><input type="date" name="From" value="@Model.FromDate.ToString("yyyy-MM-dd")" /></div>
+        <div><label>Hasta</label><input type="date" name="To" value="@Model.ToDate.ToString("yyyy-MM-dd")" /></div>
+        <div><label>&nbsp;</label><button class="btn" type="submit">Filtrar</button></div>
+    </form>
+</div>
+
+<div class="kpi-grid">
+    <div class="kpi green"><div class="n">@Model.Total.ToString("C2")</div><div class="l">Ventas del periodo</div></div>
+    <div class="kpi"><div class="n">@Model.Tickets</div><div class="l">Tickets</div></div>
+    <div class="kpi"><div class="n">@Model.Avg.ToString("C2")</div><div class="l">Ticket promedio</div></div>
+    <div class="kpi"><div class="n">@Model.CashTotal.ToString("C2")</div><div class="l">En efectivo</div></div>
+    <div class="kpi accent"><div class="n">@Model.BalanceTotal.ToString("C2")</div><div class="l">Con saldo</div></div>
+</div>
+
+<div class="row">
+    <div class="card">
+        <h2>Más vendidos</h2>
+        @if (Model.TopProducts.Count == 0)
+        {
+            <div class="empty"><div class="em" aria-hidden="true">🛒</div><p>Sin ventas en el periodo.</p></div>
+        }
+        else
+        {
+            <table>
+                <thead><tr><th>Producto</th><th style="text-align:right">Vendidos</th><th style="text-align:right">Importe</th></tr></thead>
+                <tbody>
+                @foreach (var t in Model.TopProducts)
+                {
+                    <tr><td>@t.Name</td><td style="text-align:right">@t.Qty.ToString("0.##")</td><td style="text-align:right;font-weight:700">@t.Amount.ToString("C2")</td></tr>
+                }
+                </tbody>
+            </table>
+        }
+    </div>
+
+    <div class="card">
+        <h2>Ventas por categoría</h2>
+        @if (Model.ByCategory.Count == 0)
+        {
+            <div class="empty"><div class="em" aria-hidden="true">🥪</div><p>Sin ventas en el periodo.</p></div>
+        }
+        else
+        {
+            <div class="catbar">
+                @foreach (var c in Model.ByCategory)
+                {
+                    <div class="row2">
+                        <span class="nm">@c.Name</span>
+                        <span class="track"><span class="fill" style="width:@c.Pct.ToString("0.#", CultureInfo.InvariantCulture)%"></span></span>
+                        <span class="amt">@c.Amount.ToString("C0")</span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <h2>Ventas por día</h2>
+    <div class="table-wrap" style="overflow-x:auto">
+        <table>
+            <thead><tr><th>Día</th><th style="text-align:right">Tickets</th><th style="text-align:right">Total</th></tr></thead>
+            <tbody>
+            @foreach (var d in Model.ByDay)
+            {
+                <tr>
+                    <td>@DayLabel(d.Day)</td>
+                    <td style="text-align:right">@d.Tickets</td>
+                    <td style="text-align:right;@(d.Total > 0 ? "font-weight:700" : "color:var(--muted)")">@d.Total.ToString("C2")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -213,13 +213,19 @@
         <div class="shell">
             <aside class="sidebar">
                 <a href="/School/Store" class="@(isActive("/School/Store") ? "active" : "")"><span class="ico">🛒</span> Mi tienda</a>
+                <a href="/School/Sales" class="@(isActive("/School/Sales") ? "active" : "")"><span class="ico">🧾</span> Ventas</a>
+                <a href="/School/Inventory" class="@(isActive("/School/Inventory") ? "active" : "")"><span class="ico">📦</span> Inventario</a>
+                <a href="/School/Reports" class="@(isActive("/School/Reports") ? "active" : "")"><span class="ico">📈</span> Reportes</a>
             </aside>
             <main class="content">
                 @RenderBody()
             </main>
         </div>
         <nav class="bottomnav">
-            <a href="/School/Store" class="@(isActive("/School/Store") ? "active" : "")"><span class="ico">🛒</span>Mi tienda</a>
+            <a href="/School/Store" class="@(isActive("/School/Store") ? "active" : "")"><span class="ico">🛒</span>Tienda</a>
+            <a href="/School/Sales" class="@(isActive("/School/Sales") ? "active" : "")"><span class="ico">🧾</span>Ventas</a>
+            <a href="/School/Inventory" class="@(isActive("/School/Inventory") ? "active" : "")"><span class="ico">📦</span>Inventario</a>
+            <a href="/School/Reports" class="@(isActive("/School/Reports") ? "active" : "")"><span class="ico">📈</span>Reportes</a>
         </nav>
     }
     else if (isLanding)

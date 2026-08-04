@@ -6,26 +6,18 @@
     ViewData["Title"] = "Facturas de comisión";
 }
 
-@section Head {
-    <style>
-        .st { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; }
-        .st.stamped { background: #ecfdf5; color: #047857; }
-        .st.draft { background: #eff6ff; color: #1d4ed8; }
-        .st.failed { background: #fef2f2; color: #b91c1c; }
-        .st.cancelled { background: #f1f5f9; color: #475569; }
-    </style>
-}
+<div class="page-head">
+    <div>
+        <div class="eyebrow2">Panel del proveedor</div>
+        <h1 style="margin:8px 0 0">Facturas de comisión</h1>
+        <p class="sub">
+            @Model.StampedCount @(Model.StampedCount == 1 ? "timbrada" : "timbradas") por @Model.StampedTotal.ToString("C2")@(Model.FailedCount > 0 ? $" · {Model.FailedCount} {(Model.FailedCount == 1 ? "fallida" : "fallidas")}" : "")
+        </p>
+    </div>
+</div>
 
 <div class="card">
-    <div class="row" style="align-items:center">
-        <div>
-            <div class="pill">Panel del proveedor</div>
-            <h1 style="margin-top:8px;margin-bottom:0">Facturas de comisión</h1>
-            <p class="muted">
-                @Model.StampedCount @(Model.StampedCount == 1 ? "timbrada" : "timbradas") por @Model.StampedTotal.ToString("C2")@(Model.FailedCount > 0 ? $" · {Model.FailedCount} {(Model.FailedCount == 1 ? "fallida" : "fallidas")}" : "")
-            </p>
-        </div>
-        <form method="get" class="row" style="align-items:flex-end;max-width:520px">
+    <form method="get" class="filter-bar">
             <div>
                 <label>Escuela</label>
                 <select name="SchoolId">
@@ -46,9 +38,8 @@
                     }
                 </select>
             </div>
-            <div style="max-width:120px"><label>&nbsp;</label><button class="btn" type="submit">Filtrar</button></div>
+            <div><label>&nbsp;</label><button class="btn" type="submit">Filtrar</button></div>
         </form>
-    </div>
 </div>
 
 <div class="card">

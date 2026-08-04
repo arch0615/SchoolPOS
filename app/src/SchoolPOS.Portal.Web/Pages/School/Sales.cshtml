@@ -1,0 +1,77 @@
+@page
+@using SchoolPOS.Domain.Enums
+@using SchoolPOS.Portal.Web.Infrastructure
+@model SchoolPOS.Portal.Web.Pages.School.SalesModel
+@{
+    ViewData["Title"] = "Ventas";
+}
+@functions {
+    static string Moment(DateTime utc)
+    {
+        var l = MxTime.Local(utc);
+        var today = MxTime.Local(DateTime.UtcNow).Date;
+        if (l.Date == today) return $"Hoy · {l:HH:mm}";
+        if (l.Date == today.AddDays(-1)) return $"Ayer · {l:HH:mm}";
+        return l.ToString("dd MMM · HH:mm", MxTime.EsMx);
+    }
+    static string Tender(TenderType t) => t == TenderType.Cash ? "Efectivo" : "Saldo";
+    static (string l, string c) State(SaleStatus s) => s switch
+    {
+        SaleStatus.Completed => ("Completada", "ok"),
+        SaleStatus.PartiallyRefunded => ("Parcial", "warn"),
+        SaleStatus.Refunded => ("Devuelta", "no"),
+        _ => (s.ToString(), "info"),
+    };
+}
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow2">Tienda escolar</div>
+        <h1 style="margin:8px 0 0">Ventas</h1>
+        <p class="sub">Tickets registrados por el POS de tu escuela.</p>
+    </div>
+</div>
+
+<div class="card">
+    <form method="get" class="filter-bar">
+        <div><label>Desde</label><input type="date" name="From" value="@(Model.From?.ToString("yyyy-MM-dd"))" /></div>
+        <div><label>Hasta</label><input type="date" name="To" value="@(Model.To?.ToString("yyyy-MM-dd"))" /></div>
+        <div><label>&nbsp;</label><button class="btn" type="submit">Filtrar</button></div>
+    </form>
+</div>
+
+<div class="kpi-grid">
+    <div class="kpi green"><div class="n">@Model.Total.ToString("C2")</div><div class="l">Ventas del periodo</div></div>
+    <div class="kpi"><div class="n">@Model.Count</div><div class="l">Tickets</div></div>
+    <div class="kpi"><div class="n">@Model.Avg.ToString("C2")</div><div class="l">Ticket promedio</div></div>
+    <div class="kpi"><div class="n">@Model.CashTotal.ToString("C2")</div><div class="l">En efectivo</div></div>
+    <div class="kpi accent"><div class="n">@Model.BalanceTotal.ToString("C2")</div><div class="l">Con saldo</div></div>
+</div>
+
+<div class="card">
+    <h2>Tickets</h2>
+    @if (Model.Rows.Count == 0)
+    {
+        <div class="empty"><div class="em" aria-hidden="true">🧾</div><p>Sin ventas en el periodo seleccionado.</p></div>
+    }
+    else
+    {
+        <table>
+            <thead><tr><th>Fecha</th><th>Pago</th><th style="text-align:right">Artículos</th><th>Estado</th><th style="text-align:right">Total</th></tr></thead>
+            <tbody>
+            @foreach (var r in Model.Rows)
+            {
+                var st = State(r.Status);
+                <tr>
+                    <td>@Moment(r.CreatedAtUtc)</td>
+                    <td>@Tender(r.Tender)</td>
+                    <td style="text-align:right">@r.Items</td>
+                    <td><span class="status @st.c">@st.l</span></td>
+                    <td style="text-align:right;font-weight:700">@r.Total.ToString("C2")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+        <p class="muted" style="margin-top:10px">Se muestran hasta 300 tickets del periodo.</p>
+    }
+</div>

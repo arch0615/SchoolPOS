@@ -24,15 +24,20 @@
 @if (!string.IsNullOrEmpty(Model.Message)) { <div class="msg ok">@Model.Message</div> }
 @if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
 
-<h1>Mis alumnos</h1>
+<div class="page-head">
+    <div>
+        <div class="eyebrow2">Cuenta</div>
+        <h1 style="margin:8px 0 0">Mis alumnos</h1>
+        <p class="sub">Saldo de cada hijo vinculado a tu cuenta.</p>
+    </div>
+</div>
 
 @if (Model.Students.Count == 0)
 {
-    <p class="muted" style="margin-bottom:18px">Aún no has vinculado a ningún alumno. Ingresa su matrícula para empezar.</p>
+    <div class="card"><div class="empty"><div class="em" aria-hidden="true">🎒</div><p>Aún no has vinculado a ningún alumno. Ingresa su matrícula para empezar.</p></div></div>
 }
 else
 {
-    <p class="muted" style="margin-bottom:18px">Saldo de cada hijo vinculado a tu cuenta.</p>
     <div class="students">
         @foreach (var s in Model.Students)
         {

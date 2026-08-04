@@ -12,41 +12,27 @@
     var qs = parts.Count > 0 ? "?" + string.Join("&", parts) : "";
 }
 
-<div class="card">
-    <div class="row" style="align-items:center">
-        <div>
-            <div class="pill">Panel del proveedor</div>
-            <h1 style="margin-top:8px;margin-bottom:0">Resumen</h1>
-            <p class="muted">Consolidado de todas las escuelas · sólo recargas capturadas</p>
-        </div>
-        <form method="get" class="row" style="align-items:flex-end;max-width:420px">
-            <div><label>Desde</label><input type="date" name="From" value="@fromStr" /></div>
-            <div><label>Hasta</label><input type="date" name="To" value="@toStr" /></div>
-            <div style="max-width:120px"><label>&nbsp;</label><button class="btn" type="submit">Filtrar</button></div>
-        </form>
+<div class="page-head">
+    <div>
+        <div class="eyebrow2">Panel del proveedor</div>
+        <h1 style="margin:8px 0 0">Resumen</h1>
+        <p class="sub">Consolidado de todas las escuelas · sólo recargas capturadas</p>
     </div>
 </div>
 
-<div class="row">
-    <div class="card">
-        <div class="muted">Escuelas</div>
-        <div class="balance" style="color:var(--text)">@Model.Rollup.Schools.Count</div>
-        <div class="muted"><a href="/Vendor/Schools@(qs)">Ver escuelas →</a></div>
-    </div>
-    <div class="card">
-        <div class="muted">Comisión total (tu ingreso)</div>
-        <div class="balance">@Model.Rollup.TotalCommission.ToString("C2")</div>
-        <div class="muted"><a href="/Vendor/Commissions@(qs)">Ver detalle →</a></div>
-    </div>
-    <div class="card">
-        <div class="muted">Total recargado</div>
-        <div class="balance" style="color:var(--warning)">@Model.Rollup.TotalRecharged.ToString("C2")</div>
-    </div>
-    <div class="card">
-        <div class="muted">Recargas</div>
-        <div class="balance" style="color:var(--text)">@Model.Rollup.TopUpCount</div>
-        <div class="muted">tasa media @((Model.AverageRate * 100).ToString("0.##"))%</div>
-    </div>
+<div class="card">
+    <form method="get" class="filter-bar">
+        <div><label>Desde</label><input type="date" name="From" value="@fromStr" /></div>
+        <div><label>Hasta</label><input type="date" name="To" value="@toStr" /></div>
+        <div><label>&nbsp;</label><button class="btn" type="submit">Filtrar</button></div>
+    </form>
+</div>
+
+<div class="kpi-grid">
+    <div class="kpi"><div class="n">@Model.Rollup.Schools.Count</div><div class="l"><a href="/Vendor/Schools@(qs)">Escuelas →</a></div></div>
+    <div class="kpi accent"><div class="n">@Model.Rollup.TotalCommission.ToString("C2")</div><div class="l"><a href="/Vendor/Commissions@(qs)">Comisión total (tu ingreso) →</a></div></div>
+    <div class="kpi amber"><div class="n">@Model.Rollup.TotalRecharged.ToString("C2")</div><div class="l">Total recargado</div></div>
+    <div class="kpi"><div class="n">@Model.Rollup.TopUpCount</div><div class="l">Recargas · tasa media @((Model.AverageRate * 100).ToString("0.##"))%</div></div>
 </div>
 
 @if (Model.Rollup.Schools.Count > 0)

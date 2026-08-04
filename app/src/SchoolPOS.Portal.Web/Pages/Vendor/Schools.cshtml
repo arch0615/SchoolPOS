@@ -10,28 +10,20 @@
     var qs = parts.Count > 0 ? "?" + string.Join("&", parts) : "";
 }
 
-@section Head {
-    <style>
-        .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; }
-        .tag.ok { background: #ecfdf5; color: #047857; }
-        .tag.no { background: #fef2f2; color: #b91c1c; }
-        .tag.warn { background: #fffbeb; color: #b45309; }
-    </style>
-}
+<div class="page-head">
+    <div>
+        <div class="eyebrow2">Panel del proveedor</div>
+        <h1 style="margin:8px 0 0">Escuelas</h1>
+        <p class="sub">@Model.Rows.Count en total · @Model.ConnectedCount con cobro conectado · @Model.InvoiceReadyCount listas para facturar</p>
+    </div>
+</div>
 
 <div class="card">
-    <div class="row" style="align-items:center">
-        <div>
-            <div class="pill">Panel del proveedor</div>
-            <h1 style="margin-top:8px;margin-bottom:0">Escuelas</h1>
-            <p class="muted">@Model.Rows.Count en total · @Model.ConnectedCount con cobro conectado · @Model.InvoiceReadyCount listas para facturar</p>
-        </div>
-        <form method="get" class="row" style="align-items:flex-end;max-width:420px">
-            <div><label>Desde</label><input type="date" name="From" value="@fromStr" /></div>
-            <div><label>Hasta</label><input type="date" name="To" value="@toStr" /></div>
-            <div style="max-width:120px"><label>&nbsp;</label><button class="btn" type="submit">Filtrar</button></div>
-        </form>
-    </div>
+    <form method="get" class="filter-bar">
+        <div><label>Desde</label><input type="date" name="From" value="@fromStr" /></div>
+        <div><label>Hasta</label><input type="date" name="To" value="@toStr" /></div>
+        <div><label>&nbsp;</label><button class="btn" type="submit">Filtrar</button></div>
+    </form>
 </div>
 
 <div class="card">

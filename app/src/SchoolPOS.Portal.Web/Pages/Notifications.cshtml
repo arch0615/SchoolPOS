@@ -25,8 +25,13 @@
 
 @if (!string.IsNullOrEmpty(Model.Message)) { <div class="msg ok">@Model.Message</div> }
 
-<h1>Avisos</h1>
-<p class="muted" style="margin-bottom:18px">Elige qué quieres que te avisemos. Puedes cambiarlo cuando quieras.</p>
+<div class="page-head">
+    <div>
+        <div class="eyebrow2">Cuenta</div>
+        <h1 style="margin:8px 0 0">Avisos</h1>
+        <p class="sub">Elige qué quieres que te avisemos. Puedes cambiarlo cuando quieras.</p>
+    </div>
+</div>
 
 <form method="post">
     <div class="card">

@@ -1,0 +1,17 @@
+@page
+@model SchoolPOS.Portal.Web.Pages.ErrorModel
+@{
+    ViewData["Title"] = Model.Title;
+}
+<div class="card receipt">
+    <div class="ricon pending" aria-hidden="true">@Model.Emoji</div>
+    <h1 style="margin:0">@Model.Title</h1>
+    <p class="muted">@Model.Message</p>
+    <div class="rows">
+        <div class="rrow"><span>Código</span><strong>@Model.HttpStatus</strong></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <a class="btn accent" href="/">Volver al inicio</a>
+        <a class="btn ghost" href="/Account/Login">Ingresar</a>
+    </div>
+</div>
