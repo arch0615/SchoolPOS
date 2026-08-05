@@ -6,12 +6,21 @@
 @{
     ViewData["Title"] = "Movimientos";
 
-    // Conserva alumno y rango al cambiar de pestaña.
+    // Conserva alumno, rango y tamaño de página al cambiar de pestaña (vuelve a la página 1).
     Func<MovementFilter, string> tabUrl = k =>
-        $"/Transactions?Kind={k}" +
+        $"/Transactions?Kind={k}&PageSize={Model.PageSize}" +
         (Model.Selected is null ? "" : $"&StudentId={Model.Selected.StudentId}") +
         (Model.From is null ? "" : $"&From={Model.From:yyyy-MM-dd}") +
         (Model.To is null ? "" : $"&To={Model.To:yyyy-MM-dd}");
+
+    // Conserva todos los filtros al cambiar de página o de tamaño de página.
+    Func<string> baseQs = () =>
+        $"Kind={Model.Kind}" +
+        (Model.Selected is null ? "" : $"&StudentId={Model.Selected.StudentId}") +
+        (Model.From is null ? "" : $"&From={Model.From:yyyy-MM-dd}") +
+        (Model.To is null ? "" : $"&To={Model.To:yyyy-MM-dd}");
+    Func<int, string> pageUrl = n => $"/Transactions?{baseQs()}&PageSize={Model.PageSize}&PageNumber={n}";
+    Func<int, string> pageSizeUrl = size => $"/Transactions?{baseQs()}&PageSize={size}&PageNumber=1";
 }
 
 @functions {
@@ -135,20 +144,24 @@ else
         }
         else
         {
-            @* Orden más reciente primero y agrupado por día local (America/Mexico_City). *@
+            @* Orden más reciente primero y agrupado por día local (America/Mexico_City). Sólo la
+               página actual se dibuja; el CSV usa el filtro completo, no sólo la página visible. *@
             var ordered = Model.Movements
                 .Select(m => new { m, L = Local(m.CreatedAtUtc) })
                 .OrderByDescending(x => x.L)
                 .ToList();
             var groups = ordered.GroupBy(x => x.L.Date).OrderByDescending(g => g.Key);
-            var csv = ordered.Select(x => new
-            {
-                fecha = x.L.ToString("yyyy-MM-dd HH:mm"),
-                tipo = TransactionsModel.TypeLabel(x.m.Type),
-                referencia = x.m.Reference ?? "",
-                importe = x.m.Amount.ToString("0.00", CultureInfo.InvariantCulture),
-                saldo = x.m.BalanceAfter.ToString("0.00", CultureInfo.InvariantCulture),
-            }).ToList();
+            var csv = Model.AllFilteredMovements
+                .Select(m => new { m, L = Local(m.CreatedAtUtc) })
+                .OrderByDescending(x => x.L)
+                .Select(x => new
+                {
+                    fecha = x.L.ToString("yyyy-MM-dd HH:mm"),
+                    tipo = TransactionsModel.TypeLabel(x.m.Type),
+                    referencia = x.m.Reference ?? "",
+                    importe = x.m.Amount.ToString("0.00", CultureInfo.InvariantCulture),
+                    saldo = x.m.BalanceAfter.ToString("0.00", CultureInfo.InvariantCulture),
+                }).ToList();
 
             <div class="stmt">
                 @foreach (var g in groups)
@@ -173,6 +186,41 @@ else
                             </div>
                         </div>
                     }
+                }
+            </div>
+
+            <div class="pager">
+                <div class="pager-size">
+                    <span class="muted">Mostrar</span>
+                    <nav class="chips">
+                        @foreach (var size in TransactionsModel.PageSizeOptions)
+                        {
+                            <a href="@pageSizeUrl(size)" class="@(Model.PageSize == size ? "on" : "")">@size</a>
+                        }
+                    </nav>
+                    <span class="muted">por página · @Model.FilteredCount @(Model.FilteredCount == 1 ? "movimiento" : "movimientos")</span>
+                </div>
+                @if (Model.TotalPages > 1)
+                {
+                    <div class="pager-nav">
+                        @if (Model.PageNumber > 1)
+                        {
+                            <a class="btn ghost pager-btn" href="@pageUrl(Model.PageNumber - 1)">← Anterior</a>
+                        }
+                        else
+                        {
+                            <span class="btn ghost pager-btn disabled" aria-disabled="true">← Anterior</span>
+                        }
+                        <span class="pager-status">Página @Model.PageNumber de @Model.TotalPages</span>
+                        @if (Model.PageNumber < Model.TotalPages)
+                        {
+                            <a class="btn ghost pager-btn" href="@pageUrl(Model.PageNumber + 1)">Siguiente →</a>
+                        }
+                        else
+                        {
+                            <span class="btn ghost pager-btn disabled" aria-disabled="true">Siguiente →</span>
+                        }
+                    </div>
                 }
             </div>
 

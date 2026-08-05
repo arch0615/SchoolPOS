@@ -114,6 +114,17 @@ main .card input:focus, main .card select:focus { border-color:var(--primary); b
 .chips a:hover { border-color:var(--primary); color:var(--primary); text-decoration:none; }
 .chips a.on { background:var(--primary); border-color:var(--primary); color:#fff; }
 
+/* --- Pagination bar: page-size chips + prev/next --- */
+.pager { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  margin-top:18px; padding-top:16px; border-top:1px solid var(--line); }
+.pager-size { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:13px; }
+.pager-size .chips a { padding:5px 12px; font-size:13px; }
+.pager-nav { display:flex; align-items:center; gap:12px; }
+.pager-btn { padding:8px 16px; font-size:13px; }
+.pager-btn.disabled { opacity:.4; pointer-events:none; }
+.pager-status { color:var(--muted); font-size:13px; font-weight:600; white-space:nowrap; font-variant-numeric:tabular-nums; }
+@media (max-width:560px){ .pager { flex-direction:column; align-items:flex-start; } }
+
 /* --- statement / activity list (Transactions, reusable) --- */
 .stmt { display:flex; flex-direction:column; }
 .day-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px;
