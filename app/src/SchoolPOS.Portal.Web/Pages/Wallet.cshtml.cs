@@ -34,6 +34,7 @@ public class WalletModel : PageModel
     public decimal MinTopUp => _options.MinTopUp;
     public decimal MaxTopUp => _options.MaxTopUp;
     public decimal[] Presets => _options.TopUpPresets;
+    public decimal LowBalanceThreshold => _options.LowBalanceThreshold;
 
     [TempData] public string? Message { get; set; }
     [TempData] public string? Error { get; set; }
