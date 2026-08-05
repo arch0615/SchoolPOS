@@ -9,12 +9,13 @@
 @if (!string.IsNullOrEmpty(Model.Message)) { <div class="msg ok">@Model.Message</div> }
 @if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
 
-<div class="page-head">
+<div class="page-head with-illus">
     <div>
         <div class="eyebrow2">Cuenta</div>
         <h1 style="margin:8px 0 0">Mi perfil</h1>
         <p class="sub">Administra tus datos, tu contraseña y tus avisos.</p>
     </div>
+    <img class="head-illus" src="/img/il/il-profile.svg" alt="" aria-hidden="true" />
 </div>
 
 <div class="settings-grid">
@@ -22,36 +23,75 @@
         <div class="pav" aria-hidden="true">@initial</div>
         <div style="font-size:17px;font-weight:700">@(string.IsNullOrWhiteSpace(Model.FullName) ? "Sin nombre" : Model.FullName)</div>
         <div class="muted" style="font-size:14px;word-break:break-word">@email</div>
+        <span class="active-chip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Cuenta activa</span>
         <a class="btn ghost" href="/Notifications" style="margin-top:16px;width:100%">Configurar avisos</a>
     </div>
 
     <div class="stack">
         <div class="card">
-            <h2>Datos personales</h2>
-            <p class="muted">Tu nombre aparece en el saludo y en los recibos.</p>
-            <form method="post" asp-page-handler="Profile">
-                <label>Nombre completo</label>
-                <input asp-for="FullName" placeholder="Ej. María López" />
-                <div style="margin-top:12px"><button class="btn" type="submit">Guardar</button></div>
-            </form>
+            <div class="setting-row">
+                <div class="sr-body">
+                    <h2>Datos personales</h2>
+                    <p class="muted">Tu nombre aparece en el saludo y en los recibos.</p>
+                    <form method="post" asp-page-handler="Profile">
+                        <label>Nombre completo</label>
+                        <input asp-for="FullName" placeholder="Ej. María López" />
+                        <div style="margin-top:12px"><button class="btn" type="submit">Guardar cambios</button></div>
+                    </form>
+                </div>
+                <img class="sr-illus" src="/img/il/il-profile.svg" alt="" aria-hidden="true" />
+            </div>
         </div>
 
         <div class="card">
-            <h2>Seguridad</h2>
-            <p class="muted">Cambia tu contraseña cuando lo necesites.</p>
-            <form method="post" asp-page-handler="Password">
-                <label>Contraseña actual</label>
-                <input asp-for="CurrentPassword" type="password" placeholder="••••••••" />
-                <label>Nueva contraseña (mínimo 6)</label>
-                <input asp-for="NewPassword" type="password" placeholder="••••••••" />
-                <div style="margin-top:12px"><button class="btn accent" type="submit">Actualizar contraseña</button></div>
-            </form>
+            <div class="setting-row">
+                <div class="sr-body">
+                    <h2>Seguridad</h2>
+                    <p class="muted">Cambia tu contraseña cuando lo necesites para mantener tu cuenta segura.</p>
+                    <form method="post" asp-page-handler="Password">
+                        <label>Contraseña actual</label>
+                        <div class="pw-wrap">
+                            <input asp-for="CurrentPassword" type="password" placeholder="••••••••" />
+                            <button type="button" class="pw-toggle" data-toggle-for="CurrentPassword" aria-label="Mostrar contraseña">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </button>
+                        </div>
+                        <label>Nueva contraseña (mínimo 6)</label>
+                        <div class="pw-wrap">
+                            <input asp-for="NewPassword" type="password" placeholder="••••••••" />
+                            <button type="button" class="pw-toggle" data-toggle-for="NewPassword" aria-label="Mostrar contraseña">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </button>
+                        </div>
+                        <div style="margin-top:12px"><button class="btn accent" type="submit">Actualizar contraseña</button></div>
+                    </form>
+                </div>
+                <img class="sr-illus" src="/img/il/il-lock.svg" alt="" aria-hidden="true" />
+            </div>
         </div>
 
         <div class="card">
-            <h2>Avisos</h2>
-            <p class="muted">Elige qué quieres que te avisemos: saldo bajo, recargas confirmadas, compras o un resumen diario.</p>
-            <div style="margin-top:12px"><a class="btn ghost" href="/Notifications">Configurar avisos</a></div>
+            <div class="setting-row">
+                <div class="sr-body">
+                    <h2>Avisos</h2>
+                    <p class="muted">Elige qué quieres que te avisemos: saldo bajo, recargas confirmadas, compras o un resumen diario.</p>
+                    <div style="margin-top:12px"><a class="btn ghost" href="/Notifications">Configurar avisos</a></div>
+                </div>
+                <img class="sr-illus" src="/img/il/il-bell.svg" alt="" aria-hidden="true" />
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+    (function () {
+        document.querySelectorAll('.pw-toggle').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var input = btn.previousElementSibling;
+                var show = input.type === 'password';
+                input.type = show ? 'text' : 'password';
+                btn.setAttribute('aria-label', show ? 'Ocultar contraseña' : 'Mostrar contraseña');
+            });
+        });
+    })();
+</script>

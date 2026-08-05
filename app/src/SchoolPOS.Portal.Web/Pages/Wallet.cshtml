@@ -1,4 +1,5 @@
 @page
+@using SchoolPOS.Portal.Web.Infrastructure
 @model SchoolPOS.Portal.Web.Pages.WalletModel
 @{
     ViewData["Title"] = "Monedero";
@@ -7,65 +8,89 @@
 @if (!string.IsNullOrEmpty(Model.Message)) { <div class="msg ok">@Model.Message</div> }
 @if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
 
-<div class="page-head">
+<div class="page-head with-illus">
     <div>
         <div class="eyebrow2">Monedero</div>
         <h1 style="margin:8px 0 0">Recargar saldo</h1>
         <p class="sub">Agrega saldo al monedero de tu hijo en segundos.</p>
     </div>
+    <img class="head-illus" src="/img/il/il-wallet.svg" alt="" aria-hidden="true" />
 </div>
 
 @if (Model.Selected is null)
 {
     <div class="card">
-        <p class="muted">Aún no has vinculado a ningún alumno, así que no hay saldo que recargar.</p>
-        <p style="margin-top:12px"><a class="btn" href="/Students">Vincular un alumno</a></p>
+        <div class="empty">
+            <img src="/img/il/il-profile.svg" alt="" style="width:96px;height:96px" />
+            <b style="display:block;margin-top:8px;font-size:17px">Aún no has vinculado a ningún alumno</b>
+            <p>Vincula a tu hijo para poder recargar su saldo.</p>
+            <div style="margin-top:14px"><a class="btn" href="/Students">Vincular un alumno</a></div>
+        </div>
     </div>
 }
 else
 {
-    <section class="balance-card">
-        <div class="row" style="align-items:center">
+    var last = Model.Recent.FirstOrDefault();
+    var thisMonthCount = Model.Recent.Count(m => MxTime.Local(m.CreatedAtUtc).Year == MxTime.Local(DateTime.UtcNow).Year
+        && MxTime.Local(m.CreatedAtUtc).Month == MxTime.Local(DateTime.UtcNow).Month);
+    var totalRecent = Model.Recent.Sum(m => m.Amount);
+    <div class="wsum">
+        <div class="wbal">
+            <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#2f6bff" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M16 12h3"/></svg></span>
             <div>
-                <div style="opacity:.85;font-size:14px">Saldo disponible</div>
-                <div class="balance">@Model.Selected.Balance.ToString("C2")</div>
-                <div style="opacity:.9;font-size:13px;margin-top:2px">@Model.Selected.FullName · @Model.Selected.EnrollmentNo</div>
+                <div class="l">Saldo disponible</div>
+                <div class="n">@Model.Selected.Balance.ToString("C2")</div>
+                <span class="pill ok">Saldo suficiente</span>
             </div>
-            @if (Model.Students.Count > 1)
-            {
-                <div style="text-align:right">
-                    <div style="opacity:.85;font-size:13px;margin-bottom:6px">Cambiar estudiante</div>
-                    <form method="get">
-                        <select name="studentId" onchange="this.form.submit()" aria-label="Estudiante">
-                            @foreach (var s in Model.Students)
-                            {
-                                <option value="@s.StudentId" selected="@(Model.Selected.StudentId == s.StudentId)">
-                                    @s.FullName · @s.EnrollmentNo
-                                </option>
-                            }
-                        </select>
-                    </form>
-                </div>
-            }
         </div>
-    </section>
+        <div class="wstats">
+            <div class="st"><div class="l">Última recarga</div><div class="n">@(last is null ? "—" : $"{MxTime.Local(last.CreatedAtUtc):dd/MM/yyyy} · +{last.Amount:C0}")</div></div>
+            <div class="st"><div class="l">Recargas este mes</div><div class="n">@thisMonthCount</div></div>
+            <div class="st"><div class="l">Total (últimas @Model.Recent.Count)</div><div class="n">@totalRecent.ToString("C2")</div></div>
+        </div>
+    </div>
 
-    <div class="card">
-        <h2>Elige el monto</h2>
-        <form method="post" asp-page-handler="TopUp">
+    @if (Model.Students.Count > 1)
+    {
+        <div class="card" style="margin-bottom:18px">
+            <div class="muted" style="font-weight:600;margin-bottom:8px">Cambiar estudiante</div>
+            <form method="get">
+                <select name="studentId" onchange="this.form.submit()" aria-label="Estudiante">
+                    @foreach (var s in Model.Students)
+                    {
+                        <option value="@s.StudentId" selected="@(Model.Selected.StudentId == s.StudentId)">@s.FullName · @s.EnrollmentNo</option>
+                    }
+                </select>
+            </form>
+        </div>
+    }
+
+    <div class="row">
+        <div class="mini-link-card">
+            <img src="/img/il/il-profile.svg" alt="" />
+            <h3>Vincular otro alumno</h3>
+            <p>Vincula a otro hijo para gestionar su saldo.</p>
+            <a class="btn ghost" href="/Students" style="width:100%">Vincular un alumno</a>
+        </div>
+
+        <div class="card" style="flex:1.6 1 380px">
+            <h2>Recargar saldo</h2>
+            <p class="muted" style="margin-top:-8px">Selecciona un monto o ingresa uno personalizado.</p>
+            <form method="post" asp-page-handler="TopUp">
             <input type="hidden" name="studentId" value="@Model.Selected.StudentId" />
             <input type="hidden" name="accountId" value="@Model.Selected.AccountId" />
 
-            <label id="lbl-monto">Monto (MXN)</label>
+            <label id="lbl-monto">Montos sugeridos</label>
             <div class="amount-pad" role="group" aria-labelledby="lbl-monto">
                 @foreach (var p in Model.Presets)
                 {
                     <button type="button" class="preset" data-amount="@p.ToString("0.##")" aria-pressed="false">@p.ToString("C0")</button>
                 }
             </div>
+            <label for="amount">Monto personalizado (MXN)</label>
             <input id="amount" name="amount" type="number" inputmode="decimal"
                    min="@Model.MinTopUp.ToString("0.##")" max="@Model.MaxTopUp.ToString("0.##")" step="1"
-                   value="@Model.Presets.First().ToString("0.##")" required aria-label="Otro monto" />
+                   value="@Model.Presets.First().ToString("0.##")" required />
             <p class="muted">Entre @Model.MinTopUp.ToString("C2") y @Model.MaxTopUp.ToString("C2"). El estudiante recibe el 100% del monto recargado.</p>
 
             <label>Método de pago</label>
@@ -77,8 +102,9 @@ else
                 </span>
             </div>
 
-            <div style="margin-top:18px"><button class="btn accent" type="submit">Continuar al pago</button></div>
+            <div style="margin-top:18px"><button class="btn accent" type="submit" style="width:100%">Recargar saldo</button></div>
         </form>
+        </div>
     </div>
 
     <div class="card">
@@ -104,6 +130,12 @@ else
             </table>
             <p style="margin-top:10px"><a href="/Transactions?StudentId=@Model.Selected.StudentId&amp;Kind=TopUps">Ver todas las recargas →</a></p>
         }
+    </div>
+
+    <div class="secbar">
+        <img src="/img/il/il-shield.svg" alt="" aria-hidden="true" />
+        <div><b>Transacciones 100% seguras</b><span>Tus pagos están protegidos con encriptación de nivel bancario.</span></div>
+        <span class="badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#2f6bff" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
     </div>
 
     <script>

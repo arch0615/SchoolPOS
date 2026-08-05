@@ -46,7 +46,7 @@
         .dash-greet .date { color:var(--muted); font-size:14px; text-transform:capitalize; }
         .lowbal { background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; border-radius:12px; padding:11px 14px;
                   font-size:14px; font-weight:600; margin-bottom:16px; }
-        .hero { background:linear-gradient(135deg,#2563eb,#3b82f6); color:#fff; border-radius:20px; padding:26px 28px; margin-bottom:18px; }
+        .hero { background:linear-gradient(135deg,#2f6bff,#4f46e5); color:#fff; border-radius:20px; padding:26px 28px; margin-bottom:18px; }
         .hero .lbl { opacity:.85; font-size:14px; }
         .hero .bal { font-size:42px; font-weight:800; line-height:1.05; margin:2px 0; letter-spacing:-1px; }
         .hero .who { opacity:.92; font-size:14px; }
@@ -65,15 +65,11 @@
                padding:10px 14px; text-decoration:none; color:var(--text); min-width:190px; transition:.12s; }
         .kid:hover { border-color:#c7d7f2; text-decoration:none; }
         .kid.is-active { border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,.12); }
-        .kid-av { width:40px; height:40px; border-radius:50%; background:var(--primary-tint); color:var(--primary-dark);
+        .kid-av { width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#a78bfa,#7c3aed); color:#fff;
                   font-weight:800; display:flex; align-items:center; justify-content:center; font-size:15px; flex:0 0 40px; }
         .kid-info strong { display:block; font-size:14px; } .kid-info small { color:var(--muted); font-size:13px; }
         .kid.add { color:var(--primary); font-weight:700; }
-        .kid.add .kid-av { background:var(--primary); color:#fff; }
-
-        .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; }
-        .stat { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 18px; }
-        .stat .n { font-size:22px; font-weight:800; letter-spacing:-.5px; } .stat .l { color:var(--muted); font-size:13px; margin-top:2px; }
+        .kid.add .kid-av { background:linear-gradient(135deg,#2f6bff,#4f46e5); color:#fff; }
 
         .mv { list-style:none; margin:0; padding:0; }
         .mv li { display:flex; align-items:center; gap:12px; padding:12px 2px; border-bottom:1px solid var(--line); }
@@ -85,9 +81,7 @@
         .mv-amt.pos { color:#16a34a; } .mv-amt.neg { color:#dc2626; }
         .empty { text-align:center; padding:34px 16px; color:var(--muted); }
         .empty .big { font-size:34px; }
-        @@media (max-width:640px) { .stats { grid-template-columns:1fr 1fr; } .kid { min-width:0; flex:1 1 46%; } }
-        /* Blue panel border matching the page container (topbar) blue. */
-        main.content .card { border-color:#2663db; }
+        @@media (max-width:640px) { .kid { min-width:0; flex:1 1 46%; } }
     </style>
 }
 
@@ -102,8 +96,8 @@
 @if (Model.Students.Count == 0)
 {
     <div class="card empty">
-        <div class="big">🎒</div>
-        <h2 style="justify-content:center">Vincula a tu primer alumno</h2>
+        <img src="/img/il/il-backpack.svg" alt="" style="width:96px;height:96px" />
+        <h2 style="justify-content:center;margin-top:8px">Vincula a tu primer alumno</h2>
         <p class="muted">Conéctalo con su matrícula para ver su saldo y recargarlo en segundos.</p>
         <div style="margin-top:14px"><a class="btn" href="/Students">Vincular un alumno</a></div>
     </div>
@@ -148,10 +142,10 @@ else
     </div>
 
     <!-- Quick stats -->
-    <div class="stats">
-        <div class="stat"><div class="n">@total.ToString("C2")</div><div class="l">Saldo total</div></div>
-        <div class="stat"><div class="n">@Model.Students.Count</div><div class="l">@(Model.Students.Count == 1 ? "Alumno vinculado" : "Alumnos vinculados")</div></div>
-        <div class="stat"><div class="n">@gastado.ToString("C2")</div><div class="l">Gastado reciente</div></div>
+    <div class="mkpi-grid">
+        <div class="mkpi"><span class="ic b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M16 12h3"/></svg></span><div><div class="n">@total.ToString("C2")</div><div class="l">Saldo total</div></div></div>
+        <div class="mkpi"><span class="ic v" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg></span><div><div class="n">@Model.Students.Count</div><div class="l">@(Model.Students.Count == 1 ? "Alumno vinculado" : "Alumnos vinculados")</div></div></div>
+        <div class="mkpi"><span class="ic r" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg></span><div><div class="n" style="color:#dc2626">@gastado.ToString("C2")</div><div class="l">Gastado reciente</div></div></div>
     </div>
 
     <!-- Recent movements -->
@@ -162,7 +156,7 @@ else
         </div>
         @if (Model.Movements.Count == 0)
         {
-            <div class="empty"><div class="big">📭</div><p>Aún no hay movimientos para @Model.Selected?.FullName.</p>
+            <div class="empty"><img src="/img/il/il-statement.svg" alt="" style="width:88px;height:88px" /><p>Aún no hay movimientos para @Model.Selected?.FullName.</p>
                 <a class="btn" href="/Wallet?studentId=@Model.Selected!.StudentId">Hacer la primera recarga</a></div>
         }
         else

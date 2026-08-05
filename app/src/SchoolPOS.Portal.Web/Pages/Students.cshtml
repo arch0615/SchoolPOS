@@ -7,34 +7,39 @@
 @section Head {
     <style>
         .students { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-bottom: 18px; }
-        .student { background: var(--card); border-radius: var(--radius); padding: 20px;
-                   box-shadow: 0 2px 8px rgba(0,0,0,.05); display: flex; flex-direction: column; gap: 4px; }
-        .student .avatar { width: 46px; height: 46px; border-radius: 50%; background: var(--primary-tint);
-                           color: var(--primary-dark); font-weight: 700; font-size: 16px;
+        .student { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 20px;
+                   box-shadow: 0 8px 24px rgba(16,32,64,.05); display: flex; flex-direction: column; gap: 4px; }
+        .student .avatar { width: 48px; height: 48px; border-radius: 50%;
+                           background: linear-gradient(135deg,#a78bfa,#7c3aed); color: #fff; font-weight: 700; font-size: 16px;
                            display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
         .student .name { font-size: 17px; font-weight: 600; }
         .student .amount { font-size: 26px; font-weight: 800; color: var(--primary); margin: 8px 0 2px; }
         .student .actions { display: flex; gap: 8px; margin-top: 14px; }
         .student .actions .btn { flex: 1; text-align: center; padding: 10px 12px; font-size: 14px; }
-        .warn { display: inline-block; padding: 2px 8px; border-radius: 10px; background: #fffbeb;
-                color: #b45309; font-size: 12px; font-weight: 600; }
     </style>
 }
 
 @if (!string.IsNullOrEmpty(Model.Message)) { <div class="msg ok">@Model.Message</div> }
 @if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
 
-<div class="page-head">
+<div class="page-head with-illus">
     <div>
         <div class="eyebrow2">Cuenta</div>
         <h1 style="margin:8px 0 0">Mis alumnos</h1>
         <p class="sub">Saldo de cada hijo vinculado a tu cuenta.</p>
     </div>
+    <img class="head-illus" src="/img/il/il-backpack.svg" alt="" aria-hidden="true" />
 </div>
 
 @if (Model.Students.Count == 0)
 {
-    <div class="card"><div class="empty"><div class="em" aria-hidden="true">🎒</div><p>Aún no has vinculado a ningún alumno. Ingresa su matrícula para empezar.</p></div></div>
+    <div class="card">
+        <div class="empty">
+            <img src="/img/il/il-backpack.svg" alt="" style="width:96px;height:96px" />
+            <b style="display:block;margin-top:8px;font-size:18px">Aún no has vinculado a ningún alumno</b>
+            <p>Ingresa su matrícula para empezar a gestionar su saldo.</p>
+        </div>
+    </div>
 }
 else
 {
@@ -48,7 +53,7 @@ else
                 <div class="amount">@s.Balance.ToString("C2")</div>
                 @if (s.Balance < Model.LowBalanceThreshold)
                 {
-                    <div><span class="warn">⚠ Saldo bajo</span></div>
+                    <div><span class="status warn">⚠ Saldo bajo</span></div>
                 }
                 <div class="actions">
                     <a class="btn accent" href="/Wallet?studentId=@s.StudentId">Recargar</a>
@@ -65,6 +70,12 @@ else
     <form method="post" asp-page-handler="LinkStudent">
         <label>Matrícula</label>
         <input name="enrollmentNo" placeholder="Ej. MAT-001" required />
-        <div style="margin-top:12px"><button class="btn" type="submit">Vincular</button></div>
+        <div style="margin-top:12px"><button class="btn violet" type="submit">Vincular alumno</button></div>
     </form>
+</div>
+
+<div class="secbar rose" style="margin-top:18px">
+    <img src="/img/il/il-shield.svg" alt="" aria-hidden="true" />
+    <div><b>Tu información está segura</b><span>Solo podrás ver y gestionar los alumnos vinculados a tu cuenta.</span></div>
+    <span class="badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
 </div>

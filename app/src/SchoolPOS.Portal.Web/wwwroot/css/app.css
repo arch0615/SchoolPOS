@@ -15,6 +15,8 @@ main .card { border:1px solid var(--line); box-shadow:0 1px 2px rgba(15,23,42,.0
 .btn { transition:transform .12s ease, background .15s, box-shadow .15s; }
 main .btn:hover { transform:translateY(-1px); }
 main .btn:active { transform:translateY(0); }
+main .btn.violet { background:linear-gradient(135deg,#8b5cf6,#7c3aed); }
+main .btn.violet:hover { background:linear-gradient(135deg,#7c3aed,#6d28d9); }
 
 /* --- inputs (higher specificity wins over base) --- */
 main .card input:not([type=checkbox]):not([type=radio]):not([type=hidden]),
@@ -68,9 +70,26 @@ main .card input:focus, main .card select:focus { border-color:var(--primary); b
 .settings-grid { display:grid; grid-template-columns:280px 1fr; gap:18px; align-items:start; }
 .settings-grid .stack { display:flex; flex-direction:column; gap:18px; }
 .profile-sum { text-align:center; }
-.profile-sum .pav { width:74px; height:74px; border-radius:50%; margin:0 auto 12px; background:var(--primary-tint);
-  color:var(--primary-dark); font-weight:800; font-size:26px; display:flex; align-items:center; justify-content:center; }
+.profile-sum .pav { width:80px; height:80px; border-radius:50%; margin:0 auto 12px;
+  background:linear-gradient(135deg,#818cf8,#7c3aed); color:#fff; font-weight:800; font-size:28px;
+  display:flex; align-items:center; justify-content:center; }
+.profile-sum .active-chip { display:inline-flex; align-items:center; gap:5px; margin-top:10px; padding:4px 12px;
+  border-radius:999px; background:#e7f9ee; color:#16a34a; font-size:12px; font-weight:700; }
 @media (max-width:760px){ .settings-grid { grid-template-columns:1fr; } }
+
+/* Settings card with a side illustration (Profile: Datos personales / Seguridad / Avisos). */
+.setting-row { display:flex; align-items:center; gap:20px; }
+.setting-row .sr-body { flex:1; min-width:0; }
+.setting-row .sr-illus { width:100px; height:100px; flex:0 0 auto; }
+@media (max-width:900px){ .setting-row .sr-illus { display:none; } }
+
+/* Show/hide toggle on password inputs. */
+.pw-wrap { position:relative; }
+.pw-wrap input { padding-right:42px; }
+.pw-wrap .pw-toggle { position:absolute; top:50%; right:10px; transform:translateY(-50%); border:0; background:none;
+  color:#94a3b8; cursor:pointer; padding:4px; display:flex; }
+.pw-wrap .pw-toggle:hover { color:var(--primary); }
+.pw-wrap .pw-toggle svg { width:18px; height:18px; }
 
 /* --- wallet: amount pad + method card --- */
 .amount-pad { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
@@ -203,6 +222,47 @@ body.has-shell .sidebar a.active { background:linear-gradient(135deg,#2f6bff,#4f
 .page-head.with-illus { align-items:center; }
 .page-head .head-illus { width:120px; height:120px; flex:0 0 auto; }
 @media (max-width:640px){ .page-head .head-illus { display:none; } }
+
+/* --- Wallet: balance summary strip + mini-stats --- */
+.wsum { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:22px 26px;
+  box-shadow:0 8px 24px rgba(16,32,64,.05); display:flex; align-items:center; gap:28px; flex-wrap:wrap; margin-bottom:18px; }
+.wsum .wbal { display:flex; align-items:center; gap:16px; }
+.wsum .wbal .ic { width:54px; height:54px; flex:0 0 54px; border-radius:50%; background:#e9f0ff; display:flex; align-items:center; justify-content:center; }
+.wsum .wbal .ic svg { width:26px; height:26px; }
+.wsum .wbal .l { color:var(--muted); font-size:13px; }
+.wsum .wbal .n { font-size:30px; font-weight:800; letter-spacing:-.6px; }
+.wsum .wbal .pill { display:inline-flex; align-items:center; margin-top:4px; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700; }
+.wsum .wbal .pill.ok { background:#e7f9ee; color:#16a34a; }
+.wsum .wstats { display:flex; gap:26px; margin-left:auto; flex-wrap:wrap; }
+.wsum .wstats .st { padding-left:22px; border-left:1px solid var(--line); }
+.wsum .wstats .st:first-child { border-left:0; padding-left:0; }
+.wsum .wstats .l { color:var(--muted); font-size:12px; }
+.wsum .wstats .n { font-size:16px; font-weight:700; margin-top:2px; font-variant-numeric:tabular-nums; }
+@media (max-width:760px){ .wsum { flex-direction:column; align-items:flex-start; } .wsum .wstats { margin-left:0; } }
+
+/* Selected amount chip gets a small checkmark badge (no JS/DOM change needed). */
+.amount-pad button[aria-pressed="true"] { position:relative; }
+.amount-pad button[aria-pressed="true"]::after { content:"✓"; position:absolute; top:-8px; right:-8px; width:19px; height:19px;
+  border-radius:50%; background:var(--primary); color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+
+/* --- Small "link another child" card, sits beside a primary form --- */
+.mini-link-card { flex:0 0 240px; background:var(--card); border:1px solid var(--line); border-radius:20px; padding:22px;
+  text-align:center; display:flex; flex-direction:column; align-items:center; }
+.mini-link-card img { width:76px; height:76px; margin-bottom:4px; }
+.mini-link-card h3 { font-size:15.5px; margin:6px 0 4px; }
+.mini-link-card p { color:var(--muted); font-size:13px; margin:0 0 14px; }
+
+/* --- Security reassurance strip --- */
+.secbar { display:flex; align-items:center; gap:14px; background:#eef4ff; border-radius:16px; padding:16px 20px; margin-top:4px; }
+.secbar img { width:40px; height:40px; flex:0 0 40px; }
+.secbar b { font-size:14.5px; display:block; }
+.secbar span { color:var(--muted); font-size:13px; }
+.secbar .badge { margin-left:auto; width:38px; height:38px; flex:0 0 38px; border-radius:50%; background:#dbe7ff; display:flex; align-items:center; justify-content:center; }
+.secbar .badge svg { width:18px; height:18px; }
+@media (max-width:560px){ .secbar { flex-wrap:wrap; } .secbar .badge { margin-left:0; } }
+.secbar.rose { background:#fdf2f6; }
+.secbar.rose .badge { background:#fbcfe1; }
+.secbar.rose .badge svg { stroke:#e11d48; }
 
 /* --- topbar user menu (dropdown) --- */
 .usermenu { position:relative; }
