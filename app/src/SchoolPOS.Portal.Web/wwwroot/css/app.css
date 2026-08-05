@@ -147,6 +147,63 @@ body.is-app header { background:#2663db; border-bottom-color:#1c47a8; box-shadow
 body.is-app .bar nav > a { color:#fff; }
 body.is-app .bar nav > a:hover { color:#dbe7ff; }
 
+/* ============================================================
+   MOCKUP SHELL — navy sidebar (logo + support) + navy-left topbar
+   ============================================================ */
+/* Topbar: navy strip on the left (256px, merges with the sidebar) + white to the right. */
+body.has-shell header { background:linear-gradient(90deg,#0b1f45 0,#0b1f45 256px,#fff 256px); border-bottom:1px solid var(--line); box-shadow:none; }
+body.has-shell .bar { height:66px; }
+body.has-shell .bar nav > a { color:#334155; }
+.brand.app-brand { display:flex; align-items:center; gap:10px; color:#fff; font-weight:800; font-size:19px; }
+.brand.app-brand .apple { width:30px; height:30px; border-radius:9px; background:linear-gradient(135deg,#fb923c,#f97316); display:flex; align-items:center; justify-content:center; font-size:16px; }
+.brand.app-brand .gold { color:#fbbf24; }
+.topbell { display:flex; align-items:center; color:#475569; padding:4px; }
+.topbell svg { width:23px; height:23px; }
+.topbell:hover { color:var(--primary); text-decoration:none; }
+
+/* Sidebar: navy gradient column with the nav on top and the support card pinned bottom. */
+body.has-shell .sidebar { background:linear-gradient(180deg,#0b1f45,#0a1834); border-right:0; width:256px; flex:0 0 256px; padding:16px 14px 20px; display:flex; flex-direction:column; }
+.side-nav { display:flex; flex-direction:column; gap:4px; }
+.side-nav a { display:flex; align-items:center; gap:12px; padding:11px 14px; border:0; border-radius:12px; color:#c7d2e6; font-weight:600; font-size:15px; }
+.side-nav a svg { width:20px; height:20px; flex:0 0 20px; }
+.side-nav a:hover { background:rgba(255,255,255,.06); color:#fff; text-decoration:none; }
+.side-nav a.active { background:linear-gradient(135deg,#2f6bff,#4f46e5); color:#fff; border-radius:12px; box-shadow:0 8px 20px rgba(47,107,255,.4); }
+/* Applies to every app-shell sidebar link (parent side-nav + vendor/school direct links). */
+body.has-shell .sidebar a { color:#c7d2e6; font-weight:600; border-color:transparent; }
+body.has-shell .sidebar a:hover { background:rgba(255,255,255,.06); color:#fff; text-decoration:none; }
+body.has-shell .sidebar a.active { background:linear-gradient(135deg,#2f6bff,#4f46e5); color:#fff; border-radius:12px; box-shadow:0 8px 20px rgba(47,107,255,.4); }
+
+.side-support { margin-top:auto; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:16px; text-align:center; color:#c7d2e6; }
+.side-support img { width:60px; height:60px; filter:drop-shadow(0 6px 14px rgba(124,58,237,.5)); }
+.side-support .ss-t { color:#fff; font-weight:700; font-size:14px; margin-top:6px; }
+.side-support .ss-s { font-size:12px; margin:2px 0 12px; }
+.side-support .ss-b { display:inline-flex; align-items:center; gap:7px; border:1px solid rgba(255,255,255,.35); background:transparent;
+  color:#fff; border-radius:999px; padding:8px 14px; font:inherit; font-size:13px; font-weight:600; cursor:pointer; width:auto; }
+.side-support .ss-b svg { width:15px; height:15px; }
+.side-support .ss-b:hover { background:rgba(255,255,255,.1); text-decoration:none; }
+.side-support .ss-link { display:block; margin-top:10px; font-size:11.5px; color:#93a4c4; }
+.side-support .ss-link:hover { color:#fff; text-decoration:underline; }
+
+@media (max-width:860px){
+  body.has-shell header { background:#0b1f45; }
+  body.has-shell .bar nav > a, body.has-shell .topbell { color:#fff; }
+}
+
+/* Mockup KPI tile: soft-tint circle icon (left) + label + colored number. */
+.mkpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:14px; margin-bottom:18px; }
+.mkpi { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px 20px; display:flex; align-items:center; gap:14px; box-shadow:0 8px 24px rgba(16,32,64,.05); }
+.mkpi .ic { width:46px; height:46px; flex:0 0 46px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+.mkpi .ic svg { width:22px; height:22px; fill:none; stroke-width:2; }
+.mkpi .l { color:var(--muted); font-size:13px; }
+.mkpi .n { font-size:22px; font-weight:800; letter-spacing:-.4px; }
+.mkpi .ic.g{background:#e7f9ee;stroke:#16a34a} .mkpi .ic.r{background:#fdecec;stroke:#dc2626}
+.mkpi .ic.b{background:#e9f0ff;stroke:#2f6bff} .mkpi .ic.v{background:#f1eafe;stroke:#7c3aed}
+
+/* Page header with a floating illustration on the right. */
+.page-head.with-illus { align-items:center; }
+.page-head .head-illus { width:120px; height:120px; flex:0 0 auto; }
+@media (max-width:640px){ .page-head .head-illus { display:none; } }
+
 /* --- topbar user menu (dropdown) --- */
 .usermenu { position:relative; }
 .usermenu-btn { display:flex; align-items:center; gap:9px; background:#fff; border:1px solid #93c5fd;
@@ -167,8 +224,31 @@ body.is-app .bar nav > a:hover { color:#dbe7ff; }
 .usermenu-sep { height:1px; background:var(--line); margin:6px 4px; }
 .usermenu-pop .usermenu-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:9px;
   color:var(--text); font-size:14px; font-weight:600; }
+.usermenu-pop button.usermenu-item { width:100%; border:0; background:none; font:inherit; text-align:left; cursor:pointer; }
 .usermenu-pop .usermenu-item:hover { background:var(--primary-tint); color:var(--primary-dark); text-decoration:none; }
 .usermenu-pop .usermenu-item.danger { color:var(--danger); }
 .usermenu-pop .usermenu-item.danger:hover { background:#fef2f2; color:#b91c1c; }
+
+/* --- Guía de uso (role-aware site guide modal) --- */
+.guide-overlay { position:fixed; inset:0; background:rgba(10,20,40,.5); backdrop-filter:blur(2px);
+  display:flex; align-items:center; justify-content:center; padding:20px; z-index:200; }
+.guide-overlay[hidden] { display:none; }
+.guide-modal { position:relative; background:#fff; border-radius:22px; width:100%; max-width:480px;
+  max-height:min(640px,90vh); overflow-y:auto; padding:30px 26px 22px; box-shadow:0 30px 70px rgba(10,20,40,.35); }
+.guide-close { position:absolute; top:16px; right:16px; width:34px; height:34px; border-radius:50%; border:0;
+  background:#f1f5f9; color:#475569; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.guide-close svg { width:16px; height:16px; }
+.guide-close:hover { background:#e2e8f0; }
+.guide-head h2 { font-size:22px; font-weight:800; margin:8px 0 4px; letter-spacing:-.4px; }
+.guide-list { display:flex; flex-direction:column; gap:8px; margin-top:18px; }
+.guide-item { display:flex; align-items:center; gap:14px; padding:12px; border-radius:14px; border:1px solid var(--line); color:var(--text); }
+.guide-item:hover { border-color:#cfe0ff; background:var(--primary-tint); text-decoration:none; }
+.guide-item .gi-ico { width:40px; height:40px; flex:0 0 40px; border-radius:11px; background:#eef4ff;
+  display:flex; align-items:center; justify-content:center; font-size:19px; }
+.guide-item .gi-txt { flex:1; min-width:0; display:flex; flex-direction:column; }
+.guide-item .gi-txt b { font-size:14.5px; font-weight:700; }
+.guide-item .gi-txt span { font-size:12.5px; color:var(--muted); }
+.guide-item .gi-arrow { width:16px; height:16px; color:#94a3b8; flex:0 0 16px; }
+@media (max-width:480px){ .guide-modal { padding:24px 18px 18px; } }
 .umi-ico { width:18px; text-align:center; font-size:15px; }
 @media (max-width:520px){ .um-name { display:none; } }
