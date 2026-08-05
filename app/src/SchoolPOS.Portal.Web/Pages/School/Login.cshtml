@@ -41,8 +41,8 @@
                 {
                     <input type="hidden" name="SchoolId" value="@Model.SchoolId" />
                 }
-                <label>Usuario</label>
-                <input asp-for="Username" autocomplete="username" autofocus />
+                <label>Correo electrónico</label>
+                <input asp-for="Username" type="email" autocomplete="username" placeholder="tu@correo.com" autofocus />
                 <label>Contraseña</label>
                 <input asp-for="Password" type="password" autocomplete="current-password" placeholder="••••••••" />
                 <button class="btn" type="submit">Entrar</button>

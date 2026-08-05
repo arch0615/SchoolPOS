@@ -50,7 +50,14 @@ public class LoginModel : PageModel
             return Page();
         }
 
-        var result = await _auth.AuthenticateAsync(SchoolId, Username.Trim(), Password);
+        var user = Username.Trim();
+        if (!user.Contains('@'))
+        {
+            Error = "El usuario debe ser un correo electrónico (incluir @).";
+            return Page();
+        }
+
+        var result = await _auth.AuthenticateAsync(SchoolId, user, Password);
         if (!result.Succeeded || result.User is null)
         {
             Error = "Usuario o contraseña incorrectos.";
