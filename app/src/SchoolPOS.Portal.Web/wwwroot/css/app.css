@@ -183,14 +183,16 @@ body.has-shell .bar nav > a { color:#334155; }
 
 /* Sidebar collapse/expand toggle, sits in the navy strip next to the brand. */
 .sidebar-toggle { display:flex; align-items:center; justify-content:center; width:32px; height:32px; margin-left:6px;
-  border:0; border-radius:9px; background:rgba(255,255,255,.08); color:#fff; cursor:pointer; flex:0 0 32px; }
+  border:0; border-radius:9px; background:#1f2937; color:#fff; cursor:pointer; flex:0 0 32px; }
 .sidebar-toggle svg { width:18px; height:18px; }
-.sidebar-toggle:hover { background:rgba(255,255,255,.16); }
+.sidebar-toggle:hover { background:#374151; }
 
 /* Sidebar: navy gradient column (slightly lighter than the original navy) with the nav on
    top and the support card pinned bottom. */
+/* Sticks below the topbar and keeps its own scroll, so the nav stays put while the page scrolls. */
 body.has-shell .sidebar { background:linear-gradient(180deg,#132a52,#0f1e3c); border-right:0; width:256px; flex:0 0 256px;
-  padding:16px 14px 20px; display:flex; flex-direction:column; transition:width .18s ease, padding .18s ease; }
+  padding:16px 14px 20px; display:flex; flex-direction:column; transition:width .18s ease, padding .18s ease;
+  position:sticky; top:66px; height:calc(100vh - 66px); overflow-y:auto; align-self:flex-start; }
 .side-nav { display:flex; flex-direction:column; gap:4px; }
 .side-nav a { display:flex; align-items:center; gap:12px; padding:11px 14px; border:0; border-radius:12px; color:#c7d2e6; font-weight:600; font-size:15px; }
 .side-nav a svg { width:20px; height:20px; flex:0 0 20px; }
