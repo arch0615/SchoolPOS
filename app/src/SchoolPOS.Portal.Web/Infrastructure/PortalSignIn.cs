@@ -33,13 +33,15 @@ public static class PortalSignIn
         return http.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
     }
 
-    /// <summary>Emite la cookie de una tienda escolar: operador del POS, limitado a su escuela.</summary>
+    /// <summary>Emite la cookie de una tienda escolar: operador del POS, limitado a su escuela.
+    /// El rol del operador (Cashier/Warehouse/Admin) viaja como claim para el control de acceso.</summary>
     public static Task SignInSchoolAsync(HttpContext http, User user)
     {
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Name, user.Username),
+            new(ClaimTypes.Role, user.Role.ToString()),
             new(ClaimsExtensions.PortalRoleClaim, "school"),
             new(ClaimsExtensions.SchoolIdClaim, user.SchoolId.ToString()),
         };

@@ -7,7 +7,7 @@ using SchoolPOS.Portal.Web.Infrastructure;
 namespace SchoolPOS.Portal.Web.Pages.School;
 
 /// <summary>Inventario de la propia escuela (solo lectura). Limitado por el claim school_id.</summary>
-[Authorize(Policy = "School")]
+[Authorize(Policy = "SchoolInventory")]
 public class InventoryModel : PageModel
 {
     private readonly SchoolDbContext _db;

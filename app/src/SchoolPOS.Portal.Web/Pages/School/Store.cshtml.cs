@@ -9,7 +9,7 @@ namespace SchoolPOS.Portal.Web.Pages.School;
 /// Panel de la propia tienda escolar. Limitado a la escuela del operador (claim school_id): una
 /// escuela nunca ve datos de otra.
 /// </summary>
-[Authorize(Policy = "School")]
+[Authorize(Policy = "SchoolAdmin")]
 public class StoreModel : PageModel
 {
     private readonly SchoolDbContext _db;

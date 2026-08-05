@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using SchoolPOS.Data;
 using SchoolPOS.Domain.Abstractions;
+using SchoolPOS.Domain.Enums;
 using SchoolPOS.Portal.Web.Infrastructure;
 
 namespace SchoolPOS.Portal.Web.Pages.School;
@@ -57,7 +58,15 @@ public class LoginModel : PageModel
         }
 
         await PortalSignIn.SignInSchoolAsync(HttpContext, result.User);
-        return RedirectToPage("/School/Store");
+
+        // Cada rol aterriza en la página que sí puede ver (RBAC).
+        var target = result.User.Role switch
+        {
+            UserRole.Admin => "/School/Store",
+            UserRole.Warehouse => "/School/Inventory",
+            _ => "/School/Sales",
+        };
+        return RedirectToPage(target);
     }
 
     private async Task LoadSchoolsAsync() =>

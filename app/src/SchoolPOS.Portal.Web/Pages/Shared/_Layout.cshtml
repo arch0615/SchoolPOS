@@ -6,6 +6,11 @@
     var showShell = authed && !isVendor && !isSchool;   // parent app-shell (sidebar)
     var showVendorShell = authed && isVendor;           // vendor app-shell (sidebar)
     var showSchoolShell = authed && isSchool;            // school-store app-shell (sidebar)
+    // RBAC de la tienda (refleja PosSession del POS): Cajero / Almacén / Administrador.
+    var schoolAdmin = isSchool && User.IsInRole("Admin");
+    var schoolInv = isSchool && (User.IsInRole("Admin") || User.IsInRole("Warehouse"));
+    var schoolRoleLabel = User.IsInRole("Admin") ? "Administrador" : User.IsInRole("Warehouse") ? "Almacén" : "Cajero";
+    var schoolHome = schoolAdmin ? "/School/Store" : (isSchool && User.IsInRole("Warehouse")) ? "/School/Inventory" : "/School/Sales";
     var isLanding = !authed && (path == "/" || path.Equals("/Index", StringComparison.OrdinalIgnoreCase));
     Func<string, bool> isActive = p => path.StartsWith(p, StringComparison.OrdinalIgnoreCase);
 }
@@ -111,7 +116,7 @@
 <body class="@(isLanding ? "is-landing" : "is-app")">
     <header>
         <div class="bar">
-            <a class="brand" href="@(showShell ? "/Dashboard" : showVendorShell ? "/Vendor/Dashboard" : showSchoolShell ? "/School/Store" : "/")"><img src="/img/loncherapp-logo.svg" alt="LoncherApp" /></a>
+            <a class="brand" href="@(showShell ? "/Dashboard" : showVendorShell ? "/Vendor/Dashboard" : showSchoolShell ? schoolHome : "/")"><img src="/img/loncherapp-logo.svg" alt="LoncherApp" /></a>
             @if (isLanding)
             {
                 <span class="lnav">
@@ -132,7 +137,7 @@
                     var uparts = uname.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                     var uinit = uparts.Length == 0 ? "?"
                         : (uparts[0].Substring(0, 1) + (uparts.Length > 1 ? uparts[1].Substring(0, 1) : "")).ToUpperInvariant();
-                    var urole = showVendorShell ? "Panel del proveedor" : showSchoolShell ? "Tienda escolar" : "Padre / tutor";
+                    var urole = showVendorShell ? "Panel del proveedor" : showSchoolShell ? $"{schoolRoleLabel} · Tienda" : "Padre / tutor";
                     <div class="usermenu">
                         <button type="button" class="usermenu-btn" id="usermenu-btn" aria-haspopup="true" aria-expanded="false">
                             <span class="um-av" aria-hidden="true">@uinit</span>
@@ -212,20 +217,38 @@
     {
         <div class="shell">
             <aside class="sidebar">
-                <a href="/School/Store" class="@(isActive("/School/Store") ? "active" : "")"><span class="ico">🛒</span> Mi tienda</a>
+                @if (schoolAdmin)
+                {
+                    <a href="/School/Store" class="@(isActive("/School/Store") ? "active" : "")"><span class="ico">🛒</span> Mi tienda</a>
+                }
                 <a href="/School/Sales" class="@(isActive("/School/Sales") ? "active" : "")"><span class="ico">🧾</span> Ventas</a>
-                <a href="/School/Inventory" class="@(isActive("/School/Inventory") ? "active" : "")"><span class="ico">📦</span> Inventario</a>
-                <a href="/School/Reports" class="@(isActive("/School/Reports") ? "active" : "")"><span class="ico">📈</span> Reportes</a>
+                @if (schoolInv)
+                {
+                    <a href="/School/Inventory" class="@(isActive("/School/Inventory") ? "active" : "")"><span class="ico">📦</span> Inventario</a>
+                }
+                @if (schoolAdmin)
+                {
+                    <a href="/School/Reports" class="@(isActive("/School/Reports") ? "active" : "")"><span class="ico">📈</span> Reportes</a>
+                }
             </aside>
             <main class="content">
                 @RenderBody()
             </main>
         </div>
         <nav class="bottomnav">
-            <a href="/School/Store" class="@(isActive("/School/Store") ? "active" : "")"><span class="ico">🛒</span>Tienda</a>
+            @if (schoolAdmin)
+            {
+                <a href="/School/Store" class="@(isActive("/School/Store") ? "active" : "")"><span class="ico">🛒</span>Tienda</a>
+            }
             <a href="/School/Sales" class="@(isActive("/School/Sales") ? "active" : "")"><span class="ico">🧾</span>Ventas</a>
-            <a href="/School/Inventory" class="@(isActive("/School/Inventory") ? "active" : "")"><span class="ico">📦</span>Inventario</a>
-            <a href="/School/Reports" class="@(isActive("/School/Reports") ? "active" : "")"><span class="ico">📈</span>Reportes</a>
+            @if (schoolInv)
+            {
+                <a href="/School/Inventory" class="@(isActive("/School/Inventory") ? "active" : "")"><span class="ico">📦</span>Inventario</a>
+            }
+            @if (schoolAdmin)
+            {
+                <a href="/School/Reports" class="@(isActive("/School/Reports") ? "active" : "")"><span class="ico">📈</span>Reportes</a>
+            }
         </nav>
     }
     else if (isLanding)

@@ -9,7 +9,7 @@ using SchoolPOS.Portal.Web.Infrastructure;
 namespace SchoolPOS.Portal.Web.Pages.School;
 
 /// <summary>Reportes de ventas de la propia escuela (solo lectura). Limitado por el claim school_id.</summary>
-[Authorize(Policy = "School")]
+[Authorize(Policy = "SchoolAdmin")]
 public class ReportsModel : PageModel
 {
     private readonly SchoolDbContext _db;

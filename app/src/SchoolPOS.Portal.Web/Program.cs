@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using SchoolPOS.Data;
 using SchoolPOS.Domain.Abstractions;
+using SchoolPOS.Domain.Enums;
 using SchoolPOS.Payments.MercadoPago;
 using SchoolPOS.Invoicing.Sw;
 using SchoolPOS.Portal.Web.Infrastructure;
@@ -98,16 +99,32 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     {
         options.LoginPath = "/Account/Login";
         options.LogoutPath = "/Account/Logout";
-        options.AccessDeniedPath = "/Account/Login";
+        options.AccessDeniedPath = "/Error";
         options.ExpireTimeSpan = TimeSpan.FromHours(4);
         options.SlidingExpiration = true;
+        // Autenticado pero sin permiso → página de error 403 de marca (con el código en la query).
+        options.Events.OnRedirectToAccessDenied = ctx =>
+        {
+            ctx.Response.Redirect("/Error?code=403");
+            return Task.CompletedTask;
+        };
     });
 builder.Services.AddAuthorization(options =>
 {
     // Panel del proveedor: requiere identidad de proveedor (comisiones vendor-wide).
     options.AddPolicy("Vendor", policy => policy.RequireClaim(ClaimsExtensions.PortalRoleClaim, "vendor"));
     // Panel de la tienda escolar: operador del POS, limitado a su propia escuela.
+    // RBAC de la tienda — refleja los permisos del POS de escritorio (PosSession):
+    //   School          cualquier operador activo (venta)         → Cajero/Almacén/Administrador
+    //   SchoolInventory manejo de inventario                      → Almacén/Administrador
+    //   SchoolAdmin     reportes y panel de administración        → Administrador
     options.AddPolicy("School", policy => policy.RequireClaim(ClaimsExtensions.PortalRoleClaim, "school"));
+    options.AddPolicy("SchoolInventory", policy => policy
+        .RequireClaim(ClaimsExtensions.PortalRoleClaim, "school")
+        .RequireRole(nameof(UserRole.Warehouse), nameof(UserRole.Admin)));
+    options.AddPolicy("SchoolAdmin", policy => policy
+        .RequireClaim(ClaimsExtensions.PortalRoleClaim, "school")
+        .RequireRole(nameof(UserRole.Admin)));
 });
 builder.Services.AddRazorPages();
 
