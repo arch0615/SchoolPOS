@@ -169,28 +169,41 @@ body.is-app .bar nav > a:hover { color:#dbe7ff; }
 /* ============================================================
    MOCKUP SHELL — navy sidebar (logo + support) + navy-left topbar
    ============================================================ */
-/* Topbar: navy strip on the left (256px, merges with the sidebar) + white to the right. */
-body.has-shell header { background:linear-gradient(90deg,#0b1f45 0,#0b1f45 256px,#fff 256px); border-bottom:1px solid var(--line); box-shadow:none; }
+/* Topbar: navy strip on the left (256px, merges with the sidebar) + white to the right.
+   Navy tone matches the sidebar's own top color exactly, so the seam is invisible. */
+body.has-shell header { background:linear-gradient(90deg,#132a52 0,#132a52 256px,#fff 256px); border-bottom:1px solid var(--line); box-shadow:none; }
 body.has-shell .bar { height:66px; }
 body.has-shell .bar nav > a { color:#334155; }
-.brand.app-brand { display:flex; align-items:center; gap:10px; color:#fff; font-weight:800; font-size:19px; }
-.brand.app-brand .apple { width:30px; height:30px; border-radius:9px; background:linear-gradient(135deg,#fb923c,#f97316); display:flex; align-items:center; justify-content:center; font-size:16px; }
+.brand.app-brand { display:flex; align-items:center; gap:10px; color:#fff; font-weight:800; font-size:19px; white-space:nowrap; }
+.brand.app-brand .apple { width:30px; height:30px; border-radius:9px; background:linear-gradient(135deg,#fb923c,#f97316); display:flex; align-items:center; justify-content:center; font-size:16px; flex:0 0 30px; }
 .brand.app-brand .gold { color:#fbbf24; }
 .topbell { display:flex; align-items:center; color:#475569; padding:4px; }
 .topbell svg { width:23px; height:23px; }
-.topbell:hover { color:var(--primary); text-decoration:none; }
+.topbell:hover { color:#374151; text-decoration:none; }
 
-/* Sidebar: navy gradient column with the nav on top and the support card pinned bottom. */
-body.has-shell .sidebar { background:linear-gradient(180deg,#0b1f45,#0a1834); border-right:0; width:256px; flex:0 0 256px; padding:16px 14px 20px; display:flex; flex-direction:column; }
+/* Sidebar collapse/expand toggle, sits in the navy strip next to the brand. */
+.sidebar-toggle { display:flex; align-items:center; justify-content:center; width:32px; height:32px; margin-left:6px;
+  border:0; border-radius:9px; background:rgba(255,255,255,.08); color:#fff; cursor:pointer; flex:0 0 32px; }
+.sidebar-toggle svg { width:18px; height:18px; }
+.sidebar-toggle:hover { background:rgba(255,255,255,.16); }
+
+/* Sidebar: navy gradient column (slightly lighter than the original navy) with the nav on
+   top and the support card pinned bottom. */
+body.has-shell .sidebar { background:linear-gradient(180deg,#132a52,#0f1e3c); border-right:0; width:256px; flex:0 0 256px;
+  padding:16px 14px 20px; display:flex; flex-direction:column; transition:width .18s ease, padding .18s ease; }
 .side-nav { display:flex; flex-direction:column; gap:4px; }
 .side-nav a { display:flex; align-items:center; gap:12px; padding:11px 14px; border:0; border-radius:12px; color:#c7d2e6; font-weight:600; font-size:15px; }
 .side-nav a svg { width:20px; height:20px; flex:0 0 20px; }
 .side-nav a:hover { background:rgba(255,255,255,.06); color:#fff; text-decoration:none; }
-.side-nav a.active { background:linear-gradient(135deg,#2f6bff,#4f46e5); color:#fff; border-radius:12px; box-shadow:0 8px 20px rgba(47,107,255,.4); }
+/* Selected item: a shade darker than the base accent, a matching shadow "box", and a red icon
+   so the active page reads instantly even among the icon-only collapsed state. */
+.side-nav a.active { background:linear-gradient(135deg,#2456cc,#3d36b0); color:#fff; border-radius:12px; box-shadow:0 10px 24px rgba(20,40,90,.55); }
+.side-nav a.active svg { stroke:var(--danger); }
 /* Applies to every app-shell sidebar link (parent side-nav + vendor/school direct links). */
 body.has-shell .sidebar a { color:#c7d2e6; font-weight:600; border-color:transparent; }
 body.has-shell .sidebar a:hover { background:rgba(255,255,255,.06); color:#fff; text-decoration:none; }
-body.has-shell .sidebar a.active { background:linear-gradient(135deg,#2f6bff,#4f46e5); color:#fff; border-radius:12px; box-shadow:0 8px 20px rgba(47,107,255,.4); }
+body.has-shell .sidebar a.active { background:linear-gradient(135deg,#2456cc,#3d36b0); color:#fff; border-radius:12px; box-shadow:0 10px 24px rgba(20,40,90,.55); }
+body.has-shell .sidebar a.active svg { stroke:var(--danger); }
 
 .side-support { margin-top:auto; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:16px; text-align:center; color:#c7d2e6; }
 .side-support img { width:60px; height:60px; filter:drop-shadow(0 6px 14px rgba(124,58,237,.5)); }
@@ -203,9 +216,19 @@ body.has-shell .sidebar a.active { background:linear-gradient(135deg,#2f6bff,#4f
 .side-support .ss-link { display:block; margin-top:10px; font-size:11.5px; color:#93a4c4; }
 .side-support .ss-link:hover { color:#fff; text-decoration:underline; }
 
+/* --- Collapsed sidebar: icons only --- */
+body.sidebar-collapsed.has-shell .sidebar { width:76px; flex:0 0 76px; padding:16px 10px; }
+body.sidebar-collapsed .side-nav a,
+body.sidebar-collapsed .sidebar a { justify-content:center; padding:12px; gap:0; }
+body.sidebar-collapsed .sidebar .lbl,
+body.sidebar-collapsed .side-support,
+body.sidebar-collapsed .brand.app-brand .lbl { display:none; }
+body.sidebar-collapsed.has-shell header { background:linear-gradient(90deg,#132a52 0,#132a52 76px,#fff 76px); }
+body.sidebar-collapsed .sidebar-toggle svg { transform:rotate(180deg); }
 @media (max-width:860px){
-  body.has-shell header { background:#0b1f45; }
+  body.has-shell header { background:#132a52; }
   body.has-shell .bar nav > a, body.has-shell .topbell { color:#fff; }
+  .sidebar-toggle { display:none; } /* the sidebar itself is hidden below 860px in favor of the bottom nav */
 }
 
 /* Mockup KPI tile: soft-tint circle icon (left) + label + colored number. */
