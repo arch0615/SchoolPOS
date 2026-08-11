@@ -18,7 +18,7 @@ public enum MovementFilter
     Purchases,
 }
 
-[Authorize]
+[Authorize(Policy = "Guardian")]
 public class TransactionsModel : PageModel
 {
     private readonly IGuardianService _guardians;

@@ -7,7 +7,7 @@ using SchoolPOS.Portal.Web.Infrastructure;
 
 namespace SchoolPOS.Portal.Web.Pages;
 
-[Authorize]
+[Authorize(Policy = "Guardian")]
 public class ProfileModel : PageModel
 {
     private readonly IGuardianService _guardians;

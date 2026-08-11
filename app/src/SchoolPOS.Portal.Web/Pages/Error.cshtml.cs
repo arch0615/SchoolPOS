@@ -30,5 +30,6 @@ public class ErrorModel : PageModel
             >= 500 => ("Algo salió mal", "Ocurrió un error inesperado. Intenta de nuevo en un momento.", "⚠️"),
             _ => ("Ocurrió un problema", "No se pudo completar la solicitud. Intenta de nuevo.", "⚠️"),
         };
+        Response.StatusCode = HttpStatus;
     }
 }

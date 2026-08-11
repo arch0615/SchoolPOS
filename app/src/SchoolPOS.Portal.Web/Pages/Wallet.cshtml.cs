@@ -11,7 +11,7 @@ namespace SchoolPOS.Portal.Web.Pages;
 /// Monedero (FR-WP-6): recarga dedicada, fuera del panel. Muestra el saldo del alumno
 /// seleccionado, los montos sugeridos y las últimas recargas antes de ir a la pasarela.
 /// </summary>
-[Authorize]
+[Authorize(Policy = "Guardian")]
 public class WalletModel : PageModel
 {
     private const int RecentTopUps = 5;

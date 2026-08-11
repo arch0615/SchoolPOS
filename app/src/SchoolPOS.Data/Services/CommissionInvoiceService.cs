@@ -32,6 +32,12 @@ public sealed class CommissionInvoiceService : ICommissionInvoiceService
     public async Task<CommissionInvoice> IssueForPeriodAsync(
         Guid schoolId, DateTime fromUtc, DateTime toUtc, CancellationToken ct = default)
     {
+        var alreadyStamped = await _db.CommissionInvoices.AnyAsync(i =>
+            i.SchoolId == schoolId && i.PeriodFromUtc == fromUtc && i.PeriodToUtc == toUtc
+            && i.Status == CfdiStatus.Stamped, ct);
+        if (alreadyStamped)
+            throw new InvalidOperationException("Ya se emitió una factura para este periodo.");
+
         var summary = await _reports.GetSchoolSummaryAsync(schoolId, fromUtc, toUtc, ct);
         if (summary.TotalCommission <= 0m)
             throw new InvalidOperationException("No hay comisión que facturar en el periodo indicado.");

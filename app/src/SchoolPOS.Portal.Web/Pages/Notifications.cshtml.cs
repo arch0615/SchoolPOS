@@ -10,7 +10,7 @@ namespace SchoolPOS.Portal.Web.Pages;
 /// Avisos (FR-WP-10): el tutor elige qué quiere que se le notifique. Sólo guarda la elección;
 /// el envío de correos se implementa aparte y consultará estas banderas.
 /// </summary>
-[Authorize]
+[Authorize(Policy = "Guardian")]
 public class NotificationsModel : PageModel
 {
     private readonly INotificationPreferenceService _prefs;

@@ -10,7 +10,7 @@ namespace SchoolPOS.Portal.Web.Pages;
 /// Mis alumnos (FR-WP-9): una tarjeta por hijo vinculado, con su saldo y accesos directos
 /// a recargar o ver movimientos. Es también donde se vincula un alumno nuevo por matrícula.
 /// </summary>
-[Authorize]
+[Authorize(Policy = "Guardian")]
 public class StudentsModel : PageModel
 {
     private readonly IGuardianService _guardians;

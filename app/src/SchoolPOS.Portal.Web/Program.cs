@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using SchoolPOS.Data;
 using SchoolPOS.Domain.Abstractions;
@@ -108,9 +109,24 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
             ctx.Response.Redirect("/Error?code=403");
             return Task.CompletedTask;
         };
+        // Sin sesión → cada área tiene su propio login (padre/proveedor/tienda), no solo /Account/Login.
+        options.Events.OnRedirectToLogin = ctx =>
+        {
+            var loginPath = ctx.Request.Path.StartsWithSegments("/Vendor") ? "/Vendor/Login"
+                : ctx.Request.Path.StartsWithSegments("/School") ? "/School/Login"
+                : "/Account/Login";
+            var returnUrl = ctx.Request.Path + ctx.Request.QueryString;
+            ctx.Response.Redirect(QueryHelpers.AddQueryString(loginPath, "ReturnUrl", returnUrl));
+            return Task.CompletedTask;
+        };
     });
 builder.Services.AddAuthorization(options =>
 {
+    // Portal del tutor: sesión autenticada que NO es de proveedor ni de tienda (esas llevan
+    // portal_role). Evita que esas dos sesiones truene (GetGuardianId) o vean páginas ajenas.
+    options.AddPolicy("Guardian", policy => policy.RequireAssertion(ctx =>
+        ctx.User.Identity?.IsAuthenticated == true
+        && !ctx.User.HasClaim(c => c.Type == ClaimsExtensions.PortalRoleClaim)));
     // Panel del proveedor: requiere identidad de proveedor (comisiones vendor-wide).
     options.AddPolicy("Vendor", policy => policy.RequireClaim(ClaimsExtensions.PortalRoleClaim, "vendor"));
     // Panel de la tienda escolar: operador del POS, limitado a su propia escuela.
