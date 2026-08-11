@@ -24,6 +24,13 @@ public sealed class PosSession
     public bool IsAdmin => Role is UserRole.Admin;
     public bool CanViewReports => Role is UserRole.Admin;
 
+    /// <summary>Compras: alimenta el inventario (recepción de mercancía), mismo permiso que Inventario.</summary>
+    public bool CanManagePurchasing => Role is UserRole.Warehouse or UserRole.Admin;
+
+    /// <summary>Tesorería (arqueo, movimientos de caja) y configuración: función administrativa.</summary>
+    public bool CanManageTreasury => Role is UserRole.Admin;
+    public bool CanManageSettings => Role is UserRole.Admin;
+
     public void SignIn(User user) => Operator = user;
 
     public void SignOut() => Operator = null;

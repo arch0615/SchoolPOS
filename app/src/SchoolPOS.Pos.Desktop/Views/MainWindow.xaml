@@ -17,11 +17,20 @@
         <DataTemplate DataType="{x:Type vm:InventoryViewModel}">
             <views:InventoryView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:PurchasingViewModel}">
+            <views:PurchasingView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:TreasuryViewModel}">
+            <views:TreasuryView />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:ReportsViewModel}">
             <views:ReportsView />
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:AuditViewModel}">
             <views:AuditView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+            <views:SettingsView />
         </DataTemplate>
 
         <Style x:Key="NavButton" TargetType="Button">
@@ -67,12 +76,21 @@
                     <Button Content="📦  Inventario" Style="{StaticResource NavButton}"
                             Command="{Binding ShowInventoryCommand}"
                             Visibility="{Binding CanManageInventory, Converter={StaticResource BoolToVisibility}}" />
+                    <Button Content="🚚  Compras" Style="{StaticResource NavButton}"
+                            Command="{Binding ShowPurchasingCommand}"
+                            Visibility="{Binding CanManagePurchasing, Converter={StaticResource BoolToVisibility}}" />
+                    <Button Content="💵  Tesorería" Style="{StaticResource NavButton}"
+                            Command="{Binding ShowTreasuryCommand}"
+                            Visibility="{Binding CanManageTreasury, Converter={StaticResource BoolToVisibility}}" />
                     <Button Content="📈  Reportes" Style="{StaticResource NavButton}"
                             Command="{Binding ShowReportsCommand}"
                             Visibility="{Binding CanViewReports, Converter={StaticResource BoolToVisibility}}" />
                     <Button Content="📋  Bitácora" Style="{StaticResource NavButton}"
                             Command="{Binding ShowAuditCommand}"
                             Visibility="{Binding CanViewReports, Converter={StaticResource BoolToVisibility}}" />
+                    <Button Content="⚙️  Configuración" Style="{StaticResource NavButton}"
+                            Command="{Binding ShowSettingsCommand}"
+                            Visibility="{Binding CanManageSettings, Converter={StaticResource BoolToVisibility}}" />
                 </StackPanel>
 
                 <StackPanel DockPanel.Dock="Bottom" Margin="18,10">

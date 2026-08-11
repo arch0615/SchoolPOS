@@ -1,0 +1,62 @@
+<UserControl x:Class="SchoolPOS.Pos.Desktop.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <DockPanel Margin="24">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,12">
+            <Viewbox Width="26" Height="26" Margin="0,0,10,0">
+                <Canvas Width="64" Height="64">
+                    <Path Data="M32 21 C 27 13, 17 14, 15 24 C 13 33, 18 51, 27 51 C 30 51, 30 49, 32 49 C 34 49, 34 51, 37 51 C 46 51, 51 33, 49 24 C 47 14, 37 13, 32 21 Z"
+                          Stroke="#EFA43B" StrokeThickness="4.5" StrokeLineJoin="Round" />
+                    <Path Data="M33 19 C 35 12, 41 9, 46 12" Stroke="#EFA43B" StrokeThickness="3.2"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                    <Path Data="M31 19 C 24 9, 15 11, 20 18 C 24 23, 30 22, 31 19 Z" Fill="#5FB03A" />
+                </Canvas>
+            </Viewbox>
+            <TextBlock Text="Configuración" FontSize="24" FontWeight="Bold" Foreground="{StaticResource InkBrush}" VerticalAlignment="Center" />
+        </StackPanel>
+
+        <StatusBar DockPanel.Dock="Bottom" Background="Transparent">
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource DangerBrush}" />
+            <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource AccentBrush}" />
+        </StatusBar>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <Border Background="White" CornerRadius="8" Padding="18" MaxWidth="560" HorizontalAlignment="Left">
+                <StackPanel>
+                    <TextBlock Text="{Binding SchoolName}" FontWeight="Bold" FontSize="18" Margin="0,0,0,14" />
+
+                    <TextBlock Text="Moneda" Foreground="{StaticResource MutedBrush}" />
+                    <TextBox Text="{Binding Currency, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,10" />
+
+                    <TextBlock Text="Comisión sobre recargas (0–1, ej. 0.05 = 5%)" Foreground="{StaticResource MutedBrush}" />
+                    <TextBox Text="{Binding CommissionRate, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,10" />
+
+                    <TextBlock Text="IVA (0–1)" Foreground="{StaticResource MutedBrush}" />
+                    <TextBox Text="{Binding TaxRate, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,4" />
+                    <CheckBox Content="IVA incluido en el precio" IsChecked="{Binding TaxInclusive}" Margin="0,0,0,10" />
+
+                    <Separator Margin="0,4,0,14" />
+                    <TextBlock Text="Datos fiscales (receptor del CFDI de comisión)" FontWeight="SemiBold" Margin="0,0,0,8" />
+
+                    <TextBlock Text="RFC" Foreground="{StaticResource MutedBrush}" />
+                    <TextBox Text="{Binding Rfc, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,10" />
+
+                    <TextBlock Text="Razón social" Foreground="{StaticResource MutedBrush}" />
+                    <TextBox Text="{Binding LegalName, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,10" />
+
+                    <TextBlock Text="Régimen fiscal (código SAT)" Foreground="{StaticResource MutedBrush}" />
+                    <TextBox Text="{Binding TaxRegime, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,10" />
+
+                    <TextBlock Text="Código postal" Foreground="{StaticResource MutedBrush}" />
+                    <TextBox Text="{Binding PostalCode, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,10" />
+
+                    <TextBlock Text="Uso de CFDI (código SAT)" Foreground="{StaticResource MutedBrush}" />
+                    <TextBox Text="{Binding CfdiUse, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,16" />
+
+                    <Button Content="Guardar cambios" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left"
+                            Command="{Binding SaveCommand}" />
+                </StackPanel>
+            </Border>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

@@ -48,8 +48,11 @@ public partial class App : Application
                 services.AddTransient<DashboardViewModel>();
                 services.AddTransient<SalesViewModel>();
                 services.AddTransient<InventoryViewModel>();
+                services.AddTransient<PurchasingViewModel>();
+                services.AddTransient<TreasuryViewModel>();
                 services.AddTransient<ReportsViewModel>();
                 services.AddTransient<AuditViewModel>();
+                services.AddTransient<SettingsViewModel>();
 
                 // Ventanas.
                 services.AddTransient<LoginWindow>();

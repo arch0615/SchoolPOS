@@ -36,6 +36,32 @@
                     Command="{Binding RegisterEntryCommand}" />
         </Grid>
 
+        <!-- Categorías + alta de producto (FR-INV-2) -->
+        <Border DockPanel.Dock="Top" Background="White" CornerRadius="8" Padding="14" Margin="0,0,0,12">
+            <StackPanel>
+                <TextBlock Text="Categorías y nuevo producto" FontWeight="SemiBold" Margin="0,0,0,8" />
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="220" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" Text="{Binding NewCategoryName, UpdateSourceTrigger=PropertyChanged}"
+                             Tag="Nueva categoría…" />
+                    <Button Grid.Column="1" Content="Agregar categoría" Command="{Binding AddCategoryCommand}" />
+                </Grid>
+                <WrapPanel>
+                    <TextBox Width="180" Margin="0,0,6,6" Text="{Binding NewProductName, UpdateSourceTrigger=PropertyChanged}" Tag="Nombre" />
+                    <TextBox Width="130" Margin="0,0,6,6" Text="{Binding NewProductBarcode, UpdateSourceTrigger=PropertyChanged}" Tag="Código de barras" />
+                    <ComboBox Width="140" Margin="0,0,6,6" ItemsSource="{Binding Categories}"
+                              DisplayMemberPath="Name" SelectedItem="{Binding NewProductCategory}" />
+                    <TextBox Width="80" Margin="0,0,6,6" Text="{Binding NewProductPrice, UpdateSourceTrigger=PropertyChanged}" Tag="Precio" />
+                    <TextBox Width="80" Margin="0,0,6,6" Text="{Binding NewProductCost, UpdateSourceTrigger=PropertyChanged}" Tag="Costo" />
+                    <TextBox Width="80" Margin="0,0,6,6" Text="{Binding NewProductMinStock, UpdateSourceTrigger=PropertyChanged}" Tag="Mínimo" />
+                    <Button Content="Crear producto" Style="{StaticResource PrimaryButton}" Command="{Binding CreateProductCommand}" />
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+
         <StatusBar DockPanel.Dock="Bottom" Background="Transparent">
             <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource DangerBrush}" />
             <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource AccentBrush}" />
