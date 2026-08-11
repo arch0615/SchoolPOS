@@ -2,7 +2,12 @@
 @model SchoolPOS.Portal.Web.Pages.School.InventoryModel
 @{
     ViewData["Title"] = "Inventario";
+    var editing = Model.Input.Id is not null;
 }
+
+@if (!string.IsNullOrEmpty(Model.Message)) { <div class="msg ok">@Model.Message</div> }
+@if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
+
 <div class="page-head">
     <div>
         <div class="eyebrow2">Tienda escolar</div>
@@ -19,6 +24,57 @@
 </div>
 
 <div class="card">
+    <h2>Categorías</h2>
+    <form method="post" asp-page-handler="CreateCategory" class="filter-bar">
+        <div>
+            <label for="NewCategoryName">Nueva categoría</label>
+            <input id="NewCategoryName" name="NewCategoryName" placeholder="Bebidas, Snacks…" required />
+        </div>
+        <div><label>&nbsp;</label><button class="btn" type="submit">Agregar categoría</button></div>
+    </form>
+</div>
+
+<div class="card">
+    <h2>@(editing ? "Editar producto" : "Nuevo producto")</h2>
+    <form method="post" asp-page-handler="SaveProduct" class="filter-bar">
+        <input type="hidden" asp-for="Input.Id" />
+        <div>
+            <label asp-for="Input.Name">Nombre</label>
+            <input asp-for="Input.Name" required />
+        </div>
+        <div>
+            <label asp-for="Input.Barcode">Código de barras</label>
+            <input asp-for="Input.Barcode" />
+        </div>
+        <div>
+            <label asp-for="Input.CategoryId">Categoría</label>
+            <select asp-for="Input.CategoryId">
+                <option value="">Sin categoría</option>
+                @foreach (var c in Model.Categories)
+                {
+                    <option value="@c.Id">@c.Name</option>
+                }
+            </select>
+        </div>
+        <div><label asp-for="Input.Price">Precio</label><input asp-for="Input.Price" type="number" step="0.01" min="0" required /></div>
+        <div><label asp-for="Input.Cost">Costo</label><input asp-for="Input.Cost" type="number" step="0.01" min="0" required /></div>
+        <div><label asp-for="Input.MinStock">Mínimo</label><input asp-for="Input.MinStock" type="number" step="0.01" min="0" /></div>
+        @if (!editing)
+        {
+            <div><label asp-for="Input.InitialStock">Existencia inicial</label><input asp-for="Input.InitialStock" type="number" step="0.01" min="0" /></div>
+        }
+        <div>
+            <label>&nbsp;</label>
+            <button class="btn accent" type="submit">@(editing ? "Guardar cambios" : "Crear producto")</button>
+        </div>
+        @if (editing)
+        {
+            <div><label>&nbsp;</label><a class="btn ghost" href="/School/Inventory">Cancelar</a></div>
+        }
+    </form>
+</div>
+
+<div class="card">
     <h2>Productos</h2>
     @if (Model.Rows.Count == 0)
     {
@@ -28,7 +84,7 @@
     {
         <table>
             <thead>
-                <tr><th>Producto</th><th>Categoría</th><th style="text-align:right">Precio</th><th style="text-align:right">Existencia</th><th style="text-align:right">Mínimo</th><th>Estado</th></tr>
+                <tr><th>Producto</th><th>Categoría</th><th style="text-align:right">Precio</th><th style="text-align:right">Existencia</th><th style="text-align:right">Mínimo</th><th>Estado</th><th></th></tr>
             </thead>
             <tbody>
             @foreach (var p in Model.Rows)
@@ -46,6 +102,18 @@
                         @if (!p.Active) { <span class="status no">Inactivo</span> }
                         else if (p.Low) { <span class="status warn">Stock bajo</span> }
                         else { <span class="status ok">Activo</span> }
+                    </td>
+                    <td>
+                        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+                            <a class="btn ghost" href="/School/Inventory?Edit=@p.Id">Editar</a>
+                            <form method="post" asp-page-handler="AdjustStock" asp-route-id="@p.Id" style="display:flex;gap:4px;align-items:center">
+                                <input name="countedQuantity" type="number" step="0.01" min="0" value="@p.Stock.ToString("0.##")" style="width:80px" title="Existencia contada" />
+                                <button class="btn ghost" type="submit" title="Ajustar existencia al valor contado">Ajustar</button>
+                            </form>
+                            <form method="post" asp-page-handler="ToggleActive" asp-route-id="@p.Id">
+                                <button class="btn ghost" type="submit">@(p.Active ? "Desactivar" : "Reactivar")</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
             }

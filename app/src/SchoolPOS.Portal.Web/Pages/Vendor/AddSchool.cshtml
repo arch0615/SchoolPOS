@@ -1,0 +1,84 @@
+@page
+@model SchoolPOS.Portal.Web.Pages.Vendor.AddSchoolModel
+@{
+    ViewData["Title"] = "Agregar escuela";
+}
+
+@if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
+@if (Model.CreatedSchoolId is not null)
+{
+    <div class="msg ok">
+        Escuela <strong>@Model.CreatedSchoolName</strong> creada, con administrador <strong>@Model.CreatedAdminUser</strong>.
+        SchoolId: <code>@Model.CreatedSchoolId</code> — úsalo para configurar el POS de escritorio y el
+        Sync Agent en la escuela (ver <code>app/deploy/INSTALL.md</code>).
+    </div>
+}
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow2">Panel del proveedor</div>
+        <h1 style="margin:8px 0 0">Agregar escuela</h1>
+        <p class="sub">Da de alta una escuela nueva y su primer administrador, sin línea de comandos.</p>
+    </div>
+</div>
+
+<form method="post">
+    <div class="card">
+        <h2>Datos de la escuela</h2>
+        <div class="filter-bar">
+            <div>
+                <label asp-for="Input.SchoolName">Nombre</label>
+                <input asp-for="Input.SchoolName" required />
+            </div>
+            <div>
+                <label asp-for="Input.Currency">Moneda</label>
+                <select asp-for="Input.Currency">
+                    <option value="MXN">MXN</option>
+                    <option value="USD">USD</option>
+                </select>
+            </div>
+            <div>
+                <label asp-for="Input.CommissionRate">Comisión (0–1)</label>
+                <input asp-for="Input.CommissionRate" type="number" step="0.001" min="0" max="1" />
+            </div>
+            <div>
+                <label asp-for="Input.TaxRate">IVA (0–1)</label>
+                <input asp-for="Input.TaxRate" type="number" step="0.001" min="0" max="1" />
+            </div>
+            <div>
+                <label asp-for="Input.TaxInclusive">IVA incluido en el precio</label>
+                <select asp-for="Input.TaxInclusive">
+                    <option value="true">Sí (incluido)</option>
+                    <option value="false">No (se añade)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Datos fiscales <span class="muted" style="font-weight:400">(receptor del CFDI de comisión — se pueden completar después)</span></h2>
+        <div class="filter-bar">
+            <div><label asp-for="Input.Rfc">RFC</label><input asp-for="Input.Rfc" placeholder="XAXX010101000" /></div>
+            <div><label asp-for="Input.LegalName">Razón social</label><input asp-for="Input.LegalName" /></div>
+            <div><label asp-for="Input.TaxRegime">Régimen fiscal</label><input asp-for="Input.TaxRegime" placeholder="601" /></div>
+            <div><label asp-for="Input.PostalCode">Código postal</label><input asp-for="Input.PostalCode" placeholder="23089" /></div>
+            <div><label asp-for="Input.CfdiUse">Uso de CFDI</label><input asp-for="Input.CfdiUse" placeholder="G03" /></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Administrador inicial</h2>
+        <p class="muted" style="margin-top:-8px">Podrá entrar en /School/Login y dar de alta cajeros y personal de almacén desde Operadores.</p>
+        <div class="filter-bar">
+            <div>
+                <label asp-for="Input.AdminUsername">Usuario (correo)</label>
+                <input asp-for="Input.AdminUsername" type="email" placeholder="admin@laescuela.com" required />
+            </div>
+            <div>
+                <label asp-for="Input.AdminPassword">Contraseña</label>
+                <input asp-for="Input.AdminPassword" type="password" minlength="6" required />
+            </div>
+            <div><label>&nbsp;</label><button class="btn accent" type="submit">Crear escuela</button></div>
+        </div>
+    </div>
+</form>

@@ -21,4 +21,17 @@ public static class ClaimsExtensions
         var value = user.FindFirstValue(SchoolIdClaim);
         return Guid.TryParse(value, out var id) ? id : Guid.Empty;
     }
+
+    /// <summary>
+    /// Id del operador de tienda (User.Id) autenticado — mismo claim NameIdentifier que
+    /// <see cref="GetGuardianId"/>, con otro nombre para no confundir el contexto (tutor vs
+    /// operador) en las páginas de /School/*.
+    /// </summary>
+    public static Guid GetOperatorId(this ClaimsPrincipal user)
+    {
+        var value = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        return Guid.TryParse(value, out var id)
+            ? id
+            : throw new InvalidOperationException("Sesión sin identificador de operador.");
+    }
 }

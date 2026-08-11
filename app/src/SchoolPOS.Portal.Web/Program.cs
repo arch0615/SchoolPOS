@@ -175,7 +175,9 @@ app.MapRazorPages();
 // Webhook de la pasarela: confirma el pago server-side (NUNCA por la redirección del navegador,
 // NFR-3) y aplica la recarga al libro mayor de forma idempotente.
 app.MapPost("/api/payments/webhook", async (
-    HttpRequest request, IPaymentGateway gateway, ITopUpService topUps, CancellationToken ct) =>
+    HttpRequest request, IPaymentGateway gateway, ITopUpService topUps, SchoolDbContext db,
+    IEmailSender emailSender, INotificationPreferenceService notificationPrefs,
+    ILogger<Program> webhookLogger, CancellationToken ct) =>
 {
     using var reader = new StreamReader(request.Body);
     var payload = await reader.ReadToEndAsync(ct);
@@ -195,6 +197,7 @@ app.MapPost("/api/payments/webhook", async (
     {
         var topUp = await topUps.ConfirmAsync(notification.GatewayRef, ct);
         await topUps.ApplyConfirmedAsync(topUp.Id, ct);
+        await TopUpNotifier.SendConfirmedAsync(db, emailSender, notificationPrefs, webhookLogger, topUp.Id, ct);
     }
     return Results.Ok();
 });

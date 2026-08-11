@@ -252,6 +252,7 @@
                 @if (schoolAdmin)
                 {
                     <a href="/School/Reports" class="@(isActive("/School/Reports") ? "active" : "")"><span class="ico">📈</span><span class="lbl"> Reportes</span></a>
+                    <a href="/School/Operators" class="@(isActive("/School/Operators") ? "active" : "")"><span class="ico">👤</span><span class="lbl"> Operadores</span></a>
                 }
             </aside>
             <main class="content">
@@ -271,6 +272,7 @@
             @if (schoolAdmin)
             {
                 <a href="/School/Reports" class="@(isActive("/School/Reports") ? "active" : "")"><span class="ico">📈</span>Reportes</a>
+                <a href="/School/Operators" class="@(isActive("/School/Operators") ? "active" : "")"><span class="ico">👤</span>Operadores</a>
             }
         </nav>
     }
@@ -314,6 +316,7 @@
             guideItems.Add(("/School/Sales", "🧾", "Ventas", "Consulta los tickets de venta registrados."));
             if (schoolInv) { guideItems.Add(("/School/Inventory", "📦", "Inventario", "Productos y existencias de tu escuela.")); }
             if (schoolAdmin) { guideItems.Add(("/School/Reports", "📈", "Reportes", "Reportes de ventas por periodo.")); }
+            if (schoolAdmin) { guideItems.Add(("/School/Operators", "👤", "Operadores", "Alta y baja de cajeros y personal de almacén.")); }
         }
         var guideRole = showVendorShell ? "Panel del proveedor" : showSchoolShell ? $"{schoolRoleLabel} · Tienda escolar" : showShell ? "Padre / tutor" : null;
     }

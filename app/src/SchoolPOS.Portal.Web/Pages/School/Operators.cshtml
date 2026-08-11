@@ -1,0 +1,75 @@
+@page
+@model SchoolPOS.Portal.Web.Pages.School.OperatorsModel
+@using SchoolPOS.Domain.Enums
+@{
+    ViewData["Title"] = "Operadores";
+}
+
+@if (!string.IsNullOrEmpty(Model.Message)) { <div class="msg ok">@Model.Message</div> }
+@if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow2">Tienda escolar</div>
+        <h1 style="margin:8px 0 0">Operadores</h1>
+        <p class="sub">Da de alta cajeros y personal de almacén para el punto de venta de tu escuela.</p>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Nuevo operador</h2>
+    <form method="post" asp-page-handler="Create" class="filter-bar">
+        <div>
+            <label asp-for="Input.Username">Usuario (correo)</label>
+            <input asp-for="Input.Username" type="email" placeholder="cajero@tuescuela.com" required />
+        </div>
+        <div>
+            <label asp-for="Input.Password">Contraseña</label>
+            <input asp-for="Input.Password" type="password" minlength="6" required />
+        </div>
+        <div>
+            <label asp-for="Input.Role">Rol</label>
+            <select asp-for="Input.Role">
+                <option value="@UserRole.Cashier">Cajero</option>
+                <option value="@UserRole.Warehouse">Almacén</option>
+                <option value="@UserRole.Admin">Administrador</option>
+            </select>
+        </div>
+        <div><label>&nbsp;</label><button class="btn accent" type="submit">Crear operador</button></div>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Operadores de tu escuela</h2>
+    @if (Model.Operators.Count == 0)
+    {
+        <div class="empty"><div class="em" aria-hidden="true">👤</div><p>Aún no hay operadores registrados.</p></div>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr><th>Usuario</th><th>Rol</th><th>Estado</th><th>Alta</th><th></th></tr>
+            </thead>
+            <tbody>
+            @foreach (var u in Model.Operators)
+            {
+                <tr>
+                    <td>@u.Username</td>
+                    <td class="muted">@OperatorsModel.RoleLabel(u.Role)</td>
+                    <td>
+                        @if (u.IsActive) { <span class="status ok">Activo</span> }
+                        else { <span class="status no">Desactivado</span> }
+                    </td>
+                    <td class="muted">@u.CreatedAtUtc.ToString("yyyy-MM-dd")</td>
+                    <td>
+                        <form method="post" asp-page-handler="ToggleActive" asp-route-id="@u.Id">
+                            <button class="btn ghost" type="submit">@(u.IsActive ? "Desactivar" : "Reactivar")</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</div>

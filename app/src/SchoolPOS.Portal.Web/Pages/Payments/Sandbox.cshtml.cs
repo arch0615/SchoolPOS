@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using SchoolPOS.Data;
 using SchoolPOS.Domain.Abstractions;
+using SchoolPOS.Portal.Web.Infrastructure.Email;
 
 namespace SchoolPOS.Portal.Web.Pages.Payments;
 
@@ -12,11 +14,21 @@ public class SandboxModel : PageModel
 {
     private readonly IPaymentGateway _gateway;
     private readonly ITopUpService _topUps;
+    private readonly SchoolDbContext _db;
+    private readonly IEmailSender _email;
+    private readonly INotificationPreferenceService _prefs;
+    private readonly ILogger<SandboxModel> _logger;
 
-    public SandboxModel(IPaymentGateway gateway, ITopUpService topUps)
+    public SandboxModel(
+        IPaymentGateway gateway, ITopUpService topUps, SchoolDbContext db,
+        IEmailSender email, INotificationPreferenceService prefs, ILogger<SandboxModel> logger)
     {
         _gateway = gateway;
         _topUps = topUps;
+        _db = db;
+        _email = email;
+        _prefs = prefs;
+        _logger = logger;
     }
 
     public string Reference { get; private set; } = string.Empty;
@@ -36,6 +48,7 @@ public class SandboxModel : PageModel
         {
             var topUp = await _topUps.ConfirmAsync(notification.GatewayRef);
             await _topUps.ApplyConfirmedAsync(topUp.Id);
+            await TopUpNotifier.SendConfirmedAsync(_db, _email, _prefs, _logger, topUp.Id);
         }
         return RedirectToPage("/Payments/Result", new { status = "approved" });
     }
