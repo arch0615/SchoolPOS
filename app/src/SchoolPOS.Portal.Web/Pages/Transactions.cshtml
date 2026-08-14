@@ -23,6 +23,8 @@
     Func<int, string> pageSizeUrl = size => $"/Transactions?{baseQs()}&PageSize={size}&PageNumber=1";
 }
 
+@if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
+
 @functions {
     static readonly TimeZoneInfo MxTz = ResolveTz();
     static readonly CultureInfo EsMx = CultureInfo.GetCultureInfo("es-MX");

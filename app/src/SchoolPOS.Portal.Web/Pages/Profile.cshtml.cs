@@ -25,25 +25,46 @@ public class ProfileModel : PageModel
 
     public async Task<IActionResult> OnGetAsync()
     {
-        Me = await _guardians.GetAsync(User.GetGuardianId());
-        FullName = Me?.FullName ?? string.Empty;
+        try
+        {
+            Me = await _guardians.GetAsync(User.GetGuardianId());
+            FullName = Me?.FullName ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Error = $"No se pudo cargar tu perfil: {ex.Message}";
+        }
         return Page();
     }
 
     public async Task<IActionResult> OnPostProfileAsync()
     {
-        await _guardians.UpdateProfileAsync(User.GetGuardianId(), FullName.Trim());
-        Message = "Perfil actualizado.";
+        try
+        {
+            await _guardians.UpdateProfileAsync(User.GetGuardianId(), FullName.Trim());
+            Message = "Perfil actualizado.";
+        }
+        catch (Exception ex)
+        {
+            Error = $"No se pudo actualizar el perfil: {ex.Message}";
+        }
         return RedirectToPage();
     }
 
     public async Task<IActionResult> OnPostPasswordAsync()
     {
-        var ok = await _guardians.ChangePasswordAsync(User.GetGuardianId(), CurrentPassword, NewPassword);
-        if (ok)
-            Message = "Contraseña actualizada.";
-        else
-            Error = "La contraseña actual es incorrecta o la nueva es muy corta (mínimo 6).";
+        try
+        {
+            var ok = await _guardians.ChangePasswordAsync(User.GetGuardianId(), CurrentPassword, NewPassword);
+            if (ok)
+                Message = "Contraseña actualizada.";
+            else
+                Error = "La contraseña actual es incorrecta o la nueva es muy corta (mínimo 6).";
+        }
+        catch (Exception ex)
+        {
+            Error = $"No se pudo cambiar la contraseña: {ex.Message}";
+        }
         return RedirectToPage();
     }
 }

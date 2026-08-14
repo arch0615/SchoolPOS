@@ -79,13 +79,20 @@ public class OperatorsModel : PageModel
 
     public async Task<IActionResult> OnPostToggleActiveAsync(Guid id)
     {
-        var schoolId = User.GetSchoolId();
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == id && u.SchoolId == schoolId);
-        if (user is not null)
+        try
         {
-            user.IsActive = !user.IsActive;
-            await _db.SaveChangesAsync();
-            Message = user.IsActive ? $"'{user.Username}' reactivado." : $"'{user.Username}' desactivado.";
+            var schoolId = User.GetSchoolId();
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == id && u.SchoolId == schoolId);
+            if (user is not null)
+            {
+                user.IsActive = !user.IsActive;
+                await _db.SaveChangesAsync();
+                Message = user.IsActive ? $"'{user.Username}' reactivado." : $"'{user.Username}' desactivado.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Error = $"No se pudo cambiar el estado del operador: {ex.Message}";
         }
 
         return RedirectToPage();

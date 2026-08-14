@@ -12,6 +12,8 @@
     var qs = parts.Count > 0 ? "?" + string.Join("&", parts) : "";
 }
 
+@if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
+
 <div class="page-head">
     <div>
         <div class="eyebrow2">Panel del proveedor</div>

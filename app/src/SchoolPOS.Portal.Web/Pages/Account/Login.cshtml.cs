@@ -39,14 +39,22 @@ public class LoginModel : PageModel
             return Page();
         }
 
-        var result = await _guardians.AuthenticateAsync(_options.SchoolId, Input.Email, Input.Password);
-        if (!result.Succeeded || result.Guardian is null)
+        try
         {
-            Error = result.Error ?? "No se pudo iniciar sesión.";
+            var result = await _guardians.AuthenticateAsync(_options.SchoolId, Input.Email, Input.Password);
+            if (!result.Succeeded || result.Guardian is null)
+            {
+                Error = result.Error ?? "No se pudo iniciar sesión.";
+                return Page();
+            }
+
+            await PortalSignIn.SignInAsync(HttpContext, result.Guardian);
+            return RedirectToPage("/Dashboard");
+        }
+        catch (Exception ex)
+        {
+            Error = $"No se pudo iniciar sesión: {ex.Message}";
             return Page();
         }
-
-        await PortalSignIn.SignInAsync(HttpContext, result.Guardian);
-        return RedirectToPage("/Dashboard");
     }
 }

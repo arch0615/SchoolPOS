@@ -30,21 +30,30 @@ public class DashboardModel : PageModel
     [BindProperty(SupportsGet = true)] public DateTime? From { get; set; }
     [BindProperty(SupportsGet = true)] public DateTime? To { get; set; }
 
+    public string? Error { get; private set; }
+
     public decimal AverageRate => Rollup.TotalRecharged == 0m
         ? 0m
         : Math.Round(Rollup.TotalCommission / Rollup.TotalRecharged, 4);
 
     public async Task OnGetAsync()
     {
-        var toUtc = To?.Date.AddDays(1).AddTicks(-1); // fin del día inclusivo
-        Rollup = await _reports.GetVendorRollupAsync(From?.Date, toUtc);
+        try
+        {
+            var toUtc = To?.Date.AddDays(1).AddTicks(-1); // fin del día inclusivo
+            Rollup = await _reports.GetVendorRollupAsync(From?.Date, toUtc);
 
-        // Serie diaria: usa el rango elegido o, por defecto, los últimos 30 días.
-        var end = To?.Date ?? DateTime.UtcNow.Date;
-        var start = From?.Date ?? end.AddDays(-29);
-        if ((end - start).TotalDays > MaxSeriesDays) start = end.AddDays(-MaxSeriesDays);
-        SeriesFrom = start;
-        SeriesTo = end;
-        Series = await _reports.GetDailySeriesAsync(start, end.AddDays(1).AddTicks(-1));
+            // Serie diaria: usa el rango elegido o, por defecto, los últimos 30 días.
+            var end = To?.Date ?? DateTime.UtcNow.Date;
+            var start = From?.Date ?? end.AddDays(-29);
+            if ((end - start).TotalDays > MaxSeriesDays) start = end.AddDays(-MaxSeriesDays);
+            SeriesFrom = start;
+            SeriesTo = end;
+            Series = await _reports.GetDailySeriesAsync(start, end.AddDays(1).AddTicks(-1));
+        }
+        catch (Exception ex)
+        {
+            Error = $"No se pudo cargar el panel: {ex.Message}";
+        }
     }
 }

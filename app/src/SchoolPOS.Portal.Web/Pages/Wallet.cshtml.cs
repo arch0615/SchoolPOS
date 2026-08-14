@@ -41,7 +41,14 @@ public class WalletModel : PageModel
 
     public async Task<IActionResult> OnGetAsync(Guid? studentId)
     {
-        await LoadAsync(studentId);
+        try
+        {
+            await LoadAsync(studentId);
+        }
+        catch (Exception ex)
+        {
+            Error = $"No se pudo cargar tu monedero: {ex.Message}";
+        }
         return Page();
     }
 
@@ -60,9 +67,19 @@ public class WalletModel : PageModel
             return RedirectToPage(new { studentId });
         }
 
-        var created = await _topUps.CreateAsync(_options.SchoolId, accountId, amount);
-        // Redirige al checkout de la pasarela (en sandbox, una página interna de simulación).
-        return Redirect(created.CheckoutUrl);
+        try
+        {
+            var created = await _topUps.CreateAsync(_options.SchoolId, accountId, amount);
+            // Redirige al checkout de la pasarela (en sandbox, una página interna de simulación).
+            return Redirect(created.CheckoutUrl);
+        }
+        catch (Exception ex)
+        {
+            // La pasarela puede estar caída o el token de la escuela sin renovar — no dejar que
+            // una recarga fallida tumbe la página con una excepción sin manejar.
+            Error = $"No se pudo iniciar la recarga: {ex.Message}";
+            return RedirectToPage(new { studentId });
+        }
     }
 
     private async Task LoadAsync(Guid? studentId)

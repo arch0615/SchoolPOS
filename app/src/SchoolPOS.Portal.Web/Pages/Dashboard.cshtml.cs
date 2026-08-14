@@ -22,7 +22,14 @@ public class DashboardModel : PageModel
 
     public async Task<IActionResult> OnGetAsync(Guid? studentId)
     {
-        await LoadAsync(studentId);
+        try
+        {
+            await LoadAsync(studentId);
+        }
+        catch (Exception ex)
+        {
+            Error = $"No se pudo cargar tu panel: {ex.Message}";
+        }
         return Page();
     }
 

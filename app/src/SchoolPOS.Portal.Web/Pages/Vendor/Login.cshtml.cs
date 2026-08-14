@@ -23,7 +23,15 @@ public class LoginModel : PageModel
             return Page();
         }
 
-        await PortalSignIn.SignInVendorAsync(HttpContext);
-        return RedirectToPage("/Vendor/Dashboard");
+        try
+        {
+            await PortalSignIn.SignInVendorAsync(HttpContext);
+            return RedirectToPage("/Vendor/Dashboard");
+        }
+        catch (Exception ex)
+        {
+            Error = $"No se pudo iniciar sesión: {ex.Message}";
+            return Page();
+        }
     }
 }

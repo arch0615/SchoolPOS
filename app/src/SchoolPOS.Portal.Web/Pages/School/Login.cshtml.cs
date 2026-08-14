@@ -33,47 +33,62 @@ public class LoginModel : PageModel
 
     public async Task OnGetAsync()
     {
-        await LoadSchoolsAsync();
-        // Preselecciona la escuela configurada del portal, o la primera disponible.
-        SchoolId = Schools.Any(s => s.Id == _options.SchoolId)
-            ? _options.SchoolId
-            : Schools.FirstOrDefault()?.Id ?? Guid.Empty;
+        try
+        {
+            await LoadSchoolsAsync();
+            // Preselecciona la escuela configurada del portal, o la primera disponible.
+            SchoolId = Schools.Any(s => s.Id == _options.SchoolId)
+                ? _options.SchoolId
+                : Schools.FirstOrDefault()?.Id ?? Guid.Empty;
+        }
+        catch (Exception ex)
+        {
+            Error = $"No se pudo cargar el listado de escuelas: {ex.Message}";
+        }
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        await LoadSchoolsAsync();
-
-        if (SchoolId == Guid.Empty || Schools.All(s => s.Id != SchoolId))
+        try
         {
-            Error = "Selecciona una escuela válida.";
+            await LoadSchoolsAsync();
+
+            if (SchoolId == Guid.Empty || Schools.All(s => s.Id != SchoolId))
+            {
+                Error = "Selecciona una escuela válida.";
+                return Page();
+            }
+
+            var user = Username.Trim();
+            if (!user.Contains('@'))
+            {
+                Error = "El usuario debe ser un correo electrónico (incluir @).";
+                return Page();
+            }
+
+            var result = await _auth.AuthenticateAsync(SchoolId, user, Password);
+            if (!result.Succeeded || result.User is null)
+            {
+                Error = "Usuario o contraseña incorrectos.";
+                return Page();
+            }
+
+            await PortalSignIn.SignInSchoolAsync(HttpContext, result.User);
+
+            // Cada rol aterriza en la página que sí puede ver (RBAC).
+            var target = result.User.Role switch
+            {
+                UserRole.Admin => "/School/Store",
+                UserRole.Warehouse => "/School/Inventory",
+                _ => "/School/Sales",
+            };
+            return RedirectToPage(target);
+        }
+        catch (Exception ex)
+        {
+            Error = $"No se pudo iniciar sesión: {ex.Message}";
             return Page();
         }
-
-        var user = Username.Trim();
-        if (!user.Contains('@'))
-        {
-            Error = "El usuario debe ser un correo electrónico (incluir @).";
-            return Page();
-        }
-
-        var result = await _auth.AuthenticateAsync(SchoolId, user, Password);
-        if (!result.Succeeded || result.User is null)
-        {
-            Error = "Usuario o contraseña incorrectos.";
-            return Page();
-        }
-
-        await PortalSignIn.SignInSchoolAsync(HttpContext, result.User);
-
-        // Cada rol aterriza en la página que sí puede ver (RBAC).
-        var target = result.User.Role switch
-        {
-            UserRole.Admin => "/School/Store",
-            UserRole.Warehouse => "/School/Inventory",
-            _ => "/School/Sales",
-        };
-        return RedirectToPage(target);
     }
 
     private async Task LoadSchoolsAsync() =>

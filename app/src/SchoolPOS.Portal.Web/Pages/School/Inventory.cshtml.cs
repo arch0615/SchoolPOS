@@ -104,14 +104,22 @@ public class InventoryModel : PageModel
             return RedirectToPage();
         }
 
-        _db.Categories.Add(new Category
+        try
         {
-            SchoolId = schoolId,
-            Name = NewCategoryName.Trim(),
-            CreatedAtUtc = DateTime.UtcNow,
-        });
-        await _db.SaveChangesAsync();
-        Message = $"Categoría '{NewCategoryName.Trim()}' creada.";
+            _db.Categories.Add(new Category
+            {
+                SchoolId = schoolId,
+                Name = NewCategoryName.Trim(),
+                CreatedAtUtc = DateTime.UtcNow,
+            });
+            await _db.SaveChangesAsync();
+            Message = $"Categoría '{NewCategoryName.Trim()}' creada.";
+        }
+        catch (Exception ex)
+        {
+            Error = $"No se pudo crear la categoría: {ex.Message}";
+        }
+
         return RedirectToPage();
     }
 
@@ -176,13 +184,20 @@ public class InventoryModel : PageModel
 
     public async Task<IActionResult> OnPostToggleActiveAsync(Guid id)
     {
-        var schoolId = User.GetSchoolId();
-        var product = await _db.Products.FirstOrDefaultAsync(p => p.Id == id && p.SchoolId == schoolId);
-        if (product is not null)
+        try
         {
-            product.IsActive = !product.IsActive;
-            await _db.SaveChangesAsync();
-            Message = product.IsActive ? $"'{product.Name}' reactivado." : $"'{product.Name}' desactivado.";
+            var schoolId = User.GetSchoolId();
+            var product = await _db.Products.FirstOrDefaultAsync(p => p.Id == id && p.SchoolId == schoolId);
+            if (product is not null)
+            {
+                product.IsActive = !product.IsActive;
+                await _db.SaveChangesAsync();
+                Message = product.IsActive ? $"'{product.Name}' reactivado." : $"'{product.Name}' desactivado.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Error = $"No se pudo cambiar el estado del producto: {ex.Message}";
         }
 
         return RedirectToPage();

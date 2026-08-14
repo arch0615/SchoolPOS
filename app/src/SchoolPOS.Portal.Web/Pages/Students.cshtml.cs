@@ -31,7 +31,14 @@ public class StudentsModel : PageModel
 
     public async Task<IActionResult> OnGetAsync()
     {
-        Students = await _guardians.GetLinkedStudentsAsync(User.GetGuardianId());
+        try
+        {
+            Students = await _guardians.GetLinkedStudentsAsync(User.GetGuardianId());
+        }
+        catch (Exception ex)
+        {
+            Error = $"No se pudieron cargar tus alumnos: {ex.Message}";
+        }
         return Page();
     }
 

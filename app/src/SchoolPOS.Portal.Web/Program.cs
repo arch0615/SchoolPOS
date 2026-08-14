@@ -179,52 +179,79 @@ app.MapPost("/api/payments/webhook", async (
     IEmailSender emailSender, INotificationPreferenceService notificationPrefs,
     ILogger<Program> webhookLogger, CancellationToken ct) =>
 {
-    using var reader = new StreamReader(request.Body);
-    var payload = await reader.ReadToEndAsync(ct);
-
-    // Mercado Pago envía x-signature + x-request-id y el id del pago en la query (data.id).
-    var webhook = new WebhookRequest(
-        RawBody: payload,
-        Signature: request.Headers["x-signature"].ToString(),
-        RequestId: request.Headers["x-request-id"].ToString(),
-        ResourceId: request.Query["data.id"].FirstOrDefault() ?? request.Query["id"].FirstOrDefault());
-
-    var notification = await gateway.VerifyWebhookAsync(webhook, ct);
-    if (notification is null)
-        return Results.BadRequest("Notificación inválida.");
-
-    if (notification.Status == PaymentStatus.Approved)
+    try
     {
-        var topUp = await topUps.ConfirmAsync(notification.GatewayRef, ct);
-        await topUps.ApplyConfirmedAsync(topUp.Id, ct);
-        await TopUpNotifier.SendConfirmedAsync(db, emailSender, notificationPrefs, webhookLogger, topUp.Id, ct);
+        using var reader = new StreamReader(request.Body);
+        var payload = await reader.ReadToEndAsync(ct);
+
+        // Mercado Pago envía x-signature + x-request-id y el id del pago en la query (data.id).
+        var webhook = new WebhookRequest(
+            RawBody: payload,
+            Signature: request.Headers["x-signature"].ToString(),
+            RequestId: request.Headers["x-request-id"].ToString(),
+            ResourceId: request.Query["data.id"].FirstOrDefault() ?? request.Query["id"].FirstOrDefault());
+
+        var notification = await gateway.VerifyWebhookAsync(webhook, ct);
+        if (notification is null)
+            return Results.BadRequest("Notificación inválida.");
+
+        if (notification.Status == PaymentStatus.Approved)
+        {
+            var topUp = await topUps.ConfirmAsync(notification.GatewayRef, ct);
+            await topUps.ApplyConfirmedAsync(topUp.Id, ct);
+            await TopUpNotifier.SendConfirmedAsync(db, emailSender, notificationPrefs, webhookLogger, topUp.Id, ct);
+        }
+        return Results.Ok();
     }
-    return Results.Ok();
+    catch (Exception ex)
+    {
+        // 500, no 200: le dice a Mercado Pago que reintente la entrega — nunca confirmar
+        // recepción de un pago que no se pudo aplicar de verdad (NFR-3).
+        webhookLogger.LogError(ex, "Fallo al procesar el webhook de pagos.");
+        return Results.Problem("No se pudo procesar la notificación.", statusCode: 500);
+    }
 });
 
 // ---- Onboarding OAuth marketplace (la escuela conecta su cuenta de Mercado Pago) ----
 app.MapGet("/oauth/mercadopago/start", (
-    HttpContext http, Guid schoolId, IMercadoPagoOAuth oauth, OnboardingStateProtector protector) =>
+    HttpContext http, Guid schoolId, IMercadoPagoOAuth oauth, OnboardingStateProtector protector,
+    ILogger<Program> oauthLogger) =>
 {
-    var state = protector.Protect(schoolId, TimeSpan.FromMinutes(15));
-    var redirectUri = $"{http.Request.Scheme}://{http.Request.Host}/oauth/mercadopago/callback";
-    return Results.Redirect(oauth.BuildAuthorizationUrl(state, redirectUri));
+    try
+    {
+        var state = protector.Protect(schoolId, TimeSpan.FromMinutes(15));
+        var redirectUri = $"{http.Request.Scheme}://{http.Request.Host}/oauth/mercadopago/callback";
+        return Results.Redirect(oauth.BuildAuthorizationUrl(state, redirectUri));
+    }
+    catch (Exception ex)
+    {
+        oauthLogger.LogError(ex, "No se pudo iniciar la conexión con Mercado Pago (schoolId {SchoolId}).", schoolId);
+        return Results.Redirect("/Vendor/Connections?error=1");
+    }
 }).RequireAuthorization("Vendor");
 
 app.MapGet("/oauth/mercadopago/callback", async (
     HttpContext http, string? code, string? state,
     IMercadoPagoOAuth oauth, ISchoolPaymentAccountStore store, OnboardingStateProtector protector,
-    CancellationToken ct) =>
+    ILogger<Program> oauthLogger, CancellationToken ct) =>
 {
     // El state firmado prueba que el flujo lo inició nuestro portal (CSRF) y trae el schoolId.
     if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(state) || !protector.TryUnprotect(state, out var schoolId))
         return Results.Redirect("/Vendor/Connections?error=1");
 
-    var redirectUri = $"{http.Request.Scheme}://{http.Request.Host}/oauth/mercadopago/callback";
-    var tokens = await oauth.ExchangeCodeAsync(code, redirectUri, ct);
-    await store.SaveAsync(schoolId, "MercadoPago", tokens.ProviderUserId,
-        tokens.AccessToken, tokens.RefreshToken, tokens.ExpiresAtUtc, ct);
-    return Results.Redirect("/Vendor/Connections?connected=1");
+    try
+    {
+        var redirectUri = $"{http.Request.Scheme}://{http.Request.Host}/oauth/mercadopago/callback";
+        var tokens = await oauth.ExchangeCodeAsync(code, redirectUri, ct);
+        await store.SaveAsync(schoolId, "MercadoPago", tokens.ProviderUserId,
+            tokens.AccessToken, tokens.RefreshToken, tokens.ExpiresAtUtc, ct);
+        return Results.Redirect("/Vendor/Connections?connected=1");
+    }
+    catch (Exception ex)
+    {
+        oauthLogger.LogError(ex, "No se pudo completar la conexión con Mercado Pago (schoolId {SchoolId}).", schoolId);
+        return Results.Redirect("/Vendor/Connections?error=1");
+    }
 });
 
 // Página de consentimiento simulada (solo desarrollo — reemplaza al checkout real de Mercado Pago).

@@ -25,6 +25,7 @@
 }
 
 @if (!string.IsNullOrEmpty(Model.Message)) { <div class="msg ok">@Model.Message</div> }
+@if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
 
 <div class="page-head with-illus">
     <div>

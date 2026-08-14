@@ -34,25 +34,40 @@ public class NotificationsModel : PageModel
     public decimal LowBalanceThreshold => _options.LowBalanceThreshold;
 
     [TempData] public string? Message { get; set; }
+    [TempData] public string? Error { get; set; }
 
     public async Task OnGetAsync()
     {
-        var guardianId = User.GetGuardianId();
-        var prefs = await _prefs.GetAsync(guardianId);
+        try
+        {
+            var guardianId = User.GetGuardianId();
+            var prefs = await _prefs.GetAsync(guardianId);
 
-        LowBalance = prefs.LowBalance;
-        TopUpConfirmed = prefs.TopUpConfirmed;
-        PurchaseMade = prefs.PurchaseMade;
-        DailySummary = prefs.DailySummary;
+            LowBalance = prefs.LowBalance;
+            TopUpConfirmed = prefs.TopUpConfirmed;
+            PurchaseMade = prefs.PurchaseMade;
+            DailySummary = prefs.DailySummary;
 
-        Email = (await _guardians.GetAsync(guardianId))?.Email;
+            Email = (await _guardians.GetAsync(guardianId))?.Email;
+        }
+        catch (Exception ex)
+        {
+            Error = $"No se pudieron cargar tus preferencias: {ex.Message}";
+        }
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        await _prefs.SaveAsync(
-            User.GetGuardianId(), LowBalance, TopUpConfirmed, PurchaseMade, DailySummary);
-        Message = "Preferencias de aviso guardadas.";
+        try
+        {
+            await _prefs.SaveAsync(
+                User.GetGuardianId(), LowBalance, TopUpConfirmed, PurchaseMade, DailySummary);
+            Message = "Preferencias de aviso guardadas.";
+        }
+        catch (Exception ex)
+        {
+            Error = $"No se pudieron guardar tus preferencias: {ex.Message}";
+        }
         return RedirectToPage();
     }
 }

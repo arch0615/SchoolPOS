@@ -32,14 +32,22 @@ public class ResetPasswordModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        var ok = await _guardians.ResetPasswordAsync(_options.SchoolId, Email, Token, NewPassword);
-        if (!ok)
+        try
         {
-            Error = "El enlace es inválido o venció, o la contraseña es muy corta. Solicita uno nuevo.";
+            var ok = await _guardians.ResetPasswordAsync(_options.SchoolId, Email, Token, NewPassword);
+            if (!ok)
+            {
+                Error = "El enlace es inválido o venció, o la contraseña es muy corta. Solicita uno nuevo.";
+                return Page();
+            }
+
+            LoginMessage = "Tu contraseña fue restablecida. Ya puedes ingresar.";
+            return RedirectToPage("/Account/Login");
+        }
+        catch (Exception ex)
+        {
+            Error = $"No se pudo restablecer la contraseña: {ex.Message}";
             return Page();
         }
-
-        LoginMessage = "Tu contraseña fue restablecida. Ya puedes ingresar.";
-        return RedirectToPage("/Account/Login");
     }
 }

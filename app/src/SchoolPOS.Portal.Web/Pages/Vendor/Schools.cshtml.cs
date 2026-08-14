@@ -32,7 +32,21 @@ public class SchoolsModel : PageModel
     public int ConnectedCount => Rows.Count(r => r.Connected);
     public int InvoiceReadyCount => Rows.Count(r => r.FiscalComplete);
 
+    public string? Error { get; private set; }
+
     public async Task OnGetAsync()
+    {
+        try
+        {
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            Error = $"No se pudo cargar el listado de escuelas: {ex.Message}";
+        }
+    }
+
+    private async Task LoadAsync()
     {
         var toUtc = To?.Date.AddDays(1).AddTicks(-1);
         var rollup = await _reports.GetVendorRollupAsync(From?.Date, toUtc);

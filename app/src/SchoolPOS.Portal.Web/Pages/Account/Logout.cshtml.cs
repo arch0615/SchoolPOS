@@ -7,6 +7,10 @@ namespace SchoolPOS.Portal.Web.Pages.Account;
 
 public class LogoutModel : PageModel
 {
+    private readonly ILogger<LogoutModel> _logger;
+
+    public LogoutModel(ILogger<LogoutModel> logger) => _logger = logger;
+
     // POST desde el botón "Salir" del encabezado.
     public Task<IActionResult> OnPostAsync() => SignOutAndRedirectAsync();
 
@@ -15,8 +19,17 @@ public class LogoutModel : PageModel
 
     private async Task<IActionResult> SignOutAndRedirectAsync()
     {
-        // Un solo esquema de cookie para padres y proveedores: cerrarlo borra la sesión de ambos.
-        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        try
+        {
+            // Un solo esquema de cookie para padres y proveedores: cerrarlo borra la sesión de ambos.
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        }
+        catch (Exception ex)
+        {
+            // Mejor esfuerzo: si algo falla al limpiar la cookie, igual mandamos al usuario a un
+            // lugar seguro en vez de mostrar una excepción sin manejar.
+            _logger.LogWarning(ex, "Fallo al cerrar sesión.");
+        }
         return RedirectToPage("/Index");
     }
 }

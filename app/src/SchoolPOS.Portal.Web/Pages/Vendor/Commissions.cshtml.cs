@@ -37,8 +37,15 @@ public class CommissionsModel : PageModel
 
     public async Task OnGetAsync()
     {
-        var toUtc = To?.Date.AddDays(1).AddTicks(-1);
-        Rollup = await _reports.GetVendorRollupAsync(From?.Date, toUtc);
+        try
+        {
+            var toUtc = To?.Date.AddDays(1).AddTicks(-1);
+            Rollup = await _reports.GetVendorRollupAsync(From?.Date, toUtc);
+        }
+        catch (Exception ex)
+        {
+            Error = $"No se pudo cargar la comisión: {ex.Message}";
+        }
     }
 
     public async Task<IActionResult> OnPostIssueAsync(Guid schoolId, DateTime? from, DateTime? to)

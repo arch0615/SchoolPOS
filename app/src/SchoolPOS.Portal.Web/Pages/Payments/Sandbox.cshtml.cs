@@ -42,15 +42,24 @@ public class SandboxModel : PageModel
 
     public async Task<IActionResult> OnPostApproveAsync(string reference)
     {
-        // Simula la notificación server-side de la pasarela.
-        var notification = await _gateway.VerifyWebhookAsync(new WebhookRequest($"{reference}|approved"));
-        if (notification is { Status: PaymentStatus.Approved })
+        try
         {
-            var topUp = await _topUps.ConfirmAsync(notification.GatewayRef);
-            await _topUps.ApplyConfirmedAsync(topUp.Id);
-            await TopUpNotifier.SendConfirmedAsync(_db, _email, _prefs, _logger, topUp.Id);
+            // Simula la notificación server-side de la pasarela.
+            var notification = await _gateway.VerifyWebhookAsync(new WebhookRequest($"{reference}|approved"));
+            if (notification is { Status: PaymentStatus.Approved })
+            {
+                var topUp = await _topUps.ConfirmAsync(notification.GatewayRef);
+                await _topUps.ApplyConfirmedAsync(topUp.Id);
+                await TopUpNotifier.SendConfirmedAsync(_db, _email, _prefs, _logger, topUp.Id);
+            }
+            return RedirectToPage("/Payments/Result", new { status = "approved" });
         }
-        return RedirectToPage("/Payments/Result", new { status = "approved" });
+        catch (Exception ex)
+        {
+            // Nunca mostrar "aprobado" si la confirmación server-side falló a medias (NFR-3).
+            _logger.LogError(ex, "Fallo al aprobar la recarga de simulación (referencia {Reference}).", reference);
+            return RedirectToPage("/Payments/Result", new { status = "rejected" });
+        }
     }
 
     public IActionResult OnPostReject(string reference) =>
