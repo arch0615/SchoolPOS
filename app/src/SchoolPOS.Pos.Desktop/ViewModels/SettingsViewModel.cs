@@ -59,26 +59,33 @@ public sealed class SettingsViewModel : ViewModelBase, IAsyncLoadable
     public async Task LoadAsync()
     {
         ErrorMessage = string.Empty;
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<SchoolDbContext>();
-
-        var school = await db.Schools.AsNoTracking().FirstOrDefaultAsync(s => s.Id == _session.SchoolId);
-        if (school is null)
+        try
         {
-            ErrorMessage = "No se encontró la configuración de la escuela.";
-            return;
-        }
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<SchoolDbContext>();
 
-        SchoolName = school.Name;
-        Currency = school.Currency;
-        CommissionRate = school.CommissionRate;
-        TaxRate = school.TaxRate;
-        TaxInclusive = school.TaxInclusive;
-        Rfc = school.Rfc ?? string.Empty;
-        LegalName = school.LegalName ?? string.Empty;
-        TaxRegime = school.TaxRegime ?? string.Empty;
-        PostalCode = school.PostalCode ?? string.Empty;
-        CfdiUse = school.CfdiUse ?? string.Empty;
+            var school = await db.Schools.AsNoTracking().FirstOrDefaultAsync(s => s.Id == _session.SchoolId);
+            if (school is null)
+            {
+                ErrorMessage = "No se encontró la configuración de la escuela.";
+                return;
+            }
+
+            SchoolName = school.Name;
+            Currency = school.Currency;
+            CommissionRate = school.CommissionRate;
+            TaxRate = school.TaxRate;
+            TaxInclusive = school.TaxInclusive;
+            Rfc = school.Rfc ?? string.Empty;
+            LegalName = school.LegalName ?? string.Empty;
+            TaxRegime = school.TaxRegime ?? string.Empty;
+            PostalCode = school.PostalCode ?? string.Empty;
+            CfdiUse = school.CfdiUse ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"No se pudo cargar la configuración: {ex.Message}";
+        }
     }
 
     private async Task SaveAsync()

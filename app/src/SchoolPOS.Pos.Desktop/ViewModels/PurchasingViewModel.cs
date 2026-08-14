@@ -198,53 +198,60 @@ public sealed class PurchasingViewModel : ViewModelBase, IAsyncLoadable
     public async Task LoadAsync()
     {
         ErrorMessage = string.Empty;
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<SchoolDbContext>();
-        var schoolId = _session.SchoolId;
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<SchoolDbContext>();
+            var schoolId = _session.SchoolId;
 
-        var suppliers = await db.Suppliers.AsNoTracking()
-            .Where(s => s.SchoolId == schoolId && s.IsActive)
-            .OrderBy(s => s.Name)
-            .Select(s => new SupplierRow(s.Id, s.Name))
-            .ToListAsync();
-        var selectedSupplierId = OrderSupplier?.Id;
-        var invoiceSupplierId = InvoiceSupplier?.Id;
-        Suppliers.Clear();
-        foreach (var s in suppliers)
-            Suppliers.Add(s);
-        OrderSupplier = Suppliers.FirstOrDefault(s => s.Id == selectedSupplierId);
-        InvoiceSupplier = Suppliers.FirstOrDefault(s => s.Id == invoiceSupplierId);
+            var suppliers = await db.Suppliers.AsNoTracking()
+                .Where(s => s.SchoolId == schoolId && s.IsActive)
+                .OrderBy(s => s.Name)
+                .Select(s => new SupplierRow(s.Id, s.Name))
+                .ToListAsync();
+            var selectedSupplierId = OrderSupplier?.Id;
+            var invoiceSupplierId = InvoiceSupplier?.Id;
+            Suppliers.Clear();
+            foreach (var s in suppliers)
+                Suppliers.Add(s);
+            OrderSupplier = Suppliers.FirstOrDefault(s => s.Id == selectedSupplierId);
+            InvoiceSupplier = Suppliers.FirstOrDefault(s => s.Id == invoiceSupplierId);
 
-        var products = await db.Products.AsNoTracking()
-            .Where(p => p.SchoolId == schoolId && p.IsActive)
-            .OrderBy(p => p.Name)
-            .Select(p => new ProductOption(p.Id, p.Name))
-            .ToListAsync();
-        Products.Clear();
-        foreach (var p in products)
-            Products.Add(p);
+            var products = await db.Products.AsNoTracking()
+                .Where(p => p.SchoolId == schoolId && p.IsActive)
+                .OrderBy(p => p.Name)
+                .Select(p => new ProductOption(p.Id, p.Name))
+                .ToListAsync();
+            Products.Clear();
+            foreach (var p in products)
+                Products.Add(p);
 
-        var orders = await db.PurchaseOrders.AsNoTracking()
-            .Where(o => o.SchoolId == schoolId)
-            .OrderByDescending(o => o.OrderDate)
-            .Select(o => new PurchaseOrderRow(o.Id, o.OrderNumber, o.Supplier.Name, o.Status, o.Total, o.OrderDate))
-            .Take(200)
-            .ToListAsync();
-        var selectedOrderId = SelectedOrder?.Id;
-        Orders.Clear();
-        foreach (var o in orders)
-            Orders.Add(o);
-        SelectedOrder = Orders.FirstOrDefault(o => o.Id == selectedOrderId);
+            var orders = await db.PurchaseOrders.AsNoTracking()
+                .Where(o => o.SchoolId == schoolId)
+                .OrderByDescending(o => o.OrderDate)
+                .Select(o => new PurchaseOrderRow(o.Id, o.OrderNumber, o.Supplier.Name, o.Status, o.Total, o.OrderDate))
+                .Take(200)
+                .ToListAsync();
+            var selectedOrderId = SelectedOrder?.Id;
+            Orders.Clear();
+            foreach (var o in orders)
+                Orders.Add(o);
+            SelectedOrder = Orders.FirstOrDefault(o => o.Id == selectedOrderId);
 
-        var invoices = await db.SupplierInvoices.AsNoTracking()
-            .Where(i => i.SchoolId == schoolId)
-            .OrderByDescending(i => i.IssueDate)
-            .Select(i => new InvoiceRow(i.Id, i.Supplier.Name, i.InvoiceNumber, i.Amount, i.AmountPaid, i.Status))
-            .Take(200)
-            .ToListAsync();
-        Invoices.Clear();
-        foreach (var i in invoices)
-            Invoices.Add(i);
+            var invoices = await db.SupplierInvoices.AsNoTracking()
+                .Where(i => i.SchoolId == schoolId)
+                .OrderByDescending(i => i.IssueDate)
+                .Select(i => new InvoiceRow(i.Id, i.Supplier.Name, i.InvoiceNumber, i.Amount, i.AmountPaid, i.Status))
+                .Take(200)
+                .ToListAsync();
+            Invoices.Clear();
+            foreach (var i in invoices)
+                Invoices.Add(i);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"No se pudieron cargar las compras: {ex.Message}";
+        }
     }
 
     private async Task AddSupplierAsync()

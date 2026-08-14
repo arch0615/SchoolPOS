@@ -17,6 +17,7 @@ public sealed class DashboardViewModel : ViewModelBase, IAsyncLoadable
     private decimal _todaySalesTotal;
     private int _todaySalesCount;
     private int _lowStockCount;
+    private string _errorMessage = string.Empty;
 
     public DashboardViewModel(IServiceScopeFactory scopeFactory, PosSession session, IClock clock)
     {
@@ -32,28 +33,38 @@ public sealed class DashboardViewModel : ViewModelBase, IAsyncLoadable
 
     public ObservableCollection<LowStockRow> LowStockItems { get; } = new();
 
+    public string ErrorMessage { get => _errorMessage; set => SetProperty(ref _errorMessage, value); }
+
     public AsyncRelayCommand RefreshCommand { get; }
 
     public async Task LoadAsync()
     {
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<SchoolDbContext>();
-        var inventory = scope.ServiceProvider.GetRequiredService<IInventoryService>();
+        ErrorMessage = string.Empty;
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<SchoolDbContext>();
+            var inventory = scope.ServiceProvider.GetRequiredService<IInventoryService>();
 
-        var since = _clock.UtcNow.Date;
-        var todayTotals = await db.Sales.AsNoTracking()
-            .Where(s => s.SchoolId == _session.SchoolId && s.CreatedAtUtc >= since)
-            .Select(s => s.Total)
-            .ToListAsync();
+            var since = _clock.UtcNow.Date;
+            var todayTotals = await db.Sales.AsNoTracking()
+                .Where(s => s.SchoolId == _session.SchoolId && s.CreatedAtUtc >= since)
+                .Select(s => s.Total)
+                .ToListAsync();
 
-        TodaySalesTotal = todayTotals.Sum();
-        TodaySalesCount = todayTotals.Count;
+            TodaySalesTotal = todayTotals.Sum();
+            TodaySalesCount = todayTotals.Count;
 
-        var low = await inventory.GetLowStockAsync(_session.SchoolId);
-        LowStockCount = low.Count;
-        LowStockItems.Clear();
-        foreach (var p in low)
-            LowStockItems.Add(new LowStockRow(p.Name, p.StockOnHand, p.MinStock));
+            var low = await inventory.GetLowStockAsync(_session.SchoolId);
+            LowStockCount = low.Count;
+            LowStockItems.Clear();
+            foreach (var p in low)
+                LowStockItems.Add(new LowStockRow(p.Name, p.StockOnHand, p.MinStock));
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"No se pudo cargar el panel: {ex.Message}";
+        }
     }
 }
 

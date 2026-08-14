@@ -107,39 +107,46 @@ public sealed class TreasuryViewModel : ViewModelBase, IAsyncLoadable
     public async Task LoadAsync()
     {
         ErrorMessage = string.Empty;
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<SchoolDbContext>();
-        var operatorId = _session.Operator!.Id;
-
-        var open = await db.CashSessions.AsNoTracking()
-            .Include(s => s.Movements)
-            .Where(s => s.SchoolId == _session.SchoolId && s.OperatorId == operatorId && s.Status == CashSessionStatus.Open)
-            .OrderByDescending(s => s.OpenedAtUtc)
-            .FirstOrDefaultAsync();
-
-        Movements.Clear();
-        if (open is null)
+        try
         {
-            OpenSession = null;
-        }
-        else
-        {
-            OpenSession = new OpenSessionRow(open.Id, open.OpeningFloat, open.OpenedAtUtc);
-            foreach (var m in open.Movements.OrderByDescending(m => m.CreatedAtUtc))
-                Movements.Add(new CashMovementRow(m.Type, m.Amount, m.Reason, m.CreatedAtUtc));
-        }
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<SchoolDbContext>();
+            var operatorId = _session.Operator!.Id;
 
-        var recent = await db.CashSessions.AsNoTracking()
-            .Where(s => s.SchoolId == _session.SchoolId && s.Status == CashSessionStatus.Closed)
-            .OrderByDescending(s => s.ClosedAtUtc)
-            .Take(20)
-            .Select(s => new ClosedSessionRow(
-                s.OpenedAtUtc, s.ClosedAtUtc, s.OpeningFloat,
-                s.CountedAmount ?? 0m, s.ExpectedAmount ?? 0m, s.Variance ?? 0m))
-            .ToListAsync();
-        RecentSessions.Clear();
-        foreach (var r in recent)
-            RecentSessions.Add(r);
+            var open = await db.CashSessions.AsNoTracking()
+                .Include(s => s.Movements)
+                .Where(s => s.SchoolId == _session.SchoolId && s.OperatorId == operatorId && s.Status == CashSessionStatus.Open)
+                .OrderByDescending(s => s.OpenedAtUtc)
+                .FirstOrDefaultAsync();
+
+            Movements.Clear();
+            if (open is null)
+            {
+                OpenSession = null;
+            }
+            else
+            {
+                OpenSession = new OpenSessionRow(open.Id, open.OpeningFloat, open.OpenedAtUtc);
+                foreach (var m in open.Movements.OrderByDescending(m => m.CreatedAtUtc))
+                    Movements.Add(new CashMovementRow(m.Type, m.Amount, m.Reason, m.CreatedAtUtc));
+            }
+
+            var recent = await db.CashSessions.AsNoTracking()
+                .Where(s => s.SchoolId == _session.SchoolId && s.Status == CashSessionStatus.Closed)
+                .OrderByDescending(s => s.ClosedAtUtc)
+                .Take(20)
+                .Select(s => new ClosedSessionRow(
+                    s.OpenedAtUtc, s.ClosedAtUtc, s.OpeningFloat,
+                    s.CountedAmount ?? 0m, s.ExpectedAmount ?? 0m, s.Variance ?? 0m))
+                .ToListAsync();
+            RecentSessions.Clear();
+            foreach (var r in recent)
+                RecentSessions.Add(r);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"No se pudo cargar la tesorería: {ex.Message}";
+        }
     }
 
     private async Task OpenSessionAsync()

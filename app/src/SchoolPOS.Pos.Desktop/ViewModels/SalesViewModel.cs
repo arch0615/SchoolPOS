@@ -135,30 +135,37 @@ public sealed class SalesViewModel : ViewModelBase, IAsyncLoadable
         if (code.Length == 0)
             return;
 
-        using var scope = _scopeFactory.CreateScope();
-        var inventory = scope.ServiceProvider.GetRequiredService<IInventoryService>();
-        var product = await inventory.FindByBarcodeAsync(_session.SchoolId, code);
-
-        if (product is null)
+        try
         {
-            ErrorMessage = $"Producto no encontrado: {code}";
-            return;
-        }
+            using var scope = _scopeFactory.CreateScope();
+            var inventory = scope.ServiceProvider.GetRequiredService<IInventoryService>();
+            var product = await inventory.FindByBarcodeAsync(_session.SchoolId, code);
 
-        var existing = Cart.FirstOrDefault(l => l.ProductId == product.Id);
-        if (existing is not null)
-        {
-            existing.Quantity += 1m;
-        }
-        else
-        {
-            var line = new CartLine { ProductId = product.Id, Description = product.Name, UnitPrice = product.Price };
-            line.Changed += RecalculateTotals;
-            Cart.Add(line);
-        }
+            if (product is null)
+            {
+                ErrorMessage = $"Producto no encontrado: {code}";
+                return;
+            }
 
-        ProductCode = string.Empty;
-        RecalculateTotals();
+            var existing = Cart.FirstOrDefault(l => l.ProductId == product.Id);
+            if (existing is not null)
+            {
+                existing.Quantity += 1m;
+            }
+            else
+            {
+                var line = new CartLine { ProductId = product.Id, Description = product.Name, UnitPrice = product.Price };
+                line.Changed += RecalculateTotals;
+                Cart.Add(line);
+            }
+
+            ProductCode = string.Empty;
+            RecalculateTotals();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"No se pudo agregar el producto: {ex.Message}";
+        }
     }
 
     private void RemoveSelectedLine()
@@ -177,19 +184,26 @@ public sealed class SalesViewModel : ViewModelBase, IAsyncLoadable
         if (code.Length == 0)
             return;
 
-        using var scope = _scopeFactory.CreateScope();
-        var directory = scope.ServiceProvider.GetRequiredService<IStudentDirectory>();
-        var student = await directory.FindByCodeAsync(_session.SchoolId, code);
-
-        if (student is null)
+        try
         {
-            ErrorMessage = $"Estudiante no encontrado: {code}";
-            CurrentStudent = null;
-            return;
-        }
+            using var scope = _scopeFactory.CreateScope();
+            var directory = scope.ServiceProvider.GetRequiredService<IStudentDirectory>();
+            var student = await directory.FindByCodeAsync(_session.SchoolId, code);
 
-        CurrentStudent = student;
-        StudentCode = string.Empty;
+            if (student is null)
+            {
+                ErrorMessage = $"Estudiante no encontrado: {code}";
+                CurrentStudent = null;
+                return;
+            }
+
+            CurrentStudent = student;
+            StudentCode = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"No se pudo identificar al estudiante: {ex.Message}";
+        }
     }
 
     private void ClearStudent()

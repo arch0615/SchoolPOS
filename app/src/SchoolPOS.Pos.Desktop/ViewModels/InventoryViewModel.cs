@@ -94,33 +94,40 @@ public sealed class InventoryViewModel : ViewModelBase, IAsyncLoadable
     public async Task LoadAsync()
     {
         ErrorMessage = string.Empty;
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<SchoolDbContext>();
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<SchoolDbContext>();
 
-        var categoryRows = await db.Categories.AsNoTracking()
-            .Where(c => c.SchoolId == _session.SchoolId && c.IsActive)
-            .OrderBy(c => c.Name)
-            .Select(c => new CategoryRow(c.Id, c.Name))
-            .ToListAsync();
+            var categoryRows = await db.Categories.AsNoTracking()
+                .Where(c => c.SchoolId == _session.SchoolId && c.IsActive)
+                .OrderBy(c => c.Name)
+                .Select(c => new CategoryRow(c.Id, c.Name))
+                .ToListAsync();
 
-        var selectedCategoryId = NewProductCategory?.Id;
-        Categories.Clear();
-        foreach (var c in categoryRows)
-            Categories.Add(c);
-        NewProductCategory = Categories.FirstOrDefault(c => c.Id == selectedCategoryId);
+            var selectedCategoryId = NewProductCategory?.Id;
+            Categories.Clear();
+            foreach (var c in categoryRows)
+                Categories.Add(c);
+            NewProductCategory = Categories.FirstOrDefault(c => c.Id == selectedCategoryId);
 
-        var query = db.Products.AsNoTracking().Where(p => p.SchoolId == _session.SchoolId && p.IsActive);
-        if (!string.IsNullOrWhiteSpace(Search))
-            query = query.Where(p => p.Name.Contains(Search) || (p.Barcode != null && p.Barcode.Contains(Search)));
+            var query = db.Products.AsNoTracking().Where(p => p.SchoolId == _session.SchoolId && p.IsActive);
+            if (!string.IsNullOrWhiteSpace(Search))
+                query = query.Where(p => p.Name.Contains(Search) || (p.Barcode != null && p.Barcode.Contains(Search)));
 
-        var rows = await query.OrderBy(p => p.Name)
-            .Select(p => new ProductRow(p.Id, p.Name, p.Barcode, p.Price, p.StockOnHand, p.MinStock))
-            .Take(200)
-            .ToListAsync();
+            var rows = await query.OrderBy(p => p.Name)
+                .Select(p => new ProductRow(p.Id, p.Name, p.Barcode, p.Price, p.StockOnHand, p.MinStock))
+                .Take(200)
+                .ToListAsync();
 
-        Products.Clear();
-        foreach (var r in rows)
-            Products.Add(r);
+            Products.Clear();
+            foreach (var r in rows)
+                Products.Add(r);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"No se pudo cargar el inventario: {ex.Message}";
+        }
     }
 
     private async Task AddCategoryAsync()

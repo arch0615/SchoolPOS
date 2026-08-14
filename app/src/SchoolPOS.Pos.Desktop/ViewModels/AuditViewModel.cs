@@ -14,6 +14,7 @@ public sealed class AuditViewModel : ViewModelBase, IAsyncLoadable
     private DateTime? _from;
     private DateTime? _to;
     private string _actionFilter = string.Empty;
+    private string _errorMessage = string.Empty;
 
     public AuditViewModel(IServiceScopeFactory scopeFactory, PosSession session)
     {
@@ -28,20 +29,30 @@ public sealed class AuditViewModel : ViewModelBase, IAsyncLoadable
 
     public ObservableCollection<AuditEntryRow> Entries { get; } = new();
 
+    public string ErrorMessage { get => _errorMessage; set => SetProperty(ref _errorMessage, value); }
+
     public AsyncRelayCommand RefreshCommand { get; }
 
     public async Task LoadAsync()
     {
-        var fromUtc = From?.Date;
-        var toUtc = To?.Date.AddDays(1).AddTicks(-1);
-        var action = string.IsNullOrWhiteSpace(ActionFilter) ? null : ActionFilter.Trim();
+        ErrorMessage = string.Empty;
+        try
+        {
+            var fromUtc = From?.Date;
+            var toUtc = To?.Date.AddDays(1).AddTicks(-1);
+            var action = string.IsNullOrWhiteSpace(ActionFilter) ? null : ActionFilter.Trim();
 
-        using var scope = _scopeFactory.CreateScope();
-        var audit = scope.ServiceProvider.GetRequiredService<IAuditLogQueryService>();
-        var rows = await audit.QueryAsync(_session.SchoolId, fromUtc, toUtc, action);
+            using var scope = _scopeFactory.CreateScope();
+            var audit = scope.ServiceProvider.GetRequiredService<IAuditLogQueryService>();
+            var rows = await audit.QueryAsync(_session.SchoolId, fromUtc, toUtc, action);
 
-        Entries.Clear();
-        foreach (var r in rows)
-            Entries.Add(r);
+            Entries.Clear();
+            foreach (var r in rows)
+                Entries.Add(r);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"No se pudo cargar la bitácora: {ex.Message}";
+        }
     }
 }

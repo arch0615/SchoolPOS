@@ -22,6 +22,8 @@ public sealed class ReportsViewModel : ViewModelBase, IAsyncLoadable
     private SalesSummary _sales = new(null, null, 0, 0, 0, 0);
     private CashFlowSummary _cashFlow = new(0, 0, 0, 0);
     private CustomerBalancesSummary _balances = new(0, 0);
+    private string _errorMessage = string.Empty;
+    private string _statusMessage = string.Empty;
 
     public ReportsViewModel(IServiceScopeFactory scopeFactory, PosSession session)
     {
@@ -42,42 +44,63 @@ public sealed class ReportsViewModel : ViewModelBase, IAsyncLoadable
 
     public ObservableCollection<ProductSalesRow> TopProducts { get; } = new();
 
+    public string ErrorMessage { get => _errorMessage; set => SetProperty(ref _errorMessage, value); }
+    public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
+
     public AsyncRelayCommand RefreshCommand { get; }
     public RelayCommand ExportProductsCommand { get; }
 
     public async Task LoadAsync()
     {
-        var fromUtc = From?.Date;
-        var toUtc = To?.Date.AddDays(1).AddTicks(-1);
+        ErrorMessage = string.Empty;
+        try
+        {
+            var fromUtc = From?.Date;
+            var toUtc = To?.Date.AddDays(1).AddTicks(-1);
 
-        using var scope = _scopeFactory.CreateScope();
-        var salesReports = scope.ServiceProvider.GetRequiredService<ISalesReportService>();
-        var finReports = scope.ServiceProvider.GetRequiredService<IFinancialReportService>();
+            using var scope = _scopeFactory.CreateScope();
+            var salesReports = scope.ServiceProvider.GetRequiredService<ISalesReportService>();
+            var finReports = scope.ServiceProvider.GetRequiredService<IFinancialReportService>();
 
-        Sales = await salesReports.GetSummaryAsync(_session.SchoolId, fromUtc, toUtc);
-        CashFlow = await finReports.GetCashFlowAsync(_session.SchoolId, fromUtc, toUtc);
-        Balances = await finReports.GetCustomerBalancesAsync(_session.SchoolId);
+            Sales = await salesReports.GetSummaryAsync(_session.SchoolId, fromUtc, toUtc);
+            CashFlow = await finReports.GetCashFlowAsync(_session.SchoolId, fromUtc, toUtc);
+            Balances = await finReports.GetCustomerBalancesAsync(_session.SchoolId);
 
-        var byProduct = await salesReports.GetByProductAsync(_session.SchoolId, fromUtc, toUtc);
-        TopProducts.Clear();
-        foreach (var p in byProduct)
-            TopProducts.Add(p);
-        ExportProductsCommand.RaiseCanExecuteChanged();
+            var byProduct = await salesReports.GetByProductAsync(_session.SchoolId, fromUtc, toUtc);
+            TopProducts.Clear();
+            foreach (var p in byProduct)
+                TopProducts.Add(p);
+            ExportProductsCommand.RaiseCanExecuteChanged();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"No se pudieron cargar los reportes: {ex.Message}";
+        }
     }
 
     private void ExportProducts()
     {
-        var dialog = new SaveFileDialog
+        ErrorMessage = string.Empty;
+        StatusMessage = string.Empty;
+        try
         {
-            FileName = $"ventas_por_producto_{DateTime.UtcNow:yyyyMMdd}.csv",
-            Filter = "CSV (*.csv)|*.csv",
-        };
-        if (dialog.ShowDialog() != true)
-            return;
+            var dialog = new SaveFileDialog
+            {
+                FileName = $"ventas_por_producto_{DateTime.UtcNow:yyyyMMdd}.csv",
+                Filter = "CSV (*.csv)|*.csv",
+            };
+            if (dialog.ShowDialog() != true)
+                return;
 
-        var csv = Csv.Build(
-            new[] { "Producto", "Cantidad", "Ingreso" },
-            TopProducts.Select(p => new[] { p.Description, p.Quantity.ToString("0.##"), p.Revenue.ToString("0.00") }));
-        File.WriteAllText(dialog.FileName, csv);
+            var csv = Csv.Build(
+                new[] { "Producto", "Cantidad", "Ingreso" },
+                TopProducts.Select(p => new[] { p.Description, p.Quantity.ToString("0.##"), p.Revenue.ToString("0.00") }));
+            File.WriteAllText(dialog.FileName, csv);
+            StatusMessage = $"Exportado a {dialog.FileName}.";
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"No se pudo exportar el CSV: {ex.Message}";
+        }
     }
 }

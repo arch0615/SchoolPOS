@@ -9,6 +9,8 @@
         </Grid.RowDefinitions>
 
         <DockPanel Grid.Row="0">
+            <TextBlock DockPanel.Dock="Bottom" Text="{Binding ErrorMessage}" Foreground="{StaticResource DangerBrush}"
+                       Margin="0,6,0,0" TextWrapping="Wrap" />
             <Button Content="Actualizar" Command="{Binding RefreshCommand}" HorizontalAlignment="Right"
                     DockPanel.Dock="Right" />
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
