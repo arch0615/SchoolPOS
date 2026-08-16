@@ -6,10 +6,23 @@
     var esMx = new System.Globalization.CultureInfo("es-MX");
     var todayStr = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, MxTz).ToString("dddd, dd 'de' MMMM", esMx);
     var total = Model.Students.Sum(s => s.Balance);
-    var gastado = Model.Movements.Where(m => m.Amount < 0).Sum(m => -m.Amount);
-    var lastTop = Model.Movements.Where(m => m.Amount > 0).OrderByDescending(m => m.CreatedAtUtc).FirstOrDefault();
+    // Del set completo sin filtrar por tipo/página — así no cambian según la pestaña o la página activa.
+    var gastado = Model.RecentSummary.Where(m => m.Amount < 0).Sum(m => -m.Amount);
+    var lastTop = Model.RecentSummary.Where(m => m.Amount > 0).OrderByDescending(m => m.CreatedAtUtc).FirstOrDefault();
     const decimal lowThreshold = 50m;
     var lowKids = Model.Students.Where(s => s.Balance < lowThreshold).ToList();
+
+    // Conserva el alumno seleccionado al cambiar de pestaña (vuelve a la página 1).
+    Func<MovementFilter, string> tabUrl = k =>
+        $"/Dashboard?Kind={k}&PageSize={Model.PageSize}" +
+        (Model.Selected is null ? "" : $"&studentId={Model.Selected.StudentId}");
+
+    // Conserva alumno + pestaña al cambiar de página o de tamaño de página.
+    Func<string> baseQs = () =>
+        $"Kind={Model.Kind}" +
+        (Model.Selected is null ? "" : $"&studentId={Model.Selected.StudentId}");
+    Func<int, string> pageUrl = n => $"/Dashboard?{baseQs()}&PageSize={Model.PageSize}&PageNumber={n}";
+    Func<int, string> pageSizeUrl = size => $"/Dashboard?{baseQs()}&PageSize={size}&PageNumber=1";
 }
 @functions {
     static readonly TimeZoneInfo MxTz = ResolveTz();
@@ -154,6 +167,13 @@ else
             <h2 style="margin:0">Movimientos recientes</h2>
             <a href="/Transactions?StudentId=@Model.Selected!.StudentId" style="margin-left:auto;font-size:14px;font-weight:700">Ver todo →</a>
         </div>
+
+        <nav class="chips" style="margin-bottom:12px">
+            <a href="@tabUrl(MovementFilter.All)" class="@(Model.Kind == MovementFilter.All ? "on" : "")">Todo</a>
+            <a href="@tabUrl(MovementFilter.TopUps)" class="@(Model.Kind == MovementFilter.TopUps ? "on" : "")">Recargas</a>
+            <a href="@tabUrl(MovementFilter.Purchases)" class="@(Model.Kind == MovementFilter.Purchases ? "on" : "")">Consumos</a>
+        </nav>
+
         @if (Model.Movements.Count == 0)
         {
             <div class="empty"><img src="/img/il/il-statement.svg" alt="" style="width:88px;height:88px" /><p>Aún no hay movimientos para @Model.Selected?.FullName.</p>
@@ -175,6 +195,41 @@ else
                     </li>
                 }
             </ul>
+
+            <div class="pager">
+                <div class="pager-size">
+                    <span class="muted">Mostrar</span>
+                    <nav class="chips">
+                        @foreach (var size in TransactionsModel.PageSizeOptions)
+                        {
+                            <a href="@pageSizeUrl(size)" class="@(Model.PageSize == size ? "on" : "")">@size</a>
+                        }
+                    </nav>
+                    <span class="muted">por página · @Model.FilteredCount @(Model.FilteredCount == 1 ? "movimiento" : "movimientos")</span>
+                </div>
+                @if (Model.TotalPages > 1)
+                {
+                    <div class="pager-nav">
+                        @if (Model.PageNumber > 1)
+                        {
+                            <a class="btn ghost pager-btn" href="@pageUrl(Model.PageNumber - 1)">← Anterior</a>
+                        }
+                        else
+                        {
+                            <span class="btn ghost pager-btn disabled" aria-disabled="true">← Anterior</span>
+                        }
+                        <span class="pager-status">Página @Model.PageNumber de @Model.TotalPages</span>
+                        @if (Model.PageNumber < Model.TotalPages)
+                        {
+                            <a class="btn ghost pager-btn" href="@pageUrl(Model.PageNumber + 1)">Siguiente →</a>
+                        }
+                        else
+                        {
+                            <span class="btn ghost pager-btn disabled" aria-disabled="true">Siguiente →</span>
+                        }
+                    </div>
+                }
+            </div>
         }
     </div>
 }
