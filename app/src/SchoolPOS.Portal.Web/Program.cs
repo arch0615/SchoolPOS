@@ -10,6 +10,11 @@ using SchoolPOS.Portal.Web.Infrastructure;
 using SchoolPOS.Portal.Web.Infrastructure.Email;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// secrets.json: overrides locales fuera de control de versiones (ya está en .gitignore). Se
+// aplica después de appsettings.json/appsettings.{Environment}.json, así que gana sobre ambos;
+// optional=true para que su ausencia no rompa un clon nuevo del repo sin credenciales todavía.
+builder.Configuration.AddJsonFile("secrets.json", optional: true, reloadOnChange: true);
 var config = builder.Configuration;
 
 var provider = config["Database:Provider"] ?? "Sqlite";
