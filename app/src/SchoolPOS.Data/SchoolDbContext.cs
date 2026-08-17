@@ -93,8 +93,10 @@ public class SchoolDbContext : DbContext
             e.HasKey(x => x.Id);
             e.Property(x => x.Provider).HasMaxLength(50).IsRequired();
             e.Property(x => x.ProviderUserId).HasMaxLength(100);
-            e.Property(x => x.AccessToken).HasMaxLength(1000).IsRequired();
-            e.Property(x => x.RefreshToken).HasMaxLength(1000);
+            // Los tokens se guardan cifrados (ISecretProtector): el texto cifrado en base64 ocupa
+            // bastante más que el token original, de ahí el margen sobre los 1000 de antes.
+            e.Property(x => x.AccessToken).HasMaxLength(2000).IsRequired();
+            e.Property(x => x.RefreshToken).HasMaxLength(2000);
             e.HasIndex(x => new { x.SchoolId, x.Provider }).IsUnique();
         });
 
@@ -129,6 +131,9 @@ public class SchoolDbContext : DbContext
             e.HasKey(x => x.Id);
             e.Property(x => x.Reference).HasMaxLength(100);
             e.HasIndex(x => new { x.AccountId, x.CreatedAtUtc });
+            // El agente de sincronización busca exactamente esto: lo pendiente de subir, por
+            // antigüedad. Sin el índice, cada corrida barre la tabla completa de asientos.
+            e.HasIndex(x => new { x.SyncedToCloudAtUtc, x.CreatedAtUtc });
             e.HasOne(x => x.Account).WithMany(a => a.Movements)
                 .HasForeignKey(x => x.AccountId)
                 .OnDelete(DeleteBehavior.Cascade);

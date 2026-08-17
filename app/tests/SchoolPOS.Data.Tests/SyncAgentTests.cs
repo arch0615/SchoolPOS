@@ -108,11 +108,89 @@ public class SyncAgentTests
         var pushed = await agent.PushConsumptionAsync();
         var pushedAgain = await agent.PushConsumptionAsync(); // idempotente
 
-        pushed.Should().Be(1);
-        pushedAgain.Should().Be(0);
+        pushed.Pushed.Should().Be(1);
+        pushedAgain.Pushed.Should().Be(0);
         var cloudMovements = await cloud.NewContext().BalanceMovements
             .Where(m => m.AccountId == AccountId && m.Type == MovementType.Sale).ToListAsync();
         cloudMovements.Should().ContainSingle();
         cloudMovements[0].Amount.Should().Be(-30m);
+    }
+
+    /// <summary>
+    /// Un asiento subido queda marcado, y la siguiente corrida ya no vuelve a leerlo. Sin esta
+    /// marca el agente releía todo el historial de la escuela en cada ciclo, para siempre.
+    /// </summary>
+    [Fact]
+    public async Task Pushed_movements_are_marked_and_not_read_again()
+    {
+        using var cloud = new TestDatabase();
+        using var local = new TestDatabase();
+        cloud.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m);
+        local.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m);
+        var localBalance = new BalanceService(local.Context, new TestClock());
+        await localBalance.ChargeSaleAsync(AccountId, 30m, "VENTA-1", Guid.NewGuid());
+
+        var agent = NewAgent(cloud, local);
+        await agent.PushConsumptionAsync();
+
+        var pendingAfter = await local.NewContext().BalanceMovements
+            .CountAsync(m => m.Type == MovementType.Sale && m.SyncedToCloudAtUtc == null);
+        pendingAfter.Should().Be(0, "lo ya subido no vuelve a la cola");
+
+        // Consumo nuevo: solo ese entra en la siguiente corrida.
+        await localBalance.ChargeSaleAsync(AccountId, 20m, "VENTA-2", Guid.NewGuid());
+        var second = await agent.PushConsumptionAsync();
+        second.Pushed.Should().Be(1, "solo el asiento nuevo, no los anteriores");
+    }
+
+    /// <summary>
+    /// La recarga no es consumo: la origina la nube y baja hacia la escuela. No debe volver a
+    /// subir (duplicaría el movimiento en la vista del padre).
+    /// </summary>
+    [Fact]
+    public async Task Push_ignores_topup_movements()
+    {
+        using var cloud = new TestDatabase();
+        using var local = new TestDatabase();
+        cloud.SeedRoster(SchoolId, StudentId, AccountId);
+        local.SeedRoster(SchoolId, StudentId, AccountId);
+        cloud.SeedConfirmedTopUp(SchoolId, AccountId, 100m, "MP-PUSH");
+
+        var agent = NewAgent(cloud, local);
+        await agent.PullTopUpsAsync();  // crea un asiento TopUp local
+        var pushed = await agent.PushConsumptionAsync();
+
+        pushed.Pushed.Should().Be(0);
+        (await cloud.NewContext().BalanceMovements.CountAsync(m => m.Type == MovementType.TopUp))
+            .Should().Be(0, "el asiento de la recarga vive en la DB local, no se replica de vuelta");
+    }
+
+    /// <summary>
+    /// Cuenta que la nube todavía no conoce (roster desfasado): el asiento no se sube, pero
+    /// tampoco se marca — tiene que seguir pendiente y subir cuando el roster se ponga al día.
+    /// </summary>
+    [Fact]
+    public async Task Movement_for_unknown_cloud_account_stays_pending()
+    {
+        using var cloud = new TestDatabase();
+        using var local = new TestDatabase();
+        local.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m); // la nube NO tiene el roster
+        var localBalance = new BalanceService(local.Context, new TestClock());
+        await localBalance.ChargeSaleAsync(AccountId, 30m, "VENTA-HUERFANA", Guid.NewGuid());
+
+        var agent = NewAgent(cloud, local);
+        var report = await agent.PushConsumptionAsync();
+
+        report.Pushed.Should().Be(0);
+        report.Skipped.Should().Be(1);
+        (await local.NewContext().BalanceMovements
+            .CountAsync(m => m.Type == MovementType.Sale && m.SyncedToCloudAtUtc == null))
+            .Should().Be(1, "sigue en la cola para la próxima corrida");
+
+        // La nube recibe el roster: ahora sí sube.
+        cloud.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m);
+        var second = await agent.PushConsumptionAsync();
+        second.Pushed.Should().Be(1);
+        second.Skipped.Should().Be(0);
     }
 }

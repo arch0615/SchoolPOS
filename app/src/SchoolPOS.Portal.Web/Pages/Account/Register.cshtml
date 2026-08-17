@@ -27,6 +27,11 @@
             @if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
 
             <form method="post">
+                <label>Escuela</label>
+                <select asp-for="Input.SchoolId"
+                        asp-items="@(new SelectList(Model.Schools, nameof(SchoolDirectory.Option.Id), nameof(SchoolDirectory.Option.Name)))">
+                    <option value="">Selecciona la escuela…</option>
+                </select>
                 <label>Nombre completo</label>
                 <input asp-for="Input.FullName" placeholder="María López" autofocus />
                 <label>Correo electrónico</label>

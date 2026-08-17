@@ -32,6 +32,10 @@ public static class DependencyInjection
     {
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
+        // Cifrado de secretos en reposo (tokens OAuth de la pasarela). El host puede reconfigurar
+        // dónde persiste el anillo de llaves llamando a AddDataProtection() después de este método.
+        services.AddDataProtection();
+        services.AddSingleton<ISecretProtector, DataProtectionSecretProtector>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IStudentDirectory, StudentDirectory>();
         services.AddScoped<ISchoolPaymentAccountStore, SchoolPaymentAccountStore>();

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using SchoolPOS.Data;
@@ -19,7 +20,9 @@ var config = builder.Configuration;
 
 var provider = config["Database:Provider"] ?? "Sqlite";
 var connectionString = config.GetConnectionString("Portal") ?? "Data Source=schoolpos-portal.db";
-var schoolId = config.GetValue<Guid>("Portal:SchoolId");
+// Solo para sembrar datos de demostración en desarrollo. El portal atiende a TODAS las escuelas:
+// la escuela de cada tutor sale de su sesión, nunca de esta configuración.
+var demoSchoolId = config.GetValue<Guid>("Portal:SchoolId");
 
 // DB local/nube + servicios de dominio (proveedor configurable).
 builder.Services.AddSchoolPosData(options =>
@@ -29,6 +32,20 @@ builder.Services.AddSchoolPosData(options =>
     else
         options.UseSqlite(connectionString);
 });
+
+// Anillo de llaves de Data Protection (cifra los tokens OAuth de las escuelas). Debe persistir
+// entre reinicios y compartirse entre instancias: si se pierde, cada escuela tiene que reconectar
+// su cuenta de Mercado Pago. Por defecto va al perfil del usuario, que en un contenedor o bajo un
+// servicio con perfil efímero se borra — de ahí que en producción se configure una ruta explícita.
+var keyRingPath = config["DataProtection:KeyRingPath"];
+if (!string.IsNullOrWhiteSpace(keyRingPath))
+{
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(keyRingPath))
+        .SetApplicationName("SchoolPOS.Portal");
+}
+
+builder.Services.AddScoped<SchoolDirectory>();
 
 // Pasarela de pago: sandbox (desarrollo) o Mercado Pago real (producción), según configuración.
 var paymentsProvider = config["Payments:Provider"] ?? "Sandbox";
@@ -49,7 +66,6 @@ else
 
 builder.Services.AddSingleton(new PortalOptions
 {
-    SchoolId = schoolId,
     VendorAccessCode = config["Portal:VendorAccessCode"] ?? "vendor-demo",
 });
 
@@ -161,7 +177,7 @@ using (var scope = app.Services.CreateScope())
         await db.Database.EnsureCreatedAsync();
 
     if (config.GetValue<bool>("Portal:SeedDemoData"))
-        await DemoDataSeeder.SeedAsync(db, schoolId);
+        await DemoDataSeeder.SeedAsync(db, demoSchoolId);
 }
 
 if (!app.Environment.IsDevelopment())

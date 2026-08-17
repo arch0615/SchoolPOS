@@ -18,6 +18,9 @@ public sealed class InventoryService : IInventoryService
     private readonly SchoolDbContext _db;
     private readonly IClock _clock;
 
+    /// <summary>Reintentos del ajuste por conteo cuando otra operación cambia el stock a la vez.</summary>
+    private const int MaxAdjustAttempts = 3;
+
     public InventoryService(SchoolDbContext db, IClock clock)
     {
         _db = db;
@@ -78,17 +81,31 @@ public sealed class InventoryService : IInventoryService
         return _db.ExecuteAtomicAsync(async () =>
         {
             var now = _clock.UtcNow;
-            var current = await _db.Products.AsNoTracking()
-                .Where(p => p.Id == productId).Select(p => (decimal?)p.StockOnHand).FirstOrDefaultAsync(ct)
-                ?? throw new InvalidOperationException($"Producto {productId} no encontrado.");
 
-            var delta = countedQuantity - current;
-            await _db.Products
-                .Where(p => p.Id == productId)
-                .ExecuteUpdateAsync(s => s.SetProperty(p => p.StockOnHand, countedQuantity), ct);
+            // Leer-y-escribir con condición sobre lo leído: sin el `StockOnHand == current` una
+            // venta concurrente entre la lectura y el UPDATE se perdería del Kardex (el delta
+            // quedaría calculado contra existencias viejas y la suma dejaría de cuadrar con
+            // StockOnHand). Si otra operación ganó la carrera, se relee y se reintenta.
+            for (var attempt = 1; ; attempt++)
+            {
+                var current = await _db.Products.AsNoTracking()
+                    .Where(p => p.Id == productId).Select(p => (decimal?)p.StockOnHand).FirstOrDefaultAsync(ct)
+                    ?? throw new InvalidOperationException($"Producto {productId} no encontrado.");
 
-            return await AppendMovementAsync(
-                productId, StockMovementType.Adjustment, delta, unitCost: null, reference: null, reason, operatorId, now, ct);
+                var affected = await _db.Products
+                    .Where(p => p.Id == productId && p.StockOnHand == current)
+                    .ExecuteUpdateAsync(s => s.SetProperty(p => p.StockOnHand, countedQuantity), ct);
+
+                if (affected > 0)
+                    return await AppendMovementAsync(
+                        productId, StockMovementType.Adjustment, countedQuantity - current,
+                        unitCost: null, reference: null, reason, operatorId, now, ct);
+
+                if (attempt >= MaxAdjustAttempts)
+                    throw new InvalidOperationException(
+                        $"No se pudo ajustar el producto {productId}: las existencias cambiaron durante " +
+                        "el conteo. Vuelva a contar y reintente.");
+            }
         }, ct);
     }
 

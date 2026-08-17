@@ -59,6 +59,25 @@ public sealed class SqliteConcurrencyDb : IDisposable
             return account.Id;
         });
 
+    /// <summary>Siembra escuela + producto con existencias iniciales y devuelve el Id del producto.</summary>
+    public Task<Guid> SeedProductAsync(decimal stock) =>
+        WithContextAsync(async ctx =>
+        {
+            var schoolId = Guid.NewGuid();
+            var product = new Product
+            {
+                SchoolId = schoolId,
+                Name = "Producto Conc",
+                Price = 10m,
+                Cost = 6m,
+                StockOnHand = stock,
+            };
+            ctx.Schools.Add(new School { Id = schoolId, Name = "Conc", Currency = "MXN" });
+            ctx.Products.Add(product);
+            await ctx.SaveChangesAsync();
+            return product.Id;
+        });
+
     public void Dispose()
     {
         SqliteConnection.ClearAllPools();

@@ -52,7 +52,10 @@ public class StudentsModel : PageModel
 
         try
         {
-            await _guardians.LinkStudentByEnrollmentAsync(User.GetGuardianId(), _options.SchoolId, enrollmentNo);
+            // La matrícula solo es única dentro de una escuela, y la del tutor viene de su sesión:
+            // así no puede vincular un alumno de otra escuela reutilizando una matrícula ajena.
+            await _guardians.LinkStudentByEnrollmentAsync(
+                User.GetGuardianId(), User.GetSchoolId(), enrollmentNo);
             Message = $"Estudiante {enrollmentNo} vinculado.";
         }
         catch (Exception ex)

@@ -11,9 +11,13 @@
     "Portal": "Server=<SERVIDOR-NUBE>;Database=SchoolPOS_Cloud;User Id=<usuario>;Password=<secreto>;TrustServerCertificate=True;"
   },
   "Portal": {
-    "SchoolId": "<PEGAR-SCHOOL-ID-DE-LA-PROVISION>",
+    "// NOTA": "El portal atiende a TODAS las escuelas: el tutor elige la suya al registrarse. SchoolId solo se usa para sembrar datos de demostración, así que con SeedDemoData=false es irrelevante.",
     "SeedDemoData": false,
     "VendorAccessCode": "<CAMBIAR-CODIGO-PROVEEDOR>"
+  },
+  "DataProtection": {
+    "// NOTA": "Anillo de llaves que cifra los tokens OAuth de las escuelas. DEBE persistir entre reinicios y respaldarse; si se pierde, cada escuela reconecta por OAuth. Con varias instancias, ruta compartida.",
+    "KeyRingPath": "/var/lib/schoolpos/keys"
   },
   "Payments": {
     "Provider": "MercadoPago"

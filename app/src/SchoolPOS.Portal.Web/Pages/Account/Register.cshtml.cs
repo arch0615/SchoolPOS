@@ -6,24 +6,33 @@ using SchoolPOS.Portal.Web.Infrastructure;
 
 namespace SchoolPOS.Portal.Web.Pages.Account;
 
+/// <summary>
+/// Alta del tutor. La escuela elegida aquí queda fija en la cuenta (el tutor solo puede vincular
+/// alumnos de esa escuela); un tutor con hijos en dos escuelas necesita una cuenta en cada una.
+/// </summary>
 public class RegisterModel : PageModel
 {
     private readonly IGuardianService _guardians;
-    private readonly PortalOptions _options;
+    private readonly SchoolDirectory _schools;
 
-    public RegisterModel(IGuardianService guardians, PortalOptions options)
+    public RegisterModel(IGuardianService guardians, SchoolDirectory schools)
     {
         _guardians = guardians;
-        _options = options;
+        _schools = schools;
     }
 
     [BindProperty]
     public InputModel Input { get; set; } = new();
 
     public string? Error { get; set; }
+    public IReadOnlyList<SchoolDirectory.Option> Schools { get; private set; } =
+        Array.Empty<SchoolDirectory.Option>();
 
     public sealed class InputModel
     {
+        [Required(ErrorMessage = "Selecciona la escuela de tu hijo.")]
+        public Guid SchoolId { get; set; }
+
         [Required(ErrorMessage = "El nombre es obligatorio.")]
         public string FullName { get; set; } = string.Empty;
 
@@ -34,18 +43,33 @@ public class RegisterModel : PageModel
         public string Password { get; set; } = string.Empty;
     }
 
+    public async Task OnGetAsync()
+    {
+        await LoadSchoolsAsync();
+        if (Schools.Count == 1)
+            Input.SchoolId = Schools[0].Id;
+    }
+
     public async Task<IActionResult> OnPostAsync()
     {
+        await LoadSchoolsAsync();
+
         if (!ModelState.IsValid)
         {
             Error = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).FirstOrDefault();
             return Page();
         }
 
+        if (!await _schools.ExistsAsync(Input.SchoolId))
+        {
+            Error = "Selecciona una escuela válida.";
+            return Page();
+        }
+
         try
         {
             var guardian = await _guardians.RegisterAsync(
-                _options.SchoolId, Input.Email, Input.Password, Input.FullName);
+                Input.SchoolId, Input.Email, Input.Password, Input.FullName);
             await PortalSignIn.SignInAsync(HttpContext, guardian);
             return RedirectToPage("/Dashboard");
         }
@@ -53,6 +77,19 @@ public class RegisterModel : PageModel
         {
             Error = ex.Message;
             return Page();
+        }
+    }
+
+    private async Task LoadSchoolsAsync()
+    {
+        try
+        {
+            Schools = await _schools.ListAsync();
+        }
+        catch (Exception)
+        {
+            Schools = Array.Empty<SchoolDirectory.Option>();
+            Error = "No se pudo cargar el listado de escuelas. Intenta de nuevo en un momento.";
         }
     }
 }

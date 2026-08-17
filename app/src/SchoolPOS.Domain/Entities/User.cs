@@ -17,5 +17,11 @@ public class User
 
     public bool IsActive { get; set; } = true;
 
+    /// <summary>Intentos fallidos consecutivos de inicio de sesión (se limpia al entrar bien).</summary>
+    public int FailedLoginCount { get; set; }
+
+    /// <summary>Si tiene valor futuro, la cuenta está bloqueada hasta esa fecha (NFR-6).</summary>
+    public DateTime? LockedUntilUtc { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
 }

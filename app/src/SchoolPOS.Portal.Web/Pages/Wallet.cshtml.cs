@@ -69,7 +69,10 @@ public class WalletModel : PageModel
 
         try
         {
-            var created = await _topUps.CreateAsync(_options.SchoolId, accountId, amount);
+            // La escuela sale de la sesión, no de la configuración: es la que determina la tasa de
+            // comisión y la moneda de la recarga, y con varias escuelas en la misma instalación una
+            // escuela fija cobraría a todo el mundo con los parámetros de la primera.
+            var created = await _topUps.CreateAsync(User.GetSchoolId(), accountId, amount);
             // Redirige al checkout de la pasarela (en sandbox, una página interna de simulación).
             return Redirect(created.CheckoutUrl);
         }

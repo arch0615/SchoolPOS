@@ -33,4 +33,12 @@ public class BalanceMovement
     public Guid? OperatorId { get; set; }
 
     public DateTime CreatedAtUtc { get; set; }
+
+    /// <summary>
+    /// Marca de sincronización: cuándo se subió este asiento a la nube. Nula = pendiente de subir.
+    /// Es la <b>única</b> columna mutable del asiento y no toca su contenido financiero (el importe
+    /// y el saldo resultante siguen siendo inmutables, NFR-5); solo permite que el agente lea lo
+    /// pendiente en vez de releer todo el historial en cada corrida.
+    /// </summary>
+    public DateTime? SyncedToCloudAtUtc { get; set; }
 }

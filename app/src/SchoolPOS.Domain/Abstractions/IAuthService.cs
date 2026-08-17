@@ -4,10 +4,13 @@ using SchoolPOS.Domain.Enums;
 namespace SchoolPOS.Domain.Abstractions;
 
 /// <summary>Resultado de un intento de autenticación de operador.</summary>
-public sealed record AuthResult(bool Succeeded, User? User, string? Error)
+public sealed record AuthResult(bool Succeeded, User? User, string? Error, bool IsLockedOut = false)
 {
     public static AuthResult Ok(User user) => new(true, user, null);
     public static AuthResult Fail(string error) => new(false, null, error);
+
+    /// <summary>Credenciales no evaluadas: la cuenta está bloqueada por intentos fallidos.</summary>
+    public static AuthResult Locked(string error) => new(false, null, error, true);
 }
 
 /// <summary>Autenticación y alta de operadores internos del POS con control de rol (FR-POS-1, FR-ADM-1).</summary>

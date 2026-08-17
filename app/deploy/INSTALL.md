@@ -65,13 +65,17 @@ o por carga inicial; el portal los vincula por matrícula.
 
 ## 4. Portal (nube)
 
+Un solo portal atiende a **todas** las escuelas: el tutor elige la suya al registrarse y a partir
+de ahí su escuela viaja en la sesión. No hay que desplegar un portal por escuela.
+
 1. Copia `deploy/config-templates/portal.appsettings.json` a
    `src/SchoolPOS.Portal.Web/appsettings.json` y completa:
    - `ConnectionStrings:Portal` → DB de la nube.
-   - `Portal:SchoolId` → el SchoolId provisionado.
-   - `Portal:SeedDemoData` → `false` en producción.
+   - `Portal:SeedDemoData` → `false` en producción (`Portal:SchoolId` solo se usa para sembrar
+     datos de demostración; en producción es irrelevante).
    - `Portal:VendorAccessCode` → código para el panel de comisiones.
    - `Payments:Provider` → `MercadoPago`; llena la sección `MercadoPago` (paso 7).
+   - `DataProtection:KeyRingPath` → carpeta persistente para el anillo de llaves (paso 9).
 2. Publica y ejecuta:
    ```bash
    dotnet publish src/SchoolPOS.Portal.Web -c Release -o /srv/schoolpos-portal
@@ -115,17 +119,44 @@ o por carga inicial; el portal los vincula por matrícula.
 4. En el panel de Mercado Pago, registra ese webhook.
    La comisión viaja como `marketplace_fee` y se separa a la cuenta del proveedor.
 
-## 8. Verificación
+## 8. Anillo de llaves (cifrado de los tokens de las escuelas)
+
+Los *access/refresh token* de Mercado Pago de cada escuela se guardan **cifrados** en la DB de la
+nube. La llave vive en un anillo de Data Protection que **debe persistir entre reinicios y
+compartirse entre instancias**; si se pierde, los tokens dejan de poder descifrarse y **cada
+escuela tiene que reconectar su cuenta por OAuth** (no se pierde dinero ni saldo, pero se caen los
+cobros hasta reconectar).
+
+```jsonc
+// portal.appsettings.json
+"DataProtection": { "KeyRingPath": "/var/lib/schoolpos/keys" }   // Windows: "C:\\SchoolPOS\\keys"
+```
+
+- La carpeta debe ser **legible/escribible solo por el usuario del servicio** y entrar en el
+  respaldo, igual que la base de datos.
+- Sin configurar, las llaves van al perfil del usuario — que en un contenedor o bajo un servicio
+  con perfil efímero se borra en cada despliegue. Configúralo siempre en producción.
+- Con **varias instancias** del portal (balanceo), todas deben apuntar a la misma ruta compartida.
+
+## 9. Verificación
 
 - [ ] `provision-school` imprime un `SchoolId` y crea el operador admin.
 - [ ] El POS inicia sesión con el admin y registra una venta contra saldo.
-- [ ] En el portal: registrar tutor → vincular alumno por matrícula → recargar → aprobar.
+- [ ] En el portal: registrar tutor **eligiendo su escuela** → vincular alumno por matrícula →
+      recargar → aprobar.
+- [ ] Con dos escuelas dadas de alta, un tutor de la escuela A **no** puede vincular una matrícula
+      de la escuela B.
 - [ ] El saldo recargado aparece en el POS tras un ciclo del agente de sincronización.
 - [ ] Panel del proveedor (`/Vendor/Login`) muestra la comisión de la escuela.
 
 ## Notas de operación
 
-- **Respaldos**: respalda la DB local de cada escuela (fuente de verdad) y la DB de la nube.
+- **Respaldos**: respalda la DB local de cada escuela (fuente de verdad), la DB de la nube y la
+  carpeta del anillo de llaves (paso 8).
+- **Primera corrida del agente tras actualizar**: los asientos anteriores a esta versión no traen
+  marca de sincronización, así que el agente los revisa una vez en lotes de 500 por ciclo (no se
+  duplica nada: hay dedupe por Id). En una escuela con mucho historial la primera puesta al día
+  puede tardar varios ciclos; después cada corrida solo mira lo nuevo.
 - **Secretos**: no subas `appsettings.json` con credenciales al repositorio (ya está en `.gitignore` por entorno). Usa variables de entorno o un gestor de secretos.
 - **Actualizaciones de esquema**: nuevas migraciones se aplican re-ejecutando el provisionador (o el portal al arrancar).
 - **Zona horaria**: los sellos de tiempo se guardan en UTC.

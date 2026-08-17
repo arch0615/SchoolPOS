@@ -49,25 +49,28 @@ La cadena de conexión real se inyecta por escuela vía `AddSchoolPosData(connec
 (ver `SchoolPOS.Data/DependencyInjection.cs`). La cadena de diseño (solo para generar
 migraciones) está en `SchoolDbContextFactory`.
 
-## Estado actual (Fase 1 completa — hito M1)
+## Estado actual
 
-Núcleo del libro mayor de saldo — **fuente única de verdad** con transacciones atómicas,
-y el **esquema completo de la Fase 1** (22 entidades) con dos migraciones.
+Las cuatro piezas están en pie: **POS WPF**, **portal web**, **agente de sincronización** y
+**proveedor** (comisiones + CFDI). 101 pruebas verdes (+1 gated sobre SQL Server real).
 
-- `Money` en `decimal` con redondeo comercial (NFR-4).
-- **Saldo:** School, Student, Account, BalanceMovement (inmutable), TopUp (dedupe por
-  `gateway_ref`), Guardian, User, AuditLog.
-- **Inventario:** Category, Product (stock denormalizado), StockMovement (Kardex).
-- **Ventas:** Sale, SaleLine.
-- **Compras:** Supplier, PurchaseOrder, PurchaseOrderLine, GoodsReceipt (+Line), SupplierInvoice.
-- **Tesorería:** CashSession, CashMovement.
-- `BalanceService`: recarga (100% al estudiante, idempotente), cobro con saldo (UPDATE
-  condicional atómico → sin sobregiro ni doble gasto), devolución y ajuste auditado.
-- 14 pruebas verdes, incl. **recarga + venta + devolución reconcilian** (M1), Kardex
-  reconcilia con existencias, y renglones de venta cuadran con el total.
+- **Saldo (núcleo):** libro mayor inmutable con `UPDATE` condicional atómico — sin sobregiro ni
+  doble gasto bajo concurrencia; `SUM(Amount) == Account.Balance` reconcilia por construcción.
+  Recargas idempotentes (dedupe por `gateway_ref` + bandera `AppliedLocally`).
+- **Inventario:** Kardex atómico que reconcilia con las existencias, incluso con ajuste por conteo
+  concurrente con ventas. **Ventas** y **compras** componen su transacción con la del saldo.
+- **Pagos:** Mercado Pago marketplace (split por `marketplace_fee`), webhook verificado por firma y
+  reconsultado server-side. Tokens OAuth de cada escuela **cifrados en reposo**.
+- **Multi-escuela:** una sola instalación del portal atiende a todas las escuelas. El tutor elige la
+  suya al registrarse y esa escuela viaja en su sesión; el alta de escuelas se hace desde el panel
+  del proveedor (`/Vendor/AddSchool`) o con `tools/SchoolPOS.Provision`.
+- **Sincronización:** el agente baja recargas confirmadas al ledger local y sube el consumo por
+  lotes, leyendo solo lo pendiente (marca por asiento).
 
 ### Siguiente
 
-Fase 1.B restante: servicios de dominio de **inventario** (entrada/salida/ajuste con Kardex
-atómico) y **ventas** (arma la venta, cobra por saldo, descuenta stock). Luego Fase 2
-(POS WPF: ventas + inventario offline sobre la DB local).
+- Ejecutar en CI la prueba de concurrencia contra SQL Server real (`SCHOOLPOS_SQLSERVER_TESTS`):
+  producción es SQL Server y hoy la garantía se prueba sobre SQLite.
+- Rate-limiting del webhook y del login; rotación programada de los tokens de Mercado Pago.
+- `Money` está definido y probado pero no se usa en los servicios (usan `decimal` directo):
+  adoptarlo en las fronteras o retirarlo.

@@ -1,13 +1,15 @@
 namespace SchoolPOS.Portal.Web.Infrastructure;
 
 /// <summary>
-/// Configuración del portal. Para desarrollo el portal es de una sola escuela (SchoolId fijo).
-/// En producción multi-escuela, la escuela se resolvería por subdominio o selección al registrarse.
+/// Configuración del portal. Es <b>multi-escuela</b>: una sola instalación atiende a todas las
+/// escuelas del proveedor. La escuela no se configura aquí — el tutor la elige al registrarse o
+/// ingresar (<see cref="SchoolDirectory"/>) y a partir de ahí viaja en la cookie como claim
+/// <c>school_id</c>, que es lo que leen las páginas autenticadas. Deliberadamente <b>no</b> existe
+/// una escuela por defecto: un respaldo global volvería a atar el portal a una sola escuela sin
+/// que nadie lo note.
 /// </summary>
 public sealed class PortalOptions
 {
-    public Guid SchoolId { get; init; }
-
     /// <summary>Código de acceso al panel del proveedor (comisiones). Configurar por instalación.</summary>
     public string VendorAccessCode { get; init; } = "vendor-demo";
 

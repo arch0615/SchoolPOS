@@ -5,17 +5,21 @@ using SchoolPOS.Portal.Web.Infrastructure;
 
 namespace SchoolPOS.Portal.Web.Pages.Account;
 
+/// <summary>
+/// Restablecimiento con el token del correo. La escuela llega en el propio enlace (y viaja oculta
+/// en el formulario): identifica junto al correo qué cuenta se está restableciendo. No es un
+/// secreto — el token sigue siendo lo único que autoriza el cambio.
+/// </summary>
 public class ResetPasswordModel : PageModel
 {
     private readonly IGuardianService _guardians;
-    private readonly PortalOptions _options;
 
-    public ResetPasswordModel(IGuardianService guardians, PortalOptions options)
+    public ResetPasswordModel(IGuardianService guardians)
     {
         _guardians = guardians;
-        _options = options;
     }
 
+    [BindProperty(SupportsGet = true)] public Guid SchoolId { get; set; }
     [BindProperty(SupportsGet = true)] public string Email { get; set; } = string.Empty;
     [BindProperty(SupportsGet = true)] public string Token { get; set; } = string.Empty;
     [BindProperty] public string NewPassword { get; set; } = string.Empty;
@@ -25,7 +29,7 @@ public class ResetPasswordModel : PageModel
 
     public IActionResult OnGet()
     {
-        if (string.IsNullOrEmpty(Email) || string.IsNullOrEmpty(Token))
+        if (SchoolId == Guid.Empty || string.IsNullOrEmpty(Email) || string.IsNullOrEmpty(Token))
             return RedirectToPage("/Account/ForgotPassword");
         return Page();
     }
@@ -34,7 +38,7 @@ public class ResetPasswordModel : PageModel
     {
         try
         {
-            var ok = await _guardians.ResetPasswordAsync(_options.SchoolId, Email, Token, NewPassword);
+            var ok = await _guardians.ResetPasswordAsync(SchoolId, Email, Token, NewPassword);
             if (!ok)
             {
                 Error = "El enlace es inválido o venció, o la contraseña es muy corta. Solicita uno nuevo.";

@@ -101,6 +101,51 @@ public class ConcurrencyTests
     }
 
     /// <summary>
+    /// El ajuste por conteo lee las existencias y luego las sobrescribe. Si entre ambos pasos entra
+    /// una venta, el delta asentado en el Kardex quedaría calculado contra un stock viejo y la suma
+    /// del Kardex dejaría de cuadrar con <c>StockOnHand</c> — justo el invariante que sostiene el
+    /// inventario. El ajuste condicional reintenta en vez de asentar un delta equivocado.
+    /// </summary>
+    [Fact]
+    public async Task Stock_count_adjustment_keeps_kardex_reconciled_under_concurrency()
+    {
+        using var db = new SqliteConcurrencyDb();
+        const decimal initialStock = 100m;
+        var productId = await db.SeedProductAsync(initialStock);
+        var clock = new TestClock();
+
+        // 10 salidas de 1 y, simultáneamente, un ajuste por conteo físico a 50.
+        await RaceAsync(11, async i =>
+        {
+            try
+            {
+                await db.WithContextAsync(ctx => i < 10
+                    ? new InventoryService(ctx, clock)
+                        .RegisterExitAsync(productId, 1m, "Venta", $"V{i}", Operator)
+                    : new InventoryService(ctx, clock)
+                        .AdjustToCountAsync(productId, 50m, "Conteo físico", Operator));
+                return true;
+            }
+            catch (InvalidOperationException)
+            {
+                return false; // el ajuste agotó sus reintentos: rechazado, no asentado a medias.
+            }
+        });
+
+        await db.WithContextAsync(async ctx =>
+        {
+            var stock = await ctx.Products
+                .Where(p => p.Id == productId).Select(p => p.StockOnHand).SingleAsync();
+            var kardex = await ctx.StockMovements
+                .Where(m => m.ProductId == productId).Select(m => m.Quantity).ToListAsync();
+
+            (initialStock + kardex.Sum()).Should().Be(
+                stock, "el Kardex reconcilia con las existencias sea cual sea el entrelazado");
+            return 0;
+        });
+    }
+
+    /// <summary>
     /// Versión adversarial sobre SQL Server real (aislamiento e índices de fila reales). Se ejecuta
     /// solo si <c>SCHOOLPOS_SQLSERVER_TESTS</c> apunta a un servidor donde se pueda crear una DB.
     /// </summary>

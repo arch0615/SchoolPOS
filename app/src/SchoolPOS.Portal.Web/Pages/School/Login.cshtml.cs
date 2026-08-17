@@ -16,13 +16,11 @@ public class LoginModel : PageModel
 {
     private readonly IAuthService _auth;
     private readonly SchoolDbContext _db;
-    private readonly PortalOptions _options;
 
-    public LoginModel(IAuthService auth, SchoolDbContext db, PortalOptions options)
+    public LoginModel(IAuthService auth, SchoolDbContext db)
     {
         _auth = auth;
         _db = db;
-        _options = options;
     }
 
     [BindProperty] public Guid SchoolId { get; set; }
@@ -36,10 +34,8 @@ public class LoginModel : PageModel
         try
         {
             await LoadSchoolsAsync();
-            // Preselecciona la escuela configurada del portal, o la primera disponible.
-            SchoolId = Schools.Any(s => s.Id == _options.SchoolId)
-                ? _options.SchoolId
-                : Schools.FirstOrDefault()?.Id ?? Guid.Empty;
+            // Con una sola escuela dada de alta no hay nada que elegir; con varias, que elija.
+            SchoolId = Schools.Count == 1 ? Schools[0].Id : Guid.Empty;
         }
         catch (Exception ex)
         {
@@ -69,7 +65,12 @@ public class LoginModel : PageModel
             var result = await _auth.AuthenticateAsync(SchoolId, user, Password);
             if (!result.Succeeded || result.User is null)
             {
-                Error = "Usuario o contraseña incorrectos.";
+                // El bloqueo sí se explica: con el mensaje genérico, un operador con la contraseña
+                // correcta la reintenta creyéndose equivocado y solo alarga el bloqueo. El resto de
+                // fallas siguen siendo genéricas (no revelan si el usuario existe).
+                Error = result.IsLockedOut
+                    ? result.Error
+                    : "Usuario o contraseña incorrectos.";
                 return Page();
             }
 
