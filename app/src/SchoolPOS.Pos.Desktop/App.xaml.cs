@@ -2,6 +2,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -37,19 +38,48 @@ public partial class App : Application
         AppDomain.CurrentDomain.UnhandledException += OnAppDomainUnhandledException;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
+        // Durante el arranque no puede haber ninguna ventana abierta (entre que se cierra el
+        // asistente y se abre el acceso hay un hueco), y con el modo por omisión WPF daría la
+        // aplicación por terminada justo ahí. Se restablece en cuanto el acceso está en pantalla.
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
         try
         {
+            // Primer arranque: sin configuración no se puede construir el contenedor (no hay cadena
+            // de conexión), así que el asistente corre antes y la deja escrita. Si el usuario lo
+            // cierra sin terminar, se sale — no hay nada que mostrar.
+            if (!PosConfig.IsConfigured())
+            {
+                var setup = new SetupWindow();
+                if (setup.ShowDialog() != true)
+                {
+                    Shutdown();
+                    return;
+                }
+            }
+
             _host = Host.CreateDefaultBuilder()
                 .ConfigureAppConfiguration((_, config) =>
                 {
+                    // Valores por omisión junto al ejecutable (opcionales: una instalación normal
+                    // no los trae) y encima la configuración de máquina que escribe el asistente.
                     config.SetBasePath(AppContext.BaseDirectory);
-                    config.AddJsonFile("appsettings.json", optional: false);
+                    config.AddJsonFile("appsettings.json", optional: true);
+                    config.AddJsonFile(PosConfig.FilePath, optional: true);
                 })
                 .ConfigureServices((context, services) =>
                 {
                     var connectionString = context.Configuration.GetConnectionString("Local")
-                        ?? throw new InvalidOperationException("Falta ConnectionStrings:Local en appsettings.json.");
-                    services.AddSchoolPosData(connectionString);
+                        ?? throw new InvalidOperationException("Falta ConnectionStrings:Local en la configuración.");
+                    var provider = context.Configuration["Database:Provider"] ?? PosConfig.SqliteProvider;
+
+                    services.AddSchoolPosData(options =>
+                    {
+                        if (string.Equals(provider, PosConfig.SqlServerProvider, StringComparison.OrdinalIgnoreCase))
+                            options.UseSqlServer(connectionString);
+                        else
+                            options.UseSqlite(connectionString);
+                    });
 
                     // Sesión con la escuela de la configuración local.
                     var schoolId = context.Configuration.GetValue<Guid>("Pos:SchoolId");
@@ -79,13 +109,16 @@ public partial class App : Application
 
             var login = Services.GetRequiredService<LoginWindow>();
             login.Show();
+
+            MainWindow = login;
+            ShutdownMode = ShutdownMode.OnLastWindowClose;
         }
         catch (Exception ex)
         {
             _logger?.LogCritical(ex, "No se pudo iniciar la aplicación.");
             MessageBox.Show(
-                $"No se pudo iniciar el POS. Revisa la configuración (appsettings.json) y la conexión " +
-                $"a la base de datos local.\n\nDetalle: {ex.Message}",
+                $"No se pudo iniciar el POS. Revisa la configuración y la conexión a la base de datos.\n\n" +
+                $"Configuración: {PosConfig.FilePath}\n\nDetalle: {ex.Message}",
                 "Error al iniciar", MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown(-1);
         }

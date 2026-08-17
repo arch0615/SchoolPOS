@@ -85,14 +85,47 @@ de ahí su escuela viaja en la sesión. No hay que desplegar un portal por escue
 
 ## 5. POS de escritorio (WPF, Windows)
 
+### 5.A Instalador (recomendado — escuela de una sola caja)
+
+La escuela **no necesita SQL Server, ni .NET, ni editar archivos**. Se genera un instalador
+(`.exe`) y la escuela hace doble clic:
+
+```powershell
+cd app\deploy\installer
+.\build-installer.ps1                 # publica el POS y compila el instalador
+# → artifacts\LoncherApp-Setup-1.0.0.exe  (~53 MB)
+```
+
+Lo que ve la escuela: siguiente → instalar → al abrir por primera vez, un **asistente** que pide
+el nombre de la escuela y el usuario/contraseña del administrador. El asistente crea la base de
+datos y guarda la configuración; a partir del segundo arranque entra directo al acceso.
+
+| | |
+|---|---|
+| Programa | `C:\Program Files\LoncherApp` |
+| **Datos (respaldar esto)** | `C:\ProgramData\LoncherApp\schoolpos.db` |
+| Configuración | `C:\ProgramData\LoncherApp\appsettings.json` |
+
+- La base es **SQLite**, en la misma computadora. Es el modo *una sola caja*: **no** debe
+  compartirse por red. Para varias cajas usa 5.B.
+- El desinstalador **pregunta** antes de borrar los datos, y por omisión los conserva.
+- El instalador **no está firmado** todavía: Windows mostrará "Windows protegió su PC" y hay que
+  elegir *Más información → Ejecutar de todas formas*. Con un certificado se firma pasando
+  `-SignTool` a `build-installer.ps1` (ver el encabezado del script).
+
+### 5.B Instalación manual (varias cajas contra SQL Server)
+
 1. En una máquina Windows, publica el POS (solo compila en Windows):
    ```powershell
    dotnet publish src\SchoolPOS.Pos.Desktop -c Release -r win-x64 --self-contained -o C:\SchoolPOS\POS
    ```
-2. Copia `deploy/config-templates/pos.appsettings.json` junto al ejecutable y completa
-   `Pos:SchoolId` y `ConnectionStrings:Local` (SQL Server local de la escuela).
+2. Crea `C:\ProgramData\LoncherApp\appsettings.json` con `Pos:SchoolId`,
+   `Database:Provider = SqlServer` y `ConnectionStrings:Local` (SQL Server local de la escuela).
+   Provisiona la base con `SchoolPOS.Provision` (paso 3).
 3. Ejecuta `SchoolPOS.Pos.Desktop.exe` e inicia sesión con el operador administrador.
    El POS opera contra la DB local por LAN → **sigue vendiendo aunque no haya internet**.
+
+> El asistente todavía no cubre este modo (la opción aparece deshabilitada); se configura a mano.
 
 ## 6. Agente de sincronización (por escuela)
 
