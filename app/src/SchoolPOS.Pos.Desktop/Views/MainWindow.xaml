@@ -14,6 +14,9 @@
         <DataTemplate DataType="{x:Type vm:SalesViewModel}">
             <views:SalesView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:RefundsViewModel}">
+            <views:RefundsView />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:InventoryViewModel}">
             <views:InventoryView />
         </DataTemplate>
@@ -73,6 +76,9 @@
                     </StackPanel>
                     <Button Content="🏠  Inicio" Style="{StaticResource NavButton}" Command="{Binding ShowDashboardCommand}" />
                     <Button Content="🛒  Venta" Style="{StaticResource NavButton}" Command="{Binding ShowSalesCommand}" />
+                    <Button Content="↩️  Devoluciones" Style="{StaticResource NavButton}"
+                            Command="{Binding ShowRefundsCommand}"
+                            Visibility="{Binding CanRefund, Converter={StaticResource BoolToVisibility}}" />
                     <Button Content="📦  Inventario" Style="{StaticResource NavButton}"
                             Command="{Binding ShowInventoryCommand}"
                             Visibility="{Binding CanManageInventory, Converter={StaticResource BoolToVisibility}}" />

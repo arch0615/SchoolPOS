@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using SchoolPOS.Domain.Abstractions;
+using SchoolPOS.Domain.Common;
 using SchoolPOS.Domain.Enums;
 using SchoolPOS.Portal.Web.Infrastructure;
 
@@ -78,9 +79,9 @@ public class TransactionsModel : PageModel
             if (Selected is null)
                 return Page();
 
-            // 'To' inclusivo hasta el final del día.
-            var toUtc = To?.Date.AddDays(1).AddTicks(-1);
-            var all = await _guardians.GetMovementsAsync(Selected.AccountId, From?.Date, toUtc);
+            // El tutor elige días locales; 'To' es inclusivo hasta el final de ese día en México.
+            var all = await _guardians.GetMovementsAsync(
+                Selected.AccountId, MxTime.StartOfDayUtc(From), MxTime.EndOfDayUtc(To));
 
             // Los totales resumen el rango completo, no sólo la pestaña activa.
             TotalIn = all.Where(m => m.Amount > 0).Sum(m => m.Amount);

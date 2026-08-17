@@ -144,6 +144,8 @@ cobros hasta reconectar).
 - [ ] El POS inicia sesión con el admin y registra una venta contra saldo.
 - [ ] En el POS: abrir caja en Tesorería → vender en efectivo → cerrar caja; el efectivo esperado
       incluye esa venta (sin caja abierta, el cobro en efectivo se rechaza).
+- [ ] En el POS (administrador): Devoluciones → elegir la venta → devolver una pieza; el stock
+      regresa y el importe se reintegra (al saldo, o como egreso de la caja si fue en efectivo).
 - [ ] En el portal: registrar tutor **eligiendo su escuela** → vincular alumno por matrícula →
       recargar → aprobar.
 - [ ] Con dos escuelas dadas de alta, un tutor de la escuela A **no** puede vincular una matrícula
@@ -161,4 +163,7 @@ cobros hasta reconectar).
   puede tardar varios ciclos; después cada corrida solo mira lo nuevo.
 - **Secretos**: no subas `appsettings.json` con credenciales al repositorio (ya está en `.gitignore` por entorno). Usa variables de entorno o un gestor de secretos.
 - **Actualizaciones de esquema**: nuevas migraciones se aplican re-ejecutando el provisionador (o el portal al arrancar).
-- **Zona horaria**: los sellos de tiempo se guardan en UTC.
+- **Zona horaria**: los sellos de tiempo se guardan en UTC y se presentan/filtran en hora de México
+  (`MxTime`, en `SchoolPOS.Domain`, compartido por el POS y el portal para que no puedan divergir).
+  El servidor resuelve `America/Mexico_City` (Linux) o `Central Standard Time (Mexico)` (Windows);
+  si ninguna existe cae a UTC, así que verifica que la caja/servidor tenga la zona instalada.

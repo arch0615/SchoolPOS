@@ -39,6 +39,10 @@ Referencias a los requisitos no funcionales en `../requirements.md`.
 - **Arqueo de caja**: toda venta en efectivo se liga a la sesión de caja abierta del operador, así
   que el efectivo esperado incluye lo vendido. El POS rechaza cobrar en efectivo sin caja abierta —
   si no, las ventas quedaban fuera del arqueo y aparecían como sobrante, tapando un faltante real.
+  Las **devoluciones en efectivo** se asientan como egreso de esa misma caja (y también exigen una
+  caja abierta), de modo que el dinero que sale del cajón queda registrado.
+- **Devoluciones** (FR-SAL-5): restringidas al administrador — quien cobra no revierte su propio
+  cobro — y auditadas con operador, venta e importe.
 
 ## Secretos en reposo
 - **Tokens OAuth de la pasarela** (`SchoolPaymentAccount`): se guardan **cifrados** con ASP.NET

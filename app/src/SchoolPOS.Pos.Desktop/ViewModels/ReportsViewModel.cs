@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
 using SchoolPOS.Data.Reporting;
 using SchoolPOS.Domain.Abstractions;
+using SchoolPOS.Domain.Common;
 using SchoolPOS.Pos.Desktop.Infrastructure;
 
 namespace SchoolPOS.Pos.Desktop.ViewModels;
@@ -17,8 +18,8 @@ public sealed class ReportsViewModel : ViewModelBase, IAsyncLoadable
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly PosSession _session;
 
-    private DateTime? _from = DateTime.UtcNow.Date;
-    private DateTime? _to = DateTime.UtcNow.Date;
+    private DateTime? _from = MxTime.TodayLocal(DateTime.UtcNow);
+    private DateTime? _to = MxTime.TodayLocal(DateTime.UtcNow);
     private SalesSummary _sales = new(null, null, 0, 0, 0, 0);
     private CashFlowSummary _cashFlow = new(0, 0, 0, 0);
     private CustomerBalancesSummary _balances = new(0, 0);
@@ -55,8 +56,10 @@ public sealed class ReportsViewModel : ViewModelBase, IAsyncLoadable
         ErrorMessage = string.Empty;
         try
         {
-            var fromUtc = From?.Date;
-            var toUtc = To?.Date.AddDays(1).AddTicks(-1);
+            // El operador elige días locales; las consultas van en UTC. Sin esta conversión el POS
+            // y el portal reportaban cifras distintas del mismo día sobre los mismos datos.
+            var fromUtc = MxTime.StartOfDayUtc(From);
+            var toUtc = MxTime.EndOfDayUtc(To);
 
             using var scope = _scopeFactory.CreateScope();
             var salesReports = scope.ServiceProvider.GetRequiredService<ISalesReportService>();

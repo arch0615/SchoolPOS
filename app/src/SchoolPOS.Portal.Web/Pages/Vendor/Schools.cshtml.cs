@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using SchoolPOS.Data;
 using SchoolPOS.Domain.Abstractions;
+using SchoolPOS.Domain.Common;
 
 namespace SchoolPOS.Portal.Web.Pages.Vendor;
 
@@ -87,8 +88,8 @@ public class SchoolsModel : PageModel
 
     private async Task LoadAsync()
     {
-        var toUtc = To?.Date.AddDays(1).AddTicks(-1);
-        var rollup = await _reports.GetVendorRollupAsync(From?.Date, toUtc);
+        // Las fechas del filtro son días locales; la consulta va en UTC.
+        var rollup = await _reports.GetVendorRollupAsync(MxTime.StartOfDayUtc(From), MxTime.EndOfDayUtc(To));
         var activity = rollup.Schools.ToDictionary(s => s.SchoolId);
 
         var schools = await (

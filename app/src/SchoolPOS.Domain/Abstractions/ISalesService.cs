@@ -36,11 +36,17 @@ public interface ISalesService
     Task<Sale> RegisterSaleAsync(SaleRequest request, CancellationToken ct = default);
 
     /// <summary>
-    /// Devolución total o parcial de una venta (FR-SAL-5): reintegra saldo (o registra la
-    /// devolución en efectivo) y reingresa stock, dejando traza. <paramref name="lines"/> indica
-    /// qué renglones y cantidades devolver.
+    /// Devolución total o parcial de una venta (FR-SAL-5): reintegra saldo (o saca el efectivo de
+    /// la caja) y reingresa stock, dejando traza. <paramref name="lines"/> indica qué renglones y
+    /// cantidades devolver.
     /// </summary>
+    /// <param name="cashSessionId">
+    /// Caja abierta contra la que se paga una devolución <b>en efectivo</b>: se le registra un
+    /// egreso por el importe devuelto, para que el arqueo siga cuadrando. Es <b>obligatorio</b> si
+    /// la venta se cobró en efectivo — sin él, el dinero saldría del cajón sin quedar registrado y
+    /// aparecería como faltante al cerrar. Se ignora para ventas cobradas con saldo.
+    /// </param>
     Task<Sale> RefundSaleAsync(
         Guid saleId, IReadOnlyList<(Guid SaleLineId, decimal Quantity)> lines, Guid operatorId,
-        CancellationToken ct = default);
+        Guid? cashSessionId = null, CancellationToken ct = default);
 }

@@ -16,16 +16,20 @@ public sealed class SalesService : ISalesService
     private readonly SchoolDbContext _db;
     private readonly IInventoryService _inventory;
     private readonly IBalanceService _balance;
+    private readonly ITreasuryService _treasury;
     private readonly IClock _clock;
 
     private const int Scale = 2;
     private const MidpointRounding Rounding = MidpointRounding.AwayFromZero;
 
-    public SalesService(SchoolDbContext db, IInventoryService inventory, IBalanceService balance, IClock clock)
+    public SalesService(
+        SchoolDbContext db, IInventoryService inventory, IBalanceService balance,
+        ITreasuryService treasury, IClock clock)
     {
         _db = db;
         _inventory = inventory;
         _balance = balance;
+        _treasury = treasury;
         _clock = clock;
     }
 
@@ -95,7 +99,7 @@ public sealed class SalesService : ISalesService
 
     public Task<Sale> RefundSaleAsync(
         Guid saleId, IReadOnlyList<(Guid SaleLineId, decimal Quantity)> lines, Guid operatorId,
-        CancellationToken ct = default)
+        Guid? cashSessionId = null, CancellationToken ct = default)
     {
         if (lines.Count == 0)
             throw new ArgumentException("No se indicaron renglones a devolver.", nameof(lines));
@@ -105,6 +109,12 @@ public sealed class SalesService : ISalesService
             var now = _clock.UtcNow;
             var sale = await _db.Sales.Include(s => s.Lines).FirstOrDefaultAsync(s => s.Id == saleId, ct)
                 ?? throw new InvalidOperationException($"Venta {saleId} no encontrada.");
+
+            // Se valida antes de tocar stock o saldo: si la devolución en efectivo no puede
+            // registrarse en una caja, no debe ejecutarse a medias.
+            if (sale.Tender == TenderType.Cash && cashSessionId is null)
+                throw new InvalidOperationException(
+                    "Una devolución en efectivo requiere una caja abierta para registrar la salida.");
 
             decimal totalRefund = 0m;
             foreach (var (saleLineId, qty) in lines)
@@ -137,6 +147,15 @@ public sealed class SalesService : ISalesService
             if (sale.Tender == TenderType.Balance && sale.AccountId is not null && totalRefund > 0m)
             {
                 await _balance.RefundAsync(sale.AccountId.Value, totalRefund, $"DEV:{sale.Id}", operatorId, ct);
+            }
+
+            // Devolución en efectivo: el dinero sale físicamente del cajón, así que se asienta como
+            // egreso de la caja. Sin esto el arqueo lo reportaría como faltante del cajero.
+            if (sale.Tender == TenderType.Cash && totalRefund > 0m)
+            {
+                await _treasury.RegisterMovementAsync(
+                    cashSessionId!.Value, CashMovementType.Expense, totalRefund,
+                    $"Devolución venta {sale.Id}", operatorId, ct);
             }
 
             // Estado de la venta según lo devuelto.

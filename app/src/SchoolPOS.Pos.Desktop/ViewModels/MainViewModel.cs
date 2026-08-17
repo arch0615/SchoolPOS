@@ -11,6 +11,7 @@ public sealed class MainViewModel : ViewModelBase
     private readonly PosSession _session;
     private readonly DashboardViewModel _dashboard;
     private readonly SalesViewModel _sales;
+    private readonly RefundsViewModel _refunds;
     private readonly InventoryViewModel _inventory;
     private readonly PurchasingViewModel _purchasing;
     private readonly TreasuryViewModel _treasury;
@@ -24,6 +25,7 @@ public sealed class MainViewModel : ViewModelBase
         PosSession session,
         DashboardViewModel dashboard,
         SalesViewModel sales,
+        RefundsViewModel refunds,
         InventoryViewModel inventory,
         PurchasingViewModel purchasing,
         TreasuryViewModel treasury,
@@ -34,6 +36,7 @@ public sealed class MainViewModel : ViewModelBase
         _session = session;
         _dashboard = dashboard;
         _sales = sales;
+        _refunds = refunds;
         _inventory = inventory;
         _purchasing = purchasing;
         _treasury = treasury;
@@ -43,6 +46,7 @@ public sealed class MainViewModel : ViewModelBase
 
         ShowDashboardCommand = new RelayCommand(async () => await NavigateAsync(_dashboard));
         ShowSalesCommand = new RelayCommand(async () => await NavigateAsync(_sales));
+        ShowRefundsCommand = new RelayCommand(async () => await NavigateAsync(_refunds), () => CanRefund);
         ShowInventoryCommand = new RelayCommand(async () => await NavigateAsync(_inventory), () => CanManageInventory);
         ShowPurchasingCommand = new RelayCommand(async () => await NavigateAsync(_purchasing), () => CanManagePurchasing);
         ShowTreasuryCommand = new RelayCommand(async () => await NavigateAsync(_treasury), () => CanOperateOwnTill);
@@ -72,10 +76,12 @@ public sealed class MainViewModel : ViewModelBase
     public bool CanManagePurchasing => _session.CanManagePurchasing;
     public bool CanOperateOwnTill => _session.CanOperateOwnTill;
     public bool CanManageSettings => _session.CanManageSettings;
+    public bool CanRefund => _session.CanRefund;
     public bool CanViewReports => _session.CanViewReports;
 
     public RelayCommand ShowDashboardCommand { get; }
     public RelayCommand ShowSalesCommand { get; }
+    public RelayCommand ShowRefundsCommand { get; }
     public RelayCommand ShowInventoryCommand { get; }
     public RelayCommand ShowPurchasingCommand { get; }
     public RelayCommand ShowTreasuryCommand { get; }

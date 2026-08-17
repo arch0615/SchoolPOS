@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using SchoolPOS.Domain.Abstractions;
+using SchoolPOS.Domain.Common;
 
 namespace SchoolPOS.Portal.Web.Pages.Vendor;
 
@@ -40,16 +41,16 @@ public class DashboardModel : PageModel
     {
         try
         {
-            var toUtc = To?.Date.AddDays(1).AddTicks(-1); // fin del día inclusivo
-            Rollup = await _reports.GetVendorRollupAsync(From?.Date, toUtc);
+            // El filtro son días locales (México); las consultas van en UTC.
+            Rollup = await _reports.GetVendorRollupAsync(MxTime.StartOfDayUtc(From), MxTime.EndOfDayUtc(To));
 
             // Serie diaria: usa el rango elegido o, por defecto, los últimos 30 días.
-            var end = To?.Date ?? DateTime.UtcNow.Date;
+            var end = To?.Date ?? MxTime.TodayLocal(DateTime.UtcNow);
             var start = From?.Date ?? end.AddDays(-29);
             if ((end - start).TotalDays > MaxSeriesDays) start = end.AddDays(-MaxSeriesDays);
             SeriesFrom = start;
             SeriesTo = end;
-            Series = await _reports.GetDailySeriesAsync(start, end.AddDays(1).AddTicks(-1));
+            Series = await _reports.GetDailySeriesAsync(MxTime.ToUtc(start), MxTime.EndOfDayUtc(end)!.Value);
         }
         catch (Exception ex)
         {

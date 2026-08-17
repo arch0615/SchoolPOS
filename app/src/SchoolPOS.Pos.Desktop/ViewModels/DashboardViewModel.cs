@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using SchoolPOS.Data;
 using SchoolPOS.Domain.Abstractions;
+using SchoolPOS.Domain.Common;
 using SchoolPOS.Pos.Desktop.Infrastructure;
 
 namespace SchoolPOS.Pos.Desktop.ViewModels;
@@ -46,7 +47,9 @@ public sealed class DashboardViewModel : ViewModelBase, IAsyncLoadable
             var db = scope.ServiceProvider.GetRequiredService<SchoolDbContext>();
             var inventory = scope.ServiceProvider.GetRequiredService<IInventoryService>();
 
-            var since = _clock.UtcNow.Date;
+            // "Hoy" es el día local de la escuela, no el día UTC: con UTC el corte cae a las 18:00
+            // hora de México y el panel arrastraría ventas de la tarde anterior.
+            var since = MxTime.ToUtc(MxTime.TodayLocal(_clock.UtcNow));
             var todayTotals = await db.Sales.AsNoTracking()
                 .Where(s => s.SchoolId == _session.SchoolId && s.CreatedAtUtc >= since)
                 .Select(s => s.Total)

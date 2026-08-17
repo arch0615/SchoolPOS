@@ -62,7 +62,8 @@ public class TreasuryServiceTests
         var clock = new TestClock();
         var treasury = new TreasuryService(db.Context, clock);
         var sales = new SalesService(
-            db.Context, new InventoryService(db.Context, clock), new BalanceService(db.Context, clock), clock);
+            db.Context, new InventoryService(db.Context, clock), new BalanceService(db.Context, clock),
+            treasury, clock);
 
         var session = await treasury.OpenSessionAsync(school.Id, Operator, openingFloat: 100m);
 
@@ -93,7 +94,8 @@ public class TreasuryServiceTests
         var clock = new TestClock();
         var treasury = new TreasuryService(db.Context, clock);
         var sales = new SalesService(
-            db.Context, new InventoryService(db.Context, clock), new BalanceService(db.Context, clock), clock);
+            db.Context, new InventoryService(db.Context, clock), new BalanceService(db.Context, clock),
+            treasury, clock);
 
         var session = await treasury.OpenSessionAsync(school.Id, Operator, openingFloat: 100m);
         await sales.RegisterSaleAsync(new SaleRequest(
@@ -104,6 +106,77 @@ public class TreasuryServiceTests
         var closed = await treasury.CloseSessionAsync(session.Id, countedAmount: 100m);
         closed.ExpectedAmount.Should().Be(100m, "solo el fondo: el saldo no pasa por el cajón");
         closed.Variance.Should().Be(0m);
+    }
+
+    /// <summary>
+    /// Devolver una venta en efectivo saca dinero del cajón. Si no queda asentado como egreso, al
+    /// cerrar aparecería como faltante del cajero — el mismo desfase que se acaba de corregir con
+    /// las ventas, pero en sentido contrario.
+    /// </summary>
+    [Fact]
+    public async Task Cash_refund_registers_a_till_expense_and_keeps_the_count_balanced()
+    {
+        using var db = new TestDatabase();
+        var school = db.SeedSchool(taxRate: 0m);
+        var product = db.SeedProduct(school.Id, price: 25m, stock: 10m);
+        var clock = new TestClock();
+        var treasury = new TreasuryService(db.Context, clock);
+        var sales = new SalesService(
+            db.Context, new InventoryService(db.Context, clock), new BalanceService(db.Context, clock),
+            treasury, clock);
+
+        var session = await treasury.OpenSessionAsync(school.Id, Operator, openingFloat: 100m);
+        var sale = await sales.RegisterSaleAsync(new SaleRequest(
+            school.Id, Operator, TenderType.Cash,
+            new[] { new SaleLineRequest(product.Id, "Producto", Quantity: 2m, UnitPrice: 25m) },
+            CashSessionId: session.Id));
+
+        // Se devuelve una de las dos piezas: salen 25 del cajón.
+        var line = sale.Lines.Single();
+        await sales.RefundSaleAsync(
+            sale.Id, new[] { (line.Id, 1m) }, Operator, cashSessionId: session.Id);
+
+        // Esperado = 100 fondo + 50 venta - 25 devolución = 125.
+        var closed = await treasury.CloseSessionAsync(session.Id, countedAmount: 125m);
+        closed.ExpectedAmount.Should().Be(125m);
+        closed.Variance.Should().Be(0m, "el efectivo devuelto ya está contemplado");
+
+        // Y el stock volvió.
+        (await db.NewContext().Products.Where(p => p.Id == product.Id).Select(p => p.StockOnHand).SingleAsync())
+            .Should().Be(9m);
+    }
+
+    /// <summary>
+    /// Sin caja abierta no se puede pagar una devolución en efectivo, y la venta debe quedar
+    /// intacta: nada de reingresar stock si el dinero no puede salir de forma registrada.
+    /// </summary>
+    [Fact]
+    public async Task Cash_refund_without_a_till_is_rejected_and_changes_nothing()
+    {
+        using var db = new TestDatabase();
+        var school = db.SeedSchool(taxRate: 0m);
+        var product = db.SeedProduct(school.Id, price: 25m, stock: 10m);
+        var clock = new TestClock();
+        var treasury = new TreasuryService(db.Context, clock);
+        var sales = new SalesService(
+            db.Context, new InventoryService(db.Context, clock), new BalanceService(db.Context, clock),
+            treasury, clock);
+
+        var session = await treasury.OpenSessionAsync(school.Id, Operator, openingFloat: 100m);
+        var sale = await sales.RegisterSaleAsync(new SaleRequest(
+            school.Id, Operator, TenderType.Cash,
+            new[] { new SaleLineRequest(product.Id, "Producto", 2m, 25m) },
+            CashSessionId: session.Id));
+        var line = sale.Lines.Single();
+
+        var act = () => sales.RefundSaleAsync(sale.Id, new[] { (line.Id, 1m) }, Operator, cashSessionId: null);
+        await act.Should().ThrowAsync<InvalidOperationException>();
+
+        var ctx = db.NewContext();
+        (await ctx.Products.Where(p => p.Id == product.Id).Select(p => p.StockOnHand).SingleAsync())
+            .Should().Be(8m, "el stock no se reingresa si la devolución no procede");
+        (await ctx.SaleLines.Where(l => l.Id == line.Id).Select(l => l.QuantityRefunded).SingleAsync())
+            .Should().Be(0m);
     }
 
     [Fact]

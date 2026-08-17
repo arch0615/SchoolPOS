@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using SchoolPOS.Domain.Abstractions;
+using SchoolPOS.Domain.Common;
 using SchoolPOS.Domain.Enums;
 
 namespace SchoolPOS.Portal.Web.Pages.Vendor;
@@ -39,8 +40,8 @@ public class CommissionsModel : PageModel
     {
         try
         {
-            var toUtc = To?.Date.AddDays(1).AddTicks(-1);
-            Rollup = await _reports.GetVendorRollupAsync(From?.Date, toUtc);
+            // Días locales (México) → instantes UTC, igual que el resto de las consolas.
+            Rollup = await _reports.GetVendorRollupAsync(MxTime.StartOfDayUtc(From), MxTime.EndOfDayUtc(To));
         }
         catch (Exception ex)
         {
@@ -58,8 +59,10 @@ public class CommissionsModel : PageModel
 
         try
         {
-            var toUtc = to.Value.Date.AddDays(1).AddTicks(-1);
-            var invoice = await _invoices.IssueForPeriodAsync(schoolId, from.Value.Date, toUtc);
+            // Mismo criterio de día local que el reporte, para que lo facturado coincida
+            // exactamente con la comisión que la pantalla muestra para ese periodo.
+            var invoice = await _invoices.IssueForPeriodAsync(
+                schoolId, MxTime.ToUtc(from.Value.Date), MxTime.EndOfDayUtc(to)!.Value);
             Message = invoice.Status == CfdiStatus.Stamped
                 ? $"CFDI emitido: {invoice.Uuid} · {invoice.CommissionAmount:C2}"
                 : $"No se pudo timbrar: {invoice.Error}";

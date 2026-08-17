@@ -17,7 +17,8 @@ public class ReportingServicesTests
         var clock = new TestClock();
         var inv = new InventoryService(db.Context, clock);
         var bal = new BalanceService(db.Context, clock);
-        return new Ctx(new SalesService(db.Context, inv, bal, clock), inv, new TreasuryService(db.Context, clock), bal, clock);
+        var treasury = new TreasuryService(db.Context, clock);
+        return new Ctx(new SalesService(db.Context, inv, bal, treasury, clock), inv, treasury, bal, clock);
     }
 
     [Fact]

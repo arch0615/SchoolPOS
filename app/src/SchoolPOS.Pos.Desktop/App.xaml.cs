@@ -60,6 +60,7 @@ public partial class App : Application
                     services.AddTransient<MainViewModel>();
                     services.AddTransient<DashboardViewModel>();
                     services.AddTransient<SalesViewModel>();
+                    services.AddTransient<RefundsViewModel>();
                     services.AddTransient<InventoryViewModel>();
                     services.AddTransient<PurchasingViewModel>();
                     services.AddTransient<TreasuryViewModel>();

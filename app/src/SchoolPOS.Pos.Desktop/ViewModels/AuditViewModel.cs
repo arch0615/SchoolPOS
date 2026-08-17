@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using Microsoft.Extensions.DependencyInjection;
 using SchoolPOS.Domain.Abstractions;
+using SchoolPOS.Domain.Common;
 using SchoolPOS.Pos.Desktop.Infrastructure;
 
 namespace SchoolPOS.Pos.Desktop.ViewModels;
@@ -38,8 +39,9 @@ public sealed class AuditViewModel : ViewModelBase, IAsyncLoadable
         ErrorMessage = string.Empty;
         try
         {
-            var fromUtc = From?.Date;
-            var toUtc = To?.Date.AddDays(1).AddTicks(-1);
+            // Días locales → UTC (la bitácora se guarda en UTC).
+            var fromUtc = MxTime.StartOfDayUtc(From);
+            var toUtc = MxTime.EndOfDayUtc(To);
             var action = string.IsNullOrWhiteSpace(ActionFilter) ? null : ActionFilter.Trim();
 
             using var scope = _scopeFactory.CreateScope();

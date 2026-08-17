@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using SchoolPOS.Data;
+using SchoolPOS.Domain.Common;
 using SchoolPOS.Domain.Enums;
 using SchoolPOS.Portal.Web.Infrastructure;
 

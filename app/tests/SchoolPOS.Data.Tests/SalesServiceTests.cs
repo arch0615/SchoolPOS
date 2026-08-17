@@ -17,7 +17,8 @@ public class SalesServiceTests
         var clock = new TestClock();
         var inventory = new InventoryService(db.Context, clock);
         var balance = new BalanceService(db.Context, clock);
-        return new Services(new SalesService(db.Context, inventory, balance, clock), clock);
+        var treasury = new TreasuryService(db.Context, clock);
+        return new Services(new SalesService(db.Context, inventory, balance, treasury, clock), clock);
     }
 
     [Fact]

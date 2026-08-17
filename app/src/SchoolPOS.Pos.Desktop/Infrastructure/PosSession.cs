@@ -21,6 +21,12 @@ public sealed class PosSession
     public bool CanSell => IsAuthenticated;
     public bool CanManageInventory => Role is UserRole.Warehouse or UserRole.Admin;
     public bool CanApplyDiscount => Role is UserRole.Admin;
+
+    /// <summary>
+    /// Devolver una venta (FR-SAL-5). Restringido al administrador, igual que los descuentos: es
+    /// dinero saliendo, y quien cobra no debería poder revertir su propio cobro sin supervisión.
+    /// </summary>
+    public bool CanRefund => Role is UserRole.Admin;
     public bool IsAdmin => Role is UserRole.Admin;
     public bool CanViewReports => Role is UserRole.Admin;
 
