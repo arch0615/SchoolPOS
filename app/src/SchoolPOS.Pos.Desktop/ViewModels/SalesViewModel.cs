@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using SchoolPOS.Data;
 using SchoolPOS.Domain.Abstractions;
 using SchoolPOS.Domain.Enums;
 using SchoolPOS.Domain.Exceptions;
@@ -25,6 +27,7 @@ public sealed class SalesViewModel : ViewModelBase, IAsyncLoadable
     private decimal? _amountReceived;
     private string _statusMessage = string.Empty;
     private string _errorMessage = string.Empty;
+    private Guid? _cashSessionId;
 
     public SalesViewModel(IServiceScopeFactory scopeFactory, PosSession session)
     {
@@ -89,6 +92,7 @@ public sealed class SalesViewModel : ViewModelBase, IAsyncLoadable
             {
                 OnPropertyChanged(nameof(IsCashTender));
                 OnPropertyChanged(nameof(Change));
+                OnPropertyChanged(nameof(NeedsOpenTill));
                 ChargeCommand.RaiseCanExecuteChanged();
             }
         }
@@ -108,6 +112,16 @@ public sealed class SalesViewModel : ViewModelBase, IAsyncLoadable
 
     public decimal Change => IsCashTender && AmountReceived is { } received ? Math.Max(0m, received - Total) : 0m;
 
+    /// <summary>
+    /// Caja abierta del operador. Toda venta en efectivo se amarra a ella: es lo que permite que el
+    /// arqueo compare el efectivo contado contra lo que debería haber. Sin caja abierta, las ventas
+    /// en efectivo quedaban fuera del cálculo y aparecían como sobrante inexplicado al cerrar.
+    /// </summary>
+    public bool HasOpenTill => _cashSessionId is not null;
+
+    /// <summary>Aviso visible cuando falta abrir la caja y el cobro es en efectivo.</summary>
+    public bool NeedsOpenTill => IsCashTender && !HasOpenTill;
+
     /// <summary>Descuentos permitidos solo con rol autorizado (FR-SAL-3).</summary>
     public bool CanApplyDiscount => _session.CanApplyDiscount;
     public bool IsDiscountReadOnly => !CanApplyDiscount;
@@ -122,10 +136,38 @@ public sealed class SalesViewModel : ViewModelBase, IAsyncLoadable
     public AsyncRelayCommand ChargeCommand { get; }
     public RelayCommand NewSaleCommand { get; }
 
-    public Task LoadAsync()
+    public async Task LoadAsync()
     {
         ResetSale();
-        return Task.CompletedTask;
+        await RefreshOpenTillAsync();
+    }
+
+    /// <summary>Relee la caja abierta del operador (puede haberla abierto en Tesorería hace un momento).</summary>
+    private async Task RefreshOpenTillAsync()
+    {
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<SchoolDbContext>();
+            var operatorId = _session.Operator!.Id;
+
+            _cashSessionId = await db.CashSessions.AsNoTracking()
+                .Where(s => s.SchoolId == _session.SchoolId
+                            && s.OperatorId == operatorId
+                            && s.Status == CashSessionStatus.Open)
+                .OrderByDescending(s => s.OpenedAtUtc)
+                .Select(s => (Guid?)s.Id)
+                .FirstOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            _cashSessionId = null;
+            ErrorMessage = $"No se pudo consultar la caja abierta: {ex.Message}";
+        }
+
+        OnPropertyChanged(nameof(HasOpenTill));
+        OnPropertyChanged(nameof(NeedsOpenTill));
+        ChargeCommand.RaiseCanExecuteChanged();
     }
 
     private async Task AddProductAsync()
@@ -232,6 +274,17 @@ public sealed class SalesViewModel : ViewModelBase, IAsyncLoadable
             return;
         }
 
+        // Relectura justo antes de cobrar: el cajero pudo abrir su caja en Tesorería sin volver a
+        // pasar por aquí, y así no pierde el carrito que ya armó.
+        if (IsCashTender && !HasOpenTill)
+            await RefreshOpenTillAsync();
+
+        if (IsCashTender && !HasOpenTill)
+        {
+            ErrorMessage = "Abra su caja en Tesorería antes de cobrar en efectivo.";
+            return;
+        }
+
         var lines = Cart.Select(l => new SaleLineRequest(l.ProductId, l.Description, l.Quantity, l.UnitPrice, l.Discount)).ToList();
         var request = new SaleRequest(
             _session.SchoolId,
@@ -239,7 +292,9 @@ public sealed class SalesViewModel : ViewModelBase, IAsyncLoadable
             IsBalanceTender ? TenderType.Balance : TenderType.Cash,
             lines,
             StudentId: CurrentStudent?.StudentId,
-            AccountId: CurrentStudent?.AccountId);
+            AccountId: CurrentStudent?.AccountId,
+            // Solo las ventas en efectivo entran al arqueo; las de saldo no mueven el cajón.
+            CashSessionId: IsCashTender ? _cashSessionId : null);
 
         try
         {

@@ -81,7 +81,7 @@
                             Visibility="{Binding CanManagePurchasing, Converter={StaticResource BoolToVisibility}}" />
                     <Button Content="💵  Tesorería" Style="{StaticResource NavButton}"
                             Command="{Binding ShowTreasuryCommand}"
-                            Visibility="{Binding CanManageTreasury, Converter={StaticResource BoolToVisibility}}" />
+                            Visibility="{Binding CanOperateOwnTill, Converter={StaticResource BoolToVisibility}}" />
                     <Button Content="📈  Reportes" Style="{StaticResource NavButton}"
                             Command="{Binding ShowReportsCommand}"
                             Visibility="{Binding CanViewReports, Converter={StaticResource BoolToVisibility}}" />

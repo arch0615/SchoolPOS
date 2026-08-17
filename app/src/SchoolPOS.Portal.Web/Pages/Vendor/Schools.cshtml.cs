@@ -34,6 +34,9 @@ public class SchoolsModel : PageModel
 
     public string? Error { get; private set; }
 
+    [TempData] public string? Message { get; set; }
+    [TempData] public string? RateError { get; set; }
+
     public async Task OnGetAsync()
     {
         try
@@ -44,6 +47,42 @@ public class SchoolsModel : PageModel
         {
             Error = $"No se pudo cargar el listado de escuelas: {ex.Message}";
         }
+    }
+
+    /// <summary>
+    /// Cambia la tarifa de comisión de una escuela. Vive aquí y no en la configuración del POS
+    /// porque es una condición del contrato entre proveedor y escuela: la escuela la consulta, no
+    /// la negocia sola. Es además la tarifa que el portal aplica al crear cada recarga.
+    /// </summary>
+    public async Task<IActionResult> OnPostRateAsync(Guid schoolId, decimal commissionRate)
+    {
+        if (commissionRate < 0m || commissionRate > 1m)
+        {
+            RateError = "La comisión debe estar entre 0 y 1 (por ejemplo 0.05 para 5%).";
+            return RedirectToPage(new { From, To });
+        }
+
+        try
+        {
+            var school = await _db.Schools.FirstOrDefaultAsync(s => s.Id == schoolId);
+            if (school is null)
+            {
+                RateError = "No se encontró la escuela.";
+                return RedirectToPage(new { From, To });
+            }
+
+            // Las recargas ya creadas conservan la tarifa con la que se cobraron (TopUp guarda su
+            // propio CommissionRate), así que este cambio solo aplica de aquí en adelante.
+            school.CommissionRate = commissionRate;
+            await _db.SaveChangesAsync();
+            Message = $"Comisión de {school.Name} actualizada a {(commissionRate * 100m).ToString("0.##")}%.";
+        }
+        catch (Exception ex)
+        {
+            RateError = $"No se pudo actualizar la comisión: {ex.Message}";
+        }
+
+        return RedirectToPage(new { From, To });
     }
 
     private async Task LoadAsync()

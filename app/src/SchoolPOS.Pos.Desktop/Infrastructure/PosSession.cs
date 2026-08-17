@@ -27,8 +27,17 @@ public sealed class PosSession
     /// <summary>Compras: alimenta el inventario (recepción de mercancía), mismo permiso que Inventario.</summary>
     public bool CanManagePurchasing => Role is UserRole.Warehouse or UserRole.Admin;
 
-    /// <summary>Tesorería (arqueo, movimientos de caja) y configuración: función administrativa.</summary>
-    public bool CanManageTreasury => Role is UserRole.Admin;
+    /// <summary>
+    /// Abrir y cerrar su <b>propia</b> caja. Lo puede hacer cualquier operador que cobre en
+    /// efectivo: si solo el administrador pudiera abrirla, un cajero sin él no podría vender en
+    /// efectivo — y las ventas quedarían fuera del arqueo, que es justo lo que se quiere evitar.
+    /// </summary>
+    public bool CanOperateOwnTill => IsAuthenticated;
+
+    /// <summary>Ver el histórico de arqueos de toda la escuela: función administrativa.</summary>
+    public bool CanViewAllTillSessions => Role is UserRole.Admin;
+
+    /// <summary>Configuración de la escuela: función administrativa.</summary>
     public bool CanManageSettings => Role is UserRole.Admin;
 
     public void SignIn(User user) => Operator = user;

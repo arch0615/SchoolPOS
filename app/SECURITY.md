@@ -36,6 +36,9 @@ Referencias a los requisitos no funcionales en `../requirements.md`.
 - **Dinero en `decimal`** con redondeo comercial; libros mayores inmutables (solo inserción).
 - **Bitácora** (FR-ADM-4): acciones sensibles (ajustes de saldo, devoluciones) quedan auditadas con
   estado antes/después.
+- **Arqueo de caja**: toda venta en efectivo se liga a la sesión de caja abierta del operador, así
+  que el efectivo esperado incluye lo vendido. El POS rechaza cobrar en efectivo sin caja abierta —
+  si no, las ventas quedaban fuera del arqueo y aparecían como sobrante, tapando un faltante real.
 
 ## Secretos en reposo
 - **Tokens OAuth de la pasarela** (`SchoolPaymentAccount`): se guardan **cifrados** con ASP.NET
@@ -49,7 +52,10 @@ Referencias a los requisitos no funcionales en `../requirements.md`.
 
 ## Control de acceso
 - **POS**: roles cajero/almacén/administrador; pantallas sensibles (inventario, reportes, bitácora,
-  descuentos) restringidas por rol.
+  descuentos) restringidas por rol. Tesorería la abre cualquier operador **para su propia caja**;
+  el histórico de arqueos de la escuela sigue siendo solo del administrador.
+- **Tarifa de comisión**: la fija el proveedor desde su panel (`/Vendor/Schools`). El POS la muestra
+  pero no la edita — es una condición del contrato, no un ajuste de la escuela.
 - **Portal**: cookies de autenticación; el panel del proveedor (comisiones) exige una política
   `Vendor` separada de las cuentas de padres.
 - **Aislamiento entre escuelas**: el portal es multi-escuela. La escuela del tutor se fija al

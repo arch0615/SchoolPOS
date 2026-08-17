@@ -45,7 +45,7 @@ public sealed class MainViewModel : ViewModelBase
         ShowSalesCommand = new RelayCommand(async () => await NavigateAsync(_sales));
         ShowInventoryCommand = new RelayCommand(async () => await NavigateAsync(_inventory), () => CanManageInventory);
         ShowPurchasingCommand = new RelayCommand(async () => await NavigateAsync(_purchasing), () => CanManagePurchasing);
-        ShowTreasuryCommand = new RelayCommand(async () => await NavigateAsync(_treasury), () => CanManageTreasury);
+        ShowTreasuryCommand = new RelayCommand(async () => await NavigateAsync(_treasury), () => CanOperateOwnTill);
         ShowReportsCommand = new RelayCommand(async () => await NavigateAsync(_reports), () => CanViewReports);
         ShowAuditCommand = new RelayCommand(async () => await NavigateAsync(_audit), () => CanViewReports);
         ShowSettingsCommand = new RelayCommand(async () => await NavigateAsync(_settings), () => CanManageSettings);
@@ -70,7 +70,7 @@ public sealed class MainViewModel : ViewModelBase
 
     public bool CanManageInventory => _session.CanManageInventory;
     public bool CanManagePurchasing => _session.CanManagePurchasing;
-    public bool CanManageTreasury => _session.CanManageTreasury;
+    public bool CanOperateOwnTill => _session.CanOperateOwnTill;
     public bool CanManageSettings => _session.CanManageSettings;
     public bool CanViewReports => _session.CanViewReports;
 

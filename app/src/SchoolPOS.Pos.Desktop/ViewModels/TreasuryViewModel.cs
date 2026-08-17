@@ -61,6 +61,9 @@ public sealed class TreasuryViewModel : ViewModelBase, IAsyncLoadable
     public bool HasOpenSession => OpenSession is not null;
     public bool NoOpenSession => OpenSession is null;
 
+    /// <summary>Solo el administrador ve los arqueos de toda la escuela.</summary>
+    public bool CanViewAllSessions => _session.CanViewAllTillSessions;
+
     public decimal OpeningFloat { get => _openingFloat; set => SetProperty(ref _openingFloat, value); }
     public AsyncRelayCommand OpenSessionCommand { get; }
 
@@ -131,6 +134,12 @@ public sealed class TreasuryViewModel : ViewModelBase, IAsyncLoadable
                     Movements.Add(new CashMovementRow(m.Type, m.Amount, m.Reason, m.CreatedAtUtc));
             }
 
+            // El histórico de arqueos de toda la escuela es información administrativa: un cajero
+            // entra aquí solo para abrir y cerrar SU caja, no para ver la de sus compañeros.
+            RecentSessions.Clear();
+            if (!CanViewAllSessions)
+                return;
+
             var recent = await db.CashSessions.AsNoTracking()
                 .Where(s => s.SchoolId == _session.SchoolId && s.Status == CashSessionStatus.Closed)
                 .OrderByDescending(s => s.ClosedAtUtc)
@@ -139,7 +148,6 @@ public sealed class TreasuryViewModel : ViewModelBase, IAsyncLoadable
                     s.OpenedAtUtc, s.ClosedAtUtc, s.OpeningFloat,
                     s.CountedAmount ?? 0m, s.ExpectedAmount ?? 0m, s.Variance ?? 0m))
                 .ToListAsync();
-            RecentSessions.Clear();
             foreach (var r in recent)
                 RecentSessions.Add(r);
         }

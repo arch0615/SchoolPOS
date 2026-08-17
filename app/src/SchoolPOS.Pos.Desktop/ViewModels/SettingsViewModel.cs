@@ -40,7 +40,18 @@ public sealed class SettingsViewModel : ViewModelBase, IAsyncLoadable
 
     public string SchoolName { get => _schoolName; private set => SetProperty(ref _schoolName, value); }
     public string Currency { get => _currency; set => SetProperty(ref _currency, value); }
-    public decimal CommissionRate { get => _commissionRate; set => SetProperty(ref _commissionRate, value); }
+
+    /// <summary>
+    /// Comisión pactada con el proveedor. Se muestra pero <b>no se edita aquí</b>: la tarifa es del
+    /// contrato, la fija el proveedor desde su panel, y la recarga la cobra el portal contra la DB
+    /// de la nube — este valor local ni siquiera intervendría en el cálculo, así que un campo
+    /// editable solo aparentaría hacer algo.
+    /// </summary>
+    public decimal CommissionRate { get => _commissionRate; private set => SetProperty(ref _commissionRate, value); }
+
+    /// <summary>La comisión en porcentaje, para mostrarla legible (5% en vez de 0.05).</summary>
+    public string CommissionRateText => (CommissionRate * 100m).ToString("0.##") + " %";
+
     public decimal TaxRate { get => _taxRate; set => SetProperty(ref _taxRate, value); }
     public bool TaxInclusive { get => _taxInclusive; set => SetProperty(ref _taxInclusive, value); }
 
@@ -74,6 +85,7 @@ public sealed class SettingsViewModel : ViewModelBase, IAsyncLoadable
             SchoolName = school.Name;
             Currency = school.Currency;
             CommissionRate = school.CommissionRate;
+            OnPropertyChanged(nameof(CommissionRateText));
             TaxRate = school.TaxRate;
             TaxInclusive = school.TaxInclusive;
             Rfc = school.Rfc ?? string.Empty;
@@ -99,8 +111,8 @@ public sealed class SettingsViewModel : ViewModelBase, IAsyncLoadable
             var school = await db.Schools.FirstOrDefaultAsync(s => s.Id == _session.SchoolId)
                 ?? throw new InvalidOperationException("No se encontró la configuración de la escuela.");
 
+            // CommissionRate no se toca: la fija el proveedor desde su panel.
             school.Currency = Currency.Trim().ToUpperInvariant();
-            school.CommissionRate = CommissionRate;
             school.TaxRate = TaxRate;
             school.TaxInclusive = TaxInclusive;
             school.Rfc = string.IsNullOrWhiteSpace(Rfc) ? null : Rfc.Trim();

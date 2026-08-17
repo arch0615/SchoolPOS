@@ -28,8 +28,10 @@
                     <TextBlock Text="Moneda" Foreground="{StaticResource MutedBrush}" />
                     <TextBox Text="{Binding Currency, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,10" />
 
-                    <TextBlock Text="Comisión sobre recargas (0–1, ej. 0.05 = 5%)" Foreground="{StaticResource MutedBrush}" />
-                    <TextBox Text="{Binding CommissionRate, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,10" />
+                    <TextBlock Text="Comisión sobre recargas en línea" Foreground="{StaticResource MutedBrush}" />
+                    <TextBlock Text="{Binding CommissionRateText}" FontWeight="SemiBold" Margin="0,2,0,2" />
+                    <TextBlock Text="La define el proveedor; para cambiarla, contáctalo."
+                               Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,0,0,10" />
 
                     <TextBlock Text="IVA (0–1)" Foreground="{StaticResource MutedBrush}" />
                     <TextBox Text="{Binding TaxRate, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,4" />

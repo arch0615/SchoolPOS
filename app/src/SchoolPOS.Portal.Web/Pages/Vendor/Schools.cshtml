@@ -11,6 +11,8 @@
 }
 
 @if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
+@if (!string.IsNullOrEmpty(Model.RateError)) { <div class="msg error">@Model.RateError</div> }
+@if (!string.IsNullOrEmpty(Model.Message)) { <div class="msg ok">@Model.Message</div> }
 
 <div class="page-head">
     <div>
@@ -56,7 +58,16 @@
                         @r.Name
                         <div class="muted" style="font-size:12px">@r.Currency</div>
                     </td>
-                    <td style="text-align:right">@((r.CommissionRate * 100).ToString("0.##"))%</td>
+                    <td style="text-align:right">
+                        <form method="post" asp-page-handler="Rate" style="display:flex;gap:6px;justify-content:flex-end;align-items:center">
+                            <input type="hidden" name="schoolId" value="@r.SchoolId" />
+                            <input type="number" name="commissionRate" value="@r.CommissionRate.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture)"
+                                   step="0.001" min="0" max="1" style="width:86px;text-align:right"
+                                   title="Proporción, no porcentaje: 0.05 = 5%" />
+                            <button class="btn" type="submit" style="padding:4px 10px">Guardar</button>
+                        </form>
+                        <div class="muted" style="font-size:12px">@((r.CommissionRate * 100).ToString("0.##"))% actual</div>
+                    </td>
                     <td>
                         @if (r.Connected)
                         {

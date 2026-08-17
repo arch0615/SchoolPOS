@@ -142,6 +142,8 @@ cobros hasta reconectar).
 
 - [ ] `provision-school` imprime un `SchoolId` y crea el operador admin.
 - [ ] El POS inicia sesión con el admin y registra una venta contra saldo.
+- [ ] En el POS: abrir caja en Tesorería → vender en efectivo → cerrar caja; el efectivo esperado
+      incluye esa venta (sin caja abierta, el cobro en efectivo se rechaza).
 - [ ] En el portal: registrar tutor **eligiendo su escuela** → vincular alumno por matrícula →
       recargar → aprobar.
 - [ ] Con dos escuelas dadas de alta, un tutor de la escuela A **no** puede vincular una matrícula
