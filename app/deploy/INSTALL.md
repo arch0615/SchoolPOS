@@ -188,6 +188,8 @@ cobros hasta reconectar).
 
 ## Notas de operación
 
+- **Alta de alumnos y operadores**: desde el POS (Alumnos / Operadores). Antes solo existían vía
+  sembrador de demostración, de modo que una escuela recién instalada no podía inscribir a nadie.
 - **Respaldos**: respalda la DB local de cada escuela (fuente de verdad), la DB de la nube y la
   carpeta del anillo de llaves (paso 8).
 - **Primera corrida del agente tras actualizar**: los asientos anteriores a esta versión no traen

@@ -108,10 +108,11 @@ public class SchoolDbContext : DbContext
             e.Property(x => x.FullName).HasMaxLength(200).IsRequired();
             // Matrícula única por escuela.
             e.HasIndex(x => new { x.SchoolId, x.EnrollmentNo }).IsUnique();
-            // Código de credencial único por escuela (cuando existe).
-            e.HasIndex(x => new { x.SchoolId, x.CardCode })
-                .IsUnique()
-                .HasFilter(null);
+            // Código de credencial único por escuela SOLO cuando existe. Sin el filtro, SQL Server
+            // trata los NULL como un valor más y admite un único alumno sin credencial en toda la
+            // escuela; en SQLite los NULL sí son distintos, así que el defecto quedaba oculto
+            // justo en el modo con el que se prueba.
+            e.HasIndex(x => new { x.SchoolId, x.CardCode }).IsUnique();
             e.HasOne(x => x.School).WithMany().HasForeignKey(x => x.SchoolId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
@@ -215,8 +216,10 @@ public class SchoolDbContext : DbContext
             e.HasKey(x => x.Id);
             e.Property(x => x.Name).HasMaxLength(200).IsRequired();
             e.Property(x => x.Barcode).HasMaxLength(100);
-            // Código de barras único por escuela (cuando existe).
-            e.HasIndex(x => new { x.SchoolId, x.Barcode }).IsUnique().HasFilter(null);
+            // Código de barras único por escuela SOLO cuando existe: la mayoría de lo que vende una
+            // tienda escolar (pan, comida preparada) no trae código, y sin el filtro SQL Server
+            // solo admitía un producto sin código en toda la escuela.
+            e.HasIndex(x => new { x.SchoolId, x.Barcode }).IsUnique();
             e.HasOne(x => x.Category).WithMany()
                 .HasForeignKey(x => x.CategoryId).OnDelete(DeleteBehavior.SetNull);
         });

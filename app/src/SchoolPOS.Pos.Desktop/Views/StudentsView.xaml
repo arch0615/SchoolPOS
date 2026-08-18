@@ -1,0 +1,82 @@
+<UserControl x:Class="SchoolPOS.Pos.Desktop.Views.StudentsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <DockPanel Margin="24">
+        <TextBlock DockPanel.Dock="Top" Text="Alumnos" FontSize="24" FontWeight="Bold"
+                   Foreground="{StaticResource InkBrush}" Margin="0,0,0,12" />
+
+        <StatusBar DockPanel.Dock="Bottom" Background="Transparent">
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource DangerBrush}" />
+            <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource AccentBrush}" />
+        </StatusBar>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="360" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Padrón -->
+            <DockPanel Grid.Column="0" Margin="0,0,20,0">
+                <Grid DockPanel.Dock="Top" Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}"
+                             Tag="Buscar por nombre, matrícula o credencial…">
+                        <TextBox.InputBindings>
+                            <KeyBinding Key="Return" Command="{Binding RefreshCommand}" />
+                        </TextBox.InputBindings>
+                    </TextBox>
+                    <Button Grid.Column="1" Content="Buscar" Command="{Binding RefreshCommand}" />
+                    <CheckBox Grid.Column="2" Content="Ver bajas" VerticalAlignment="Center" Margin="10,0,0,0"
+                              IsChecked="{Binding IncludeInactive}" />
+                </Grid>
+
+                <DataGrid ItemsSource="{Binding Students}" SelectedItem="{Binding Selected}"
+                          AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                          HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                          Background="White" RowBackground="White">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Matrícula" Binding="{Binding EnrollmentNo}" Width="110" />
+                        <DataGridTextColumn Header="Nombre" Binding="{Binding FullName}" Width="*" />
+                        <DataGridTextColumn Header="Credencial" Binding="{Binding CardCode}" Width="120" />
+                        <DataGridTextColumn Header="Saldo" Binding="{Binding Balance, StringFormat=C2}" Width="100" />
+                        <DataGridCheckBoxColumn Header="Activo" Binding="{Binding IsActive}" Width="60" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+
+            <!-- Alta / edición -->
+            <Border Grid.Column="1" Background="White" CornerRadius="8" Padding="18" VerticalAlignment="Top">
+                <StackPanel>
+                    <TextBlock Text="Datos del alumno" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,10" />
+
+                    <TextBlock Text="Matrícula" Foreground="{StaticResource MutedBrush}" />
+                    <TextBox Text="{Binding EnrollmentNo, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,10" />
+
+                    <TextBlock Text="Nombre completo" Foreground="{StaticResource MutedBrush}" />
+                    <TextBox Text="{Binding FullName, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,10" />
+
+                    <TextBlock Text="Credencial (opcional)" Foreground="{StaticResource MutedBrush}" />
+                    <TextBox Text="{Binding CardCode, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,2" />
+                    <TextBlock Text="Código de barras o QR de la credencial, para cobrar más rápido."
+                               Foreground="{StaticResource MutedBrush}" FontSize="11" TextWrapping="Wrap"
+                               Margin="0,0,0,14" />
+
+                    <Button Content="{Binding SaveButtonText}" Style="{StaticResource PrimaryButton}"
+                            Height="42" Command="{Binding SaveCommand}" />
+                    <Button Content="Nuevo alumno" Margin="0,6,0,0" Command="{Binding NewCommand}" />
+                    <Button Content="{Binding ToggleActiveText}" Margin="0,6,0,0"
+                            Command="{Binding ToggleActiveCommand}" />
+
+                    <TextBlock Text="Al darse de alta, el alumno queda con saldo $0.00. La baja es lógica: su historial de compras se conserva."
+                               Foreground="{StaticResource MutedBrush}" FontSize="11" TextWrapping="Wrap"
+                               Margin="0,12,0,0" />
+                </StackPanel>
+            </Border>
+        </Grid>
+    </DockPanel>
+</UserControl>

@@ -38,6 +38,8 @@ public static class DependencyInjection
         services.AddSingleton<ISecretProtector, DataProtectionSecretProtector>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IStudentDirectory, StudentDirectory>();
+        services.AddScoped<IStudentRegistry, StudentRegistry>();
+        services.AddScoped<IOperatorRegistry, OperatorRegistry>();
         services.AddScoped<ISchoolPaymentAccountStore, SchoolPaymentAccountStore>();
         services.AddScoped<IBalanceService, BalanceService>();
         services.AddScoped<IInventoryService, InventoryService>();

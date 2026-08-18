@@ -43,6 +43,15 @@ public sealed class PosSession
     /// <summary>Ver el histórico de arqueos de toda la escuela: función administrativa.</summary>
     public bool CanViewAllTillSessions => Role is UserRole.Admin;
 
+    /// <summary>
+    /// Padrón de alumnos: alta y baja de inscritos. Almacén también, porque en la práctica quien
+    /// atiende el mostrador es quien detecta que falta inscribir a un alumno.
+    /// </summary>
+    public bool CanManageStudents => Role is UserRole.Warehouse or UserRole.Admin;
+
+    /// <summary>Alta y baja de operadores: solo el administrador reparte accesos.</summary>
+    public bool CanManageOperators => Role is UserRole.Admin;
+
     /// <summary>Configuración de la escuela: función administrativa.</summary>
     public bool CanManageSettings => Role is UserRole.Admin;
 

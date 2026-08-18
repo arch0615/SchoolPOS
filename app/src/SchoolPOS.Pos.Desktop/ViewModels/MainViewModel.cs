@@ -12,6 +12,8 @@ public sealed class MainViewModel : ViewModelBase
     private readonly DashboardViewModel _dashboard;
     private readonly SalesViewModel _sales;
     private readonly RefundsViewModel _refunds;
+    private readonly StudentsViewModel _students;
+    private readonly OperatorsViewModel _operators;
     private readonly InventoryViewModel _inventory;
     private readonly PurchasingViewModel _purchasing;
     private readonly TreasuryViewModel _treasury;
@@ -26,6 +28,8 @@ public sealed class MainViewModel : ViewModelBase
         DashboardViewModel dashboard,
         SalesViewModel sales,
         RefundsViewModel refunds,
+        StudentsViewModel students,
+        OperatorsViewModel operators,
         InventoryViewModel inventory,
         PurchasingViewModel purchasing,
         TreasuryViewModel treasury,
@@ -37,6 +41,8 @@ public sealed class MainViewModel : ViewModelBase
         _dashboard = dashboard;
         _sales = sales;
         _refunds = refunds;
+        _students = students;
+        _operators = operators;
         _inventory = inventory;
         _purchasing = purchasing;
         _treasury = treasury;
@@ -52,6 +58,8 @@ public sealed class MainViewModel : ViewModelBase
         ShowTreasuryCommand = new RelayCommand(async () => await NavigateAsync(_treasury), () => CanOperateOwnTill);
         ShowReportsCommand = new RelayCommand(async () => await NavigateAsync(_reports), () => CanViewReports);
         ShowAuditCommand = new RelayCommand(async () => await NavigateAsync(_audit), () => CanViewReports);
+        ShowStudentsCommand = new RelayCommand(async () => await NavigateAsync(_students), () => CanManageStudents);
+        ShowOperatorsCommand = new RelayCommand(async () => await NavigateAsync(_operators), () => CanManageOperators);
         ShowSettingsCommand = new RelayCommand(async () => await NavigateAsync(_settings), () => CanManageSettings);
         SignOutCommand = new RelayCommand(() => SignOutRequested?.Invoke());
 
@@ -77,6 +85,8 @@ public sealed class MainViewModel : ViewModelBase
     public bool CanOperateOwnTill => _session.CanOperateOwnTill;
     public bool CanManageSettings => _session.CanManageSettings;
     public bool CanRefund => _session.CanRefund;
+    public bool CanManageStudents => _session.CanManageStudents;
+    public bool CanManageOperators => _session.CanManageOperators;
     public bool CanViewReports => _session.CanViewReports;
 
     public RelayCommand ShowDashboardCommand { get; }
@@ -87,6 +97,8 @@ public sealed class MainViewModel : ViewModelBase
     public RelayCommand ShowTreasuryCommand { get; }
     public RelayCommand ShowReportsCommand { get; }
     public RelayCommand ShowAuditCommand { get; }
+    public RelayCommand ShowStudentsCommand { get; }
+    public RelayCommand ShowOperatorsCommand { get; }
     public RelayCommand ShowSettingsCommand { get; }
     public RelayCommand SignOutCommand { get; }
 
