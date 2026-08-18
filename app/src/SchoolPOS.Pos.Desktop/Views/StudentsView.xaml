@@ -50,7 +50,9 @@
             </DockPanel>
 
             <!-- Alta / edición -->
-            <Border Grid.Column="1" Background="White" CornerRadius="8" Padding="18" VerticalAlignment="Top">
+            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+              <StackPanel>
+            <Border Background="White" CornerRadius="8" Padding="18" Margin="0,0,0,12">
                 <StackPanel>
                     <TextBlock Text="Datos del alumno" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,10" />
 
@@ -77,6 +79,31 @@
                                Margin="0,12,0,0" />
                 </StackPanel>
             </Border>
+
+            <!-- Recarga en efectivo: cierra el modelo prepagado donde no hay portal -->
+            <Border Background="White" CornerRadius="8" Padding="18"
+                    >
+                <StackPanel>
+                    <TextBlock Text="Recargar saldo en efectivo" FontWeight="SemiBold" FontSize="15"
+                               Margin="0,0,0,8" />
+
+                    <Border Background="#FFF4E5" CornerRadius="6" Padding="10" Margin="0,0,0,10"
+                            Visibility="{Binding NeedsOpenTill, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock TextWrapping="Wrap" Foreground="{StaticResource InkBrush}"
+                                   Text="Abra su caja en Tesorería: el efectivo recibido debe quedar registrado en el arqueo." />
+                    </Border>
+
+                    <TextBlock Text="Monto recibido" Foreground="{StaticResource MutedBrush}" />
+                    <TextBox Text="{Binding TopUpAmount, UpdateSourceTrigger=LostFocus}" Margin="0,2,0,10" />
+                    <Button Content="Aplicar recarga" Style="{StaticResource PrimaryButton}" Height="42"
+                            Command="{Binding TopUpCommand}" />
+                    <TextBlock Text="El alumno recibe el 100%. Sin comisión: el proveedor no interviene en un cobro en efectivo."
+                               Foreground="{StaticResource MutedBrush}" FontSize="11" TextWrapping="Wrap"
+                               Margin="0,10,0,0" />
+                </StackPanel>
+            </Border>
+              </StackPanel>
+            </ScrollViewer>
         </Grid>
     </DockPanel>
 </UserControl>

@@ -24,6 +24,7 @@ public sealed class SyncAgent
     private readonly IBalanceService _localBalance;
     private readonly IClock _clock;
 
+    // Consumo: nace siempre en la escuela y viaja hacia la nube.
     private static readonly MovementType[] Consumption =
         { MovementType.Sale, MovementType.Refund, MovementType.Adjustment };
 
@@ -83,10 +84,16 @@ public sealed class SyncAgent
     }
 
     /// <summary>
-    /// Sube el consumo local (ventas/devoluciones/ajustes) a la nube para el portal del padre.
-    /// Solo lee lo <b>pendiente</b> (<c>SyncedToCloudAtUtc == null</c>) y en lotes acotados: releer
-    /// todo el historial en cada ciclo hacía que el costo de la sincronización creciera sin límite
-    /// con la antigüedad de la escuela.
+    /// Sube a la nube lo que nació en la escuela: ventas, devoluciones, ajustes y las recargas
+    /// <b>en efectivo</b> capturadas en el mostrador. Solo lee lo <b>pendiente</b>
+    /// (<c>SyncedToCloudAtUtc == null</c>) y en lotes acotados: releer todo el historial en cada
+    /// ciclo hacía que el costo creciera sin límite con la antigüedad de la escuela.
+    /// <para>
+    /// Las recargas <b>por pasarela</b> se excluyen a propósito: esas nacen en el portal, que ya
+    /// asentó allá su propio movimiento al confirmarlas. Subir el asiento local las duplicaría en
+    /// el saldo que ve el tutor. Aun así se marcan como sincronizadas para que no se queden en la
+    /// cola reexaminándose en cada corrida.
+    /// </para>
     /// </summary>
     /// <returns>
     /// Cuántos asientos se subieron y cuántos se omitieron porque el roster de la nube todavía no
@@ -95,12 +102,26 @@ public sealed class SyncAgent
     public async Task<(int Pushed, int Skipped)> PushConsumptionAsync(CancellationToken ct = default)
     {
         var pending = await _local.BalanceMovements
-            .Where(m => m.SyncedToCloudAtUtc == null && Consumption.Contains(m.Type))
+            .Where(m => m.SyncedToCloudAtUtc == null &&
+                        (Consumption.Contains(m.Type) || m.Type == MovementType.TopUp))
             .OrderBy(m => m.CreatedAtUtc)
             .Take(PushBatchSize)
             .ToListAsync(ct);
         if (pending.Count == 0)
             return (0, 0);
+
+        // De las recargas del lote, cuáles son de efectivo (las únicas que sí deben subir).
+        var topUpRefs = pending
+            .Where(m => m.Type == MovementType.TopUp && m.Reference != null)
+            .Select(m => m.Reference!)
+            .Distinct()
+            .ToList();
+        var cashRefs = topUpRefs.Count == 0
+            ? new HashSet<string>()
+            : (await _local.TopUps.AsNoTracking()
+                .Where(t => t.Origin == TopUpOrigin.Cash && topUpRefs.Contains(t.GatewayRef))
+                .Select(t => t.GatewayRef)
+                .ToListAsync(ct)).ToHashSet();
 
         // Ya presentes en la nube: asientos subidos antes de que existiera la marca (o por una
         // corrida que murió entre el guardado de la nube y el de la marca local).
@@ -116,6 +137,14 @@ public sealed class SyncAgent
         int pushed = 0, skipped = 0;
         foreach (var m in pending)
         {
+            // Recarga por pasarela: ya está en la nube por su propio camino. Se marca y no sube.
+            if (m.Type == MovementType.TopUp &&
+                (m.Reference is null || !cashRefs.Contains(m.Reference)))
+            {
+                m.SyncedToCloudAtUtc = now;
+                continue;
+            }
+
             if (!cloudAccounts.Contains(m.AccountId))
             {
                 skipped++; // el roster de la nube aún no tiene la cuenta: sin marcar, se reintenta.

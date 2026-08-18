@@ -60,6 +60,9 @@ public static class DependencyInjection
         // El flujo de recargas requiere que el host (portal) registre un IPaymentGateway
         // (implementación real de Mercado Pago con sus credenciales).
         services.AddScoped<ITopUpService, TopUpService>();
+        // Recarga en efectivo del mostrador: no depende de la pasarela, así que sirve también en
+        // la instalación de una sola caja, donde no hay portal.
+        services.AddScoped<ICashTopUpService, CashTopUpService>();
         return services;
     }
 }

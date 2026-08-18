@@ -30,6 +30,12 @@ public class TopUp
     /// <summary>Referencia única de la pasarela (Mercado Pago). Clave de deduplicación.</summary>
     public string GatewayRef { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Origen del dinero. Las de <see cref="TopUpOrigin.Cash"/> las captura el POS en el mostrador
+    /// y no pasan por la pasarela: no llevan comisión y no entran a los reportes del proveedor.
+    /// </summary>
+    public TopUpOrigin Origin { get; set; } = TopUpOrigin.Gateway;
+
     public TopUpStatus Status { get; set; } = TopUpStatus.Pending;
 
     /// <summary>True cuando ya fue acreditada al libro mayor local (evita doble aplicación).</summary>

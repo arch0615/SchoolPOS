@@ -87,7 +87,10 @@ public sealed class CommissionReportService : ICommissionReportService
 
     private IQueryable<Domain.Entities.TopUp> CapturedTopUps(DateTime? fromUtc, DateTime? toUtc)
     {
-        var query = _db.TopUps.AsNoTracking().Where(t => Captured.Contains(t.Status));
+        // Solo las recargas por pasarela: el efectivo del mostrador no lo procesa el proveedor,
+        // así que ni genera comisión ni debe inflar el "recargado" de sus reportes.
+        var query = _db.TopUps.AsNoTracking()
+            .Where(t => Captured.Contains(t.Status) && t.Origin == TopUpOrigin.Gateway);
         if (fromUtc is { } from)
             query = query.Where(t => t.CreatedAtUtc >= from);
         if (toUtc is { } to)

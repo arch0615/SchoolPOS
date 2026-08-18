@@ -42,3 +42,16 @@ public enum TopUpStatus
     /// <summary>Pago fallido/cancelado.</summary>
     Failed = 4,
 }
+
+/// <summary>De dónde vino el dinero de una recarga.</summary>
+public enum TopUpOrigin
+{
+    /// <summary>Pago en línea del tutor por la pasarela (Mercado Pago). Genera comisión.</summary>
+    Gateway = 1,
+
+    /// <summary>
+    /// Efectivo entregado en el mostrador de la escuela. No genera comisión: el proveedor no
+    /// procesa ni toca ese dinero, así que no hay nada que separar por split.
+    /// </summary>
+    Cash = 2,
+}

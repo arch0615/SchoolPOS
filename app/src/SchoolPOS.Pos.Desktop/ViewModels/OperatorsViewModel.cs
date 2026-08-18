@@ -102,7 +102,7 @@ public sealed class OperatorsViewModel : ViewModelBase, IAsyncLoadable
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"No se pudieron cargar los operadores: {ex.Message}";
+            ErrorMessage = $"No se pudieron cargar los operadores: {ex.Describe()}";
         }
     }
 
@@ -122,7 +122,7 @@ public sealed class OperatorsViewModel : ViewModelBase, IAsyncLoadable
         }
         catch (Exception ex)
         {
-            ErrorMessage = ex.Message;
+            ErrorMessage = ex.Describe();
         }
     }
 
@@ -169,7 +169,7 @@ public sealed class OperatorsViewModel : ViewModelBase, IAsyncLoadable
         }
         catch (Exception ex)
         {
-            ErrorMessage = ex.Message;
+            ErrorMessage = ex.Describe();
         }
     }
 

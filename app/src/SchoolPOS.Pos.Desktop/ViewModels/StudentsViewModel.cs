@@ -1,6 +1,9 @@
 using System.Collections.ObjectModel;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using SchoolPOS.Data;
 using SchoolPOS.Domain.Abstractions;
+using SchoolPOS.Domain.Enums;
 using SchoolPOS.Pos.Desktop.Infrastructure;
 
 namespace SchoolPOS.Pos.Desktop.ViewModels;
@@ -33,6 +36,7 @@ public sealed class StudentsViewModel : ViewModelBase, IAsyncLoadable
         NewCommand = new RelayCommand(ClearForm);
         SaveCommand = new AsyncRelayCommand(SaveAsync);
         ToggleActiveCommand = new AsyncRelayCommand(ToggleActiveAsync, () => Selected is not null);
+        TopUpCommand = new AsyncRelayCommand(TopUpAsync, () => Selected is not null);
     }
 
     public ObservableCollection<StudentRow> Students { get; } = new();
@@ -64,6 +68,7 @@ public sealed class StudentsViewModel : ViewModelBase, IAsyncLoadable
             OnPropertyChanged(nameof(SaveButtonText));
             OnPropertyChanged(nameof(ToggleActiveText));
             ToggleActiveCommand.RaiseCanExecuteChanged();
+            TopUpCommand.RaiseCanExecuteChanged();
         }
     }
 
@@ -95,10 +100,12 @@ public sealed class StudentsViewModel : ViewModelBase, IAsyncLoadable
             Students.Clear();
             foreach (var r in rows)
                 Students.Add(r);
+
+            await RefreshOpenTillAsync();
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"No se pudo cargar el padrón: {ex.Message}";
+            ErrorMessage = $"No se pudo cargar el padrón: {ex.Describe()}";
         }
     }
 
@@ -137,7 +144,7 @@ public sealed class StudentsViewModel : ViewModelBase, IAsyncLoadable
         }
         catch (Exception ex)
         {
-            ErrorMessage = ex.Message;
+            ErrorMessage = ex.Describe();
         }
     }
 
@@ -161,7 +168,85 @@ public sealed class StudentsViewModel : ViewModelBase, IAsyncLoadable
         }
         catch (Exception ex)
         {
-            ErrorMessage = ex.Message;
+            ErrorMessage = ex.Describe();
+        }
+    }
+
+    // ---- Recarga en efectivo ----
+
+    private decimal _topUpAmount;
+    private Guid? _cashSessionId;
+
+    /// <summary>Monto a recargar en efectivo al alumno seleccionado.</summary>
+    public decimal TopUpAmount { get => _topUpAmount; set => SetProperty(ref _topUpAmount, value); }
+
+    /// <summary>Aviso cuando no hay caja abierta: el efectivo no podría quedar en el arqueo.</summary>
+    public bool NeedsOpenTill => _cashSessionId is null;
+
+    public AsyncRelayCommand TopUpCommand { get; private set; } = null!;
+
+    /// <summary>Caja abierta del operador; la recarga en efectivo la exige.</summary>
+    private async Task RefreshOpenTillAsync()
+    {
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<SchoolDbContext>();
+            var operatorId = _session.Operator!.Id;
+            _cashSessionId = await db.CashSessions.AsNoTracking()
+                .Where(s => s.SchoolId == _session.SchoolId
+                            && s.OperatorId == operatorId
+                            && s.Status == CashSessionStatus.Open)
+                .OrderByDescending(s => s.OpenedAtUtc)
+                .Select(s => (Guid?)s.Id)
+                .FirstOrDefaultAsync();
+        }
+        catch (Exception)
+        {
+            _cashSessionId = null;
+        }
+        OnPropertyChanged(nameof(NeedsOpenTill));
+    }
+
+    private async Task TopUpAsync()
+    {
+        ErrorMessage = string.Empty;
+        StatusMessage = string.Empty;
+
+        if (Selected is not { } student)
+        {
+            ErrorMessage = "Elija un alumno de la lista.";
+            return;
+        }
+        if (TopUpAmount <= 0m)
+        {
+            ErrorMessage = "Escriba el monto que está recibiendo.";
+            return;
+        }
+
+        // Relectura por si acaba de abrir la caja sin volver a esta pantalla.
+        if (_cashSessionId is null)
+            await RefreshOpenTillAsync();
+        if (_cashSessionId is null)
+        {
+            ErrorMessage = "Abra su caja en Tesorería: el efectivo debe quedar registrado en el arqueo.";
+            return;
+        }
+
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var cash = scope.ServiceProvider.GetRequiredService<ICashTopUpService>();
+            await cash.CreateAsync(
+                _session.SchoolId, student.AccountId, TopUpAmount, _session.Operator!.Id, _cashSessionId.Value);
+
+            StatusMessage = $"Recarga de {TopUpAmount:C2} aplicada a {student.FullName}.";
+            TopUpAmount = 0m;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Describe();
         }
     }
 }
