@@ -18,11 +18,25 @@ public sealed class AuditLogQueryService : IAuditLogQueryService
         if (toUtc is { } to) query = query.Where(a => a.CreatedAtUtc <= to);
         if (!string.IsNullOrWhiteSpace(action)) query = query.Where(a => a.Action == action);
 
-        return await query
+        var rows = await query
             .OrderByDescending(a => a.CreatedAtUtc)
             .Take(500)
             .Select(a => new AuditEntryRow(
                 a.CreatedAtUtc, a.Actor, a.Action, a.Entity, a.EntityId, a.Before, a.After))
             .ToListAsync(ct);
+
+        // El actor se guarda como el Id del operador. Mostrarlo así deja una bitácora ilegible
+        // ("quién hizo esto" es justamente su razón de ser), de modo que se resuelve al usuario.
+        // Se hace en memoria y sobre lo ya paginado: son 500 filas como máximo.
+        var operators = await _db.Users.AsNoTracking()
+            .Where(u => u.SchoolId == schoolId)
+            .Select(u => new { Id = u.Id.ToString(), u.Username })
+            .ToDictionaryAsync(u => u.Id, u => u.Username, ct);
+
+        return rows
+            .Select(r => operators.TryGetValue(r.Actor ?? string.Empty, out var name)
+                ? r with { Actor = name }
+                : r)
+            .ToList();
     }
 }

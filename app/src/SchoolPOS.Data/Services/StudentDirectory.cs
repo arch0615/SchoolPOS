@@ -15,9 +15,13 @@ public sealed class StudentDirectory : IStudentDirectory
         if (string.IsNullOrWhiteSpace(code))
             return null;
 
+        // La matrícula o el código de credencial se teclean a mano cuando el lector falla;
+        // no deben fallar por mayúsculas (SQLite compara distinguiéndolas).
+        var needle = code.Trim().ToLower();
         return await _db.Students.AsNoTracking()
             .Where(s => s.SchoolId == schoolId && s.IsActive &&
-                        (s.EnrollmentNo == code || s.CardCode == code))
+                        (s.EnrollmentNo.ToLower() == needle ||
+                         (s.CardCode != null && s.CardCode.ToLower() == needle)))
             .Select(s => new StudentBalance(
                 s.Id, s.Account.Id, s.EnrollmentNo, s.FullName, s.Account.Balance))
             .FirstOrDefaultAsync(ct);

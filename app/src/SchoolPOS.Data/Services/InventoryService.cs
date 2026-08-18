@@ -120,8 +120,11 @@ public sealed class InventoryService : IInventoryService
         if (string.IsNullOrWhiteSpace(barcode))
             return Task.FromResult<Product?>(null);
 
+        // Igual que la búsqueda: un código tecleado a mano no debe fallar por mayúsculas.
+        var code = barcode.Trim().ToLower();
         return _db.Products.AsNoTracking()
-            .FirstOrDefaultAsync(p => p.SchoolId == schoolId && p.IsActive && p.Barcode == barcode, ct);
+            .FirstOrDefaultAsync(p => p.SchoolId == schoolId && p.IsActive &&
+                                      p.Barcode != null && p.Barcode.ToLower() == code, ct);
     }
 
     public async Task<IReadOnlyList<Product>> SearchAsync(Guid schoolId, string term, CancellationToken ct = default)
@@ -129,9 +132,15 @@ public sealed class InventoryService : IInventoryService
         if (string.IsNullOrWhiteSpace(term))
             return Array.Empty<Product>();
 
+        // SQLite traduce Contains a instr(), que distingue mayúsculas: buscar "jugo" no
+        // encontraba "Jugo de naranja". SQL Server, con colación por omisión, sí lo encontraba —
+        // la búsqueda se comportaba distinto según el modo de instalación. ToLower() se traduce
+        // en ambos proveedores.
+        var needle = term.ToLower();
         return await _db.Products.AsNoTracking()
             .Where(p => p.SchoolId == schoolId && p.IsActive &&
-                        (p.Name.Contains(term) || (p.Barcode != null && p.Barcode.Contains(term))))
+                        (p.Name.ToLower().Contains(needle) ||
+                         (p.Barcode != null && p.Barcode.ToLower().Contains(needle))))
             .OrderBy(p => p.Name)
             .Take(50)
             .ToListAsync(ct);

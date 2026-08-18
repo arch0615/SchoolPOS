@@ -30,7 +30,7 @@
                     <StackPanel>
                         <TextBlock Text="No tienes una caja abierta" FontWeight="SemiBold" Margin="0,0,0,8" />
                         <StackPanel Orientation="Horizontal">
-                            <TextBox Width="120" Margin="0,0,6,0" Text="{Binding OpeningFloat, UpdateSourceTrigger=PropertyChanged}" Tag="Fondo inicial" />
+                            <TextBox Width="120" Margin="0,0,6,0" Text="{Binding OpeningFloat, UpdateSourceTrigger=LostFocus}" Tag="Fondo inicial" />
                             <Button Content="Abrir caja" Style="{StaticResource PrimaryButton}" Command="{Binding OpenSessionCommand}" />
                         </StackPanel>
                     </StackPanel>
@@ -56,7 +56,7 @@
                                          IsChecked="{Binding IsIncomeSelected}" />
                             <RadioButton Content="Egreso" Margin="0,0,10,0" VerticalAlignment="Center"
                                          IsChecked="{Binding IsExpenseSelected}" />
-                            <TextBox Width="90" Margin="0,0,6,0" Text="{Binding MovementAmount, UpdateSourceTrigger=PropertyChanged}" Tag="Importe" />
+                            <TextBox Width="90" Margin="0,0,6,0" Text="{Binding MovementAmount, UpdateSourceTrigger=LostFocus}" Tag="Importe" />
                             <TextBox Width="200" Margin="0,0,6,0" Text="{Binding MovementReason, UpdateSourceTrigger=PropertyChanged}" Tag="Motivo" />
                             <Button Content="Registrar" Command="{Binding RegisterMovementCommand}" />
                         </StackPanel>
@@ -75,7 +75,7 @@
                         <Separator Margin="0,14" />
                         <TextBlock Text="Cerrar caja (arqueo)" FontWeight="SemiBold" Margin="0,0,0,6" />
                         <StackPanel Orientation="Horizontal">
-                            <TextBox Width="120" Margin="0,0,6,0" Text="{Binding CountedAmount, UpdateSourceTrigger=PropertyChanged}" Tag="Monto contado" />
+                            <TextBox Width="120" Margin="0,0,6,0" Text="{Binding CountedAmount, UpdateSourceTrigger=LostFocus}" Tag="Monto contado" />
                             <Button Content="Cerrar caja" Style="{StaticResource PrimaryButton}" Command="{Binding CloseSessionCommand}" />
                         </StackPanel>
                     </StackPanel>

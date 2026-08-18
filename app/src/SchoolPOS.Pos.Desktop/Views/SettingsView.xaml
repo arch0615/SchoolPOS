@@ -34,7 +34,7 @@
                                Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,0,0,10" />
 
                     <TextBlock Text="IVA (0–1)" Foreground="{StaticResource MutedBrush}" />
-                    <TextBox Text="{Binding TaxRate, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,4" />
+                    <TextBox Text="{Binding TaxRate, UpdateSourceTrigger=LostFocus}" Margin="0,2,0,4" />
                     <CheckBox Content="IVA incluido en el precio" IsChecked="{Binding TaxInclusive}" Margin="0,0,0,10" />
 
                     <Separator Margin="0,4,0,14" />

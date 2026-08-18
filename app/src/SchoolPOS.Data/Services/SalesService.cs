@@ -46,6 +46,20 @@ public sealed class SalesService : ISalesService
             var school = await _db.Schools.AsNoTracking().FirstOrDefaultAsync(s => s.Id == request.SchoolId, ct)
                 ?? throw new InvalidOperationException($"Escuela {request.SchoolId} no encontrada.");
 
+            // Descuentos: privilegio de administrador (FR-SAL-3). El POS lo bloquea en pantalla,
+            // pero la regla se aplica aquí porque una restricción que solo vive en la interfaz no
+            // es una restricción — y esta en particular estaba rota en el XAML.
+            if (request.Lines.Any(l => l.Discount != 0m))
+            {
+                var role = await _db.Users.AsNoTracking()
+                    .Where(u => u.Id == request.CashierId)
+                    .Select(u => (UserRole?)u.Role)
+                    .FirstOrDefaultAsync(ct);
+                if (role != UserRole.Admin)
+                    throw new InvalidOperationException(
+                        "Solo un administrador puede aplicar descuentos.");
+            }
+
             var lines = request.Lines.Select(l => new SaleLine
             {
                 ProductId = l.ProductId,

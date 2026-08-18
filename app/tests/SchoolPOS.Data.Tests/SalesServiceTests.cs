@@ -1,3 +1,4 @@
+using SchoolPOS.Data.Security;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using SchoolPOS.Data.Services;
@@ -151,5 +152,56 @@ public class SalesServiceTests
             .Should().Be(90m, "se reintegran 10 al saldo");
         (await ctx.SaleLines.Where(l => l.Id == lineId).Select(l => l.QuantityRefunded).SingleAsync())
             .Should().Be(1m);
+    }
+
+    /// <summary>
+    /// Los descuentos son privilegio de administrador (FR-SAL-3). La restricción vivía solo en el
+    /// XAML del POS — y encima no funcionaba: una columna de DataGrid no hereda el DataContext, así
+    /// que el enlace fallaba en silencio y cualquier cajero podía capturar un descuento. Aquí se
+    /// prueba la regla donde sí manda: en el servicio.
+    /// </summary>
+    [Fact]
+    public async Task Cashier_cannot_apply_a_discount()
+    {
+        using var db = new TestDatabase();
+        var school = db.SeedSchool(taxRate: 0m);
+        var account = db.SeedStudentAccount(school.Id, balance: 100m);
+        var product = db.SeedProduct(school.Id, price: 10m, stock: 10m);
+        var auth = new AuthService(db.Context, new Pbkdf2PasswordHasher(), new TestClock());
+        var cashier = await auth.CreateOperatorAsync(school.Id, "cajero", "clave123", UserRole.Cashier);
+        var svc = NewServices(db).Sales;
+
+        var act = () => svc.RegisterSaleAsync(new SaleRequest(
+            school.Id, cashier.Id, TenderType.Balance,
+            new[] { new SaleLineRequest(product.Id, "Producto", 1m, 10m, Discount: 3m) },
+            AccountId: account.Id));
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+
+        var ctx = db.NewContext();
+        (await ctx.Sales.CountAsync()).Should().Be(0, "la venta no debe quedar a medias");
+        (await ctx.Products.Where(p => p.Id == product.Id).Select(p => p.StockOnHand).SingleAsync())
+            .Should().Be(10m, "el stock no se toca si la venta se rechaza");
+    }
+
+    /// <summary>El administrador sí puede: la regla restringe, no bloquea.</summary>
+    [Fact]
+    public async Task Admin_can_apply_a_discount()
+    {
+        using var db = new TestDatabase();
+        var school = db.SeedSchool(taxRate: 0m);
+        var account = db.SeedStudentAccount(school.Id, balance: 100m);
+        var product = db.SeedProduct(school.Id, price: 10m, stock: 10m);
+        var auth = new AuthService(db.Context, new Pbkdf2PasswordHasher(), new TestClock());
+        var admin = await auth.CreateOperatorAsync(school.Id, "admin", "clave123", UserRole.Admin);
+        var svc = NewServices(db).Sales;
+
+        var sale = await svc.RegisterSaleAsync(new SaleRequest(
+            school.Id, admin.Id, TenderType.Balance,
+            new[] { new SaleLineRequest(product.Id, "Producto", 1m, 10m, Discount: 3m) },
+            AccountId: account.Id));
+
+        sale.Total.Should().Be(7m);
+        sale.DiscountTotal.Should().Be(3m);
     }
 }

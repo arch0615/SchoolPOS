@@ -30,7 +30,7 @@
                 </TextBox.InputBindings>
             </TextBox>
             <Button Grid.Column="1" Content="Buscar" Command="{Binding RefreshCommand}" />
-            <TextBox Grid.Column="2" Width="70" Text="{Binding EntryQuantity, UpdateSourceTrigger=PropertyChanged}"
+            <TextBox Grid.Column="2" Width="70" Text="{Binding EntryQuantity, UpdateSourceTrigger=LostFocus}"
                      ToolTip="Cantidad a ingresar" VerticalContentAlignment="Center" />
             <Button Grid.Column="3" Content="Entrada +" Style="{StaticResource PrimaryButton}"
                     Command="{Binding RegisterEntryCommand}" />
@@ -54,9 +54,9 @@
                     <TextBox Width="130" Margin="0,0,6,6" Text="{Binding NewProductBarcode, UpdateSourceTrigger=PropertyChanged}" Tag="Código de barras" />
                     <ComboBox Width="140" Margin="0,0,6,6" ItemsSource="{Binding Categories}"
                               DisplayMemberPath="Name" SelectedItem="{Binding NewProductCategory}" />
-                    <TextBox Width="80" Margin="0,0,6,6" Text="{Binding NewProductPrice, UpdateSourceTrigger=PropertyChanged}" Tag="Precio" />
-                    <TextBox Width="80" Margin="0,0,6,6" Text="{Binding NewProductCost, UpdateSourceTrigger=PropertyChanged}" Tag="Costo" />
-                    <TextBox Width="80" Margin="0,0,6,6" Text="{Binding NewProductMinStock, UpdateSourceTrigger=PropertyChanged}" Tag="Mínimo" />
+                    <TextBox Width="80" Margin="0,0,6,6" Text="{Binding NewProductPrice, UpdateSourceTrigger=LostFocus}" Tag="Precio" />
+                    <TextBox Width="80" Margin="0,0,6,6" Text="{Binding NewProductCost, UpdateSourceTrigger=LostFocus}" Tag="Costo" />
+                    <TextBox Width="80" Margin="0,0,6,6" Text="{Binding NewProductMinStock, UpdateSourceTrigger=LostFocus}" Tag="Mínimo" />
                     <Button Content="Crear producto" Style="{StaticResource PrimaryButton}" Command="{Binding CreateProductCommand}" />
                 </WrapPanel>
             </StackPanel>
