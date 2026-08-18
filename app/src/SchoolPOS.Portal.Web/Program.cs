@@ -30,7 +30,7 @@ builder.Services.AddSchoolPosData(options =>
     if (string.Equals(provider, "SqlServer", StringComparison.OrdinalIgnoreCase))
         options.UseSqlServer(connectionString);
     else
-        options.UseSqlite(connectionString);
+        options.UseSqlite(connectionString, o => o.MigrationsAssembly(SqliteMigrations.AssemblyName));
 });
 
 // Anillo de llaves de Data Protection (cifra los tokens OAuth de las escuelas). Debe persistir
@@ -171,10 +171,9 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<SchoolDbContext>();
-    if (string.Equals(provider, "SqlServer", StringComparison.OrdinalIgnoreCase))
-        await db.Database.MigrateAsync();
-    else
-        await db.Database.EnsureCreatedAsync();
+    // Migraciones en ambos proveedores: SQLite tiene su propio juego, así que una base ya creada
+    // sí puede recibir cambios de esquema.
+    await db.Database.MigrateAsync();
 
     if (config.GetValue<bool>("Portal:SeedDemoData"))
         await DemoDataSeeder.SeedAsync(db, demoSchoolId);

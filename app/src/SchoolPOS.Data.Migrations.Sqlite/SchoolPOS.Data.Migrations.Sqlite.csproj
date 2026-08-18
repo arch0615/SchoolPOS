@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Migraciones de SQLite, en su propio ensamblado.
+
+    EF genera el DDL de una migración para un proveedor concreto: las de SQL Server traen tipos
+    como nvarchar(200) o uniqueidentifier y no sirven en SQLite. Y EF descubre TODAS las
+    migraciones del ensamblado de migraciones, así que los dos juegos no pueden convivir en uno
+    solo: hacen falta dos ensamblados y elegir el correcto según el proveedor.
+
+    Sin esto la instalación de una sola caja creaba el esquema con EnsureCreated(), que lo arma una
+    vez y nunca lo altera — es decir, ninguna escuela instalada podría recibir un cambio de esquema.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SchoolPOS.Data\SchoolPOS.Data.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.8">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

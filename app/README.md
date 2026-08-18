@@ -35,19 +35,38 @@ dotnet test  SchoolPOS.CrossPlatform.slnf
 
 En Windows puedes abrir `SchoolPOS.sln` completo (incluye el POS WPF).
 
-## Base de datos (SQL Server, por escuela)
+## Base de datos
 
-Las migraciones viven en `src/SchoolPOS.Data/Migrations`. Para aplicarlas a una instancia local:
+Hay **dos juegos de migraciones**, uno por proveedor, porque el DDL que genera EF es específico
+del proveedor (las de SQL Server traen `nvarchar`/`uniqueidentifier`, inservibles en SQLite) y EF
+descubre *todas* las migraciones del ensamblado: no pueden convivir en uno solo.
+
+| Proveedor | Dónde | Lo usa |
+|---|---|---|
+| SQL Server | `src/SchoolPOS.Data/Migrations` | Portal (nube) y escuelas con varias cajas |
+| SQLite | `src/SchoolPOS.Data.Migrations.Sqlite/Migrations` | Instalador de una sola caja |
+
+Al cambiar el modelo hay que agregar la migración a **los dos**, o el proveedor que se quede atrás
+fallará al arrancar:
 
 ```bash
-dotnet ef database update --project src/SchoolPOS.Data
-# nueva migración:
+# SQL Server
 dotnet ef migrations add <Nombre> --project src/SchoolPOS.Data -o Migrations
+
+# SQLite
+dotnet ef migrations add <Nombre> \
+    --project src/SchoolPOS.Data.Migrations.Sqlite \
+    --startup-project src/SchoolPOS.Data.Migrations.Sqlite -o Migrations
 ```
 
-La cadena de conexión real se inyecta por escuela vía `AddSchoolPosData(connectionString)`
-(ver `SchoolPOS.Data/DependencyInjection.cs`). La cadena de diseño (solo para generar
-migraciones) está en `SchoolDbContextFactory`.
+Los hosts aplican las migraciones al arrancar (`Database.Migrate()`), así que una escuela ya
+instalada recibe los cambios de esquema al actualizar la aplicación, conservando sus datos.
+Cualquier host que corra sobre SQLite debe **referenciar** `SchoolPOS.Data.Migrations.Sqlite`: el
+ensamblado tiene que estar presente en tiempo de ejecución para poder aplicarlas.
+
+La cadena de conexión real se inyecta por escuela vía `AddSchoolPosData(...)`
+(ver `SchoolPOS.Data/DependencyInjection.cs`). Las cadenas de diseño —solo para generar
+migraciones— están en `SchoolDbContextFactory` (SQL Server) y `SqliteDesignTimeFactory` (SQLite).
 
 ## Estado actual
 

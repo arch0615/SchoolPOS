@@ -58,15 +58,15 @@ try
 
     var builder = new DbContextOptionsBuilder<SchoolDbContext>();
     var isSqlite = string.Equals(provider, "Sqlite", StringComparison.OrdinalIgnoreCase);
-    if (isSqlite) builder.UseSqlite(connectionString);
+    if (isSqlite) builder.UseSqlite(connectionString, o => o.MigrationsAssembly(SqliteMigrations.AssemblyName));
     else builder.UseSqlServer(connectionString);
 
     await using var db = new SchoolDbContext(builder.Options);
 
     Console.WriteLine($"» Proveedor: {provider}");
     Console.WriteLine("» Preparando base de datos…");
-    if (isSqlite) await db.Database.EnsureCreatedAsync();
-    else await db.Database.MigrateAsync(); // crea/actualiza el esquema con las migraciones EF
+    // Migraciones en ambos proveedores (cada uno con su juego): crea o actualiza el esquema.
+    await db.Database.MigrateAsync();
 
     // Escuela (idempotente por Id).
     var school = await db.Schools.FirstOrDefaultAsync(s => s.Id == schoolId);

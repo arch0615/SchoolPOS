@@ -22,6 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\SchoolPOS.Domain\SchoolPOS.Domain.csproj" />
     <ProjectReference Include="..\SchoolPOS.Data\SchoolPOS.Data.csproj" />
+    <ProjectReference Include="..\SchoolPOS.Data.Migrations.Sqlite\SchoolPOS.Data.Migrations.Sqlite.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -78,7 +78,8 @@ public partial class App : Application
                         if (string.Equals(provider, PosConfig.SqlServerProvider, StringComparison.OrdinalIgnoreCase))
                             options.UseSqlServer(connectionString);
                         else
-                            options.UseSqlite(connectionString);
+                            options.UseSqlite(connectionString,
+                                o => o.MigrationsAssembly(SqliteMigrations.AssemblyName));
                     });
 
                     // Sesión con la escuela de la configuración local.

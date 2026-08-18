@@ -4,6 +4,7 @@
     "projects": [
       "src/SchoolPOS.Domain/SchoolPOS.Domain.csproj",
       "src/SchoolPOS.Data/SchoolPOS.Data.csproj",
+      "src/SchoolPOS.Data.Migrations.Sqlite/SchoolPOS.Data.Migrations.Sqlite.csproj",
       "src/SchoolPOS.Portal.Web/SchoolPOS.Portal.Web.csproj",
       "src/SchoolPOS.Sync.Agent/SchoolPOS.Sync.Agent.csproj",
       "src/SchoolPOS.Payments.MercadoPago/SchoolPOS.Payments.MercadoPago.csproj",

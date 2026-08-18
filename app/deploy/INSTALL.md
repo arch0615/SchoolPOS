@@ -106,7 +106,8 @@ datos y guarda la configuración; a partir del segundo arranque entra directo al
 | **Datos (respaldar esto)** | `C:\ProgramData\LoncherApp\schoolpos.db` |
 | Configuración | `C:\ProgramData\LoncherApp\appsettings.json` |
 
-- La base es **SQLite**, en la misma computadora. Es el modo *una sola caja*: **no** debe
+- La base es **SQLite**, en la misma computadora, y se crea y actualiza con migraciones: instalar
+  una versión nueva actualiza el esquema sin perder datos. Es el modo *una sola caja*: **no** debe
   compartirse por red. Para varias cajas usa 5.B.
 - El desinstalador **pregunta** antes de borrar los datos, y por omisión los conserva.
 - El instalador **no está firmado** todavía: Windows mostrará "Windows protegió su PC" y hay que
@@ -197,7 +198,9 @@ cobros hasta reconectar).
   duplica nada: hay dedupe por Id). En una escuela con mucho historial la primera puesta al día
   puede tardar varios ciclos; después cada corrida solo mira lo nuevo.
 - **Secretos**: no subas `appsettings.json` con credenciales al repositorio (ya está en `.gitignore` por entorno). Usa variables de entorno o un gestor de secretos.
-- **Actualizaciones de esquema**: nuevas migraciones se aplican re-ejecutando el provisionador (o el portal al arrancar).
+- **Actualizaciones de esquema**: se aplican solas al arrancar la versión nueva, en los dos
+  proveedores (SQL Server y SQLite tienen cada uno su juego de migraciones). La escuela conserva
+  sus datos: basta con instalar la actualización.
 - **Zona horaria**: los sellos de tiempo se guardan en UTC y se presentan/filtran en hora de México
   (`MxTime`, en `SchoolPOS.Domain`, compartido por el POS y el portal para que no puedan divergir).
   El servidor resuelve `America/Mexico_City` (Linux) o `Central Standard Time (Mexico)` (Windows);

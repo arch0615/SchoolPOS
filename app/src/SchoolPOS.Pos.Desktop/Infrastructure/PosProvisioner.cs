@@ -20,16 +20,17 @@ public static class PosProvisioner
     {
         var builder = new DbContextOptionsBuilder<SchoolDbContext>();
         var isSqlite = string.Equals(provider, PosConfig.SqliteProvider, StringComparison.OrdinalIgnoreCase);
-        if (isSqlite) builder.UseSqlite(connectionString);
-        else builder.UseSqlServer(connectionString);
+        if (isSqlite)
+            builder.UseSqlite(connectionString, o => o.MigrationsAssembly(SqliteMigrations.AssemblyName));
+        else
+            builder.UseSqlServer(connectionString);
 
         var db = new SchoolDbContext(builder.Options);
 
-        // Las migraciones de EF son específicas del proveedor y este juego está generado para SQL
-        // Server, así que en SQLite se crea el esquema desde el modelo (igual que hacen el portal y
-        // la herramienta de provisión).
-        if (isSqlite) await db.Database.EnsureCreatedAsync(ct);
-        else await db.Database.MigrateAsync(ct);
+        // Migraciones en ambos proveedores. Antes SQLite usaba EnsureCreated, que arma el esquema
+        // una vez y no lo altera nunca: una escuela ya instalada no podía recibir ningún cambio de
+        // esquema, y la app fallaba con un error de base de datos al tocar la columna nueva.
+        await db.Database.MigrateAsync(ct);
 
         return db;
     }
