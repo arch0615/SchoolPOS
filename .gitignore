@@ -70,6 +70,7 @@ PAGES-FEATURES.md
 PAGES-LAYOUT-CSS.md
 REDESIGN-WORKPLAN.md
 MOCKUP-REDESIGN-SPEC.md
+ChatHistory.txt
 
 # ---- Local exports (DB files, schema dumps) ----
 export/
