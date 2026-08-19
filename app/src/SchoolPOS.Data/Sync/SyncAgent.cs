@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SchoolPOS.Data.Services;
 using SchoolPOS.Domain.Abstractions;
 using SchoolPOS.Domain.Entities;
 using SchoolPOS.Domain.Enums;
@@ -135,6 +136,12 @@ public sealed class SyncAgent
 
         var now = _clock.UtcNow;
         int pushed = 0, skipped = 0;
+
+        // Variación de saldo por cuenta, para aplicarla a la nube junto con los asientos. Se
+        // acumula solo de lo que realmente se inserta: reaplicarla a un asiento que ya estaba
+        // arriba lo contaría dos veces.
+        var deltas = new Dictionary<Guid, decimal>();
+
         foreach (var m in pending)
         {
             // Recarga por pasarela: ya está en la nube por su propio camino. Se marca y no sube.
@@ -164,6 +171,7 @@ public sealed class SyncAgent
                     OperatorId = m.OperatorId,
                     CreatedAtUtc = m.CreatedAtUtc,
                 });
+                deltas[m.AccountId] = deltas.GetValueOrDefault(m.AccountId) + m.Amount;
                 pushed++;
             }
 
@@ -174,7 +182,30 @@ public sealed class SyncAgent
         // falla, no queda nada marcado y el lote entero se reintenta; el peor caso es reintentar
         // un asiento ya subido, que el dedupe por Id de arriba vuelve a filtrar.
         if (pushed > 0)
-            await _cloud.SaveChangesAsync(ct);
+            await _cloud.ExecuteAtomicAsync(async () =>
+            {
+                await _cloud.SaveChangesAsync(ct);
+
+                // El saldo de la cuenta en la nube es lo que el portal le muestra al tutor. Sin
+                // esto solo subían los asientos: la lista de movimientos mostraba la compra pero
+                // el saldo seguía igual y de más, y las dos cifras de la misma pantalla se
+                // contradecían de forma permanente.
+                //
+                // Se aplica la VARIACIÓN, no el BalanceAfter local: si la nube ya confirmó una
+                // recarga que la escuela todavía no baja, su saldo va por delante a propósito y
+                // copiar el local borraría dinero que el tutor ya pagó. El UPDATE condicional
+                // (Balance + delta) además no pierde una recarga que el portal aplique a la vez.
+                foreach (var (accountId, delta) in deltas)
+                {
+                    await _cloud.Accounts
+                        .Where(a => a.Id == accountId)
+                        .ExecuteUpdateAsync(s => s
+                            .SetProperty(a => a.Balance, a => a.Balance + delta)
+                            .SetProperty(a => a.UpdatedAtUtc, now), ct);
+                }
+
+                return 0;
+            }, ct);
         await _local.SaveChangesAsync(ct);
 
         return (pushed, skipped);

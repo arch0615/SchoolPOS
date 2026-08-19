@@ -193,4 +193,76 @@ public class SyncAgentTests
         second.Pushed.Should().Be(1);
         second.Skipped.Should().Be(0);
     }
+
+    /// <summary>
+    /// El saldo que el portal le muestra al tutor sale de <c>Accounts.Balance</c> en la nube. La
+    /// subida asentaba el movimiento pero no tocaba ese saldo: la compra aparecía en la lista y el
+    /// saldo seguía igual y de más, contradiciéndose en la misma pantalla.
+    /// </summary>
+    [Fact]
+    public async Task Pushing_consumption_also_lowers_the_balance_the_parent_sees()
+    {
+        using var cloud = new TestDatabase();
+        using var local = new TestDatabase();
+        cloud.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m);
+        local.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m);
+
+        var localBalance = new BalanceService(local.Context, new TestClock());
+        await localBalance.ChargeSaleAsync(AccountId, 30m, "VENTA-1", Guid.NewGuid());
+
+        await NewAgent(cloud, local).PushConsumptionAsync();
+
+        var cloudCtx = cloud.NewContext();
+        (await cloudCtx.Accounts.Where(a => a.Id == AccountId).Select(a => a.Balance).SingleAsync())
+            .Should().Be(70m, "el tutor debe ver el saldo ya descontado");
+
+        // Y sigue cuadrando con los asientos que la nube tiene.
+        var movements = await cloudCtx.BalanceMovements
+            .Where(m => m.AccountId == AccountId).Select(m => m.Amount).ToListAsync();
+        (100m + movements.Sum()).Should().Be(70m);
+    }
+
+    /// <summary>
+    /// Se aplica la variación, no el <c>BalanceAfter</c> local. Si la nube ya confirmó una recarga
+    /// que la escuela todavía no baja, su saldo va por delante a propósito; copiar el local
+    /// borraría dinero que el tutor ya pagó.
+    /// </summary>
+    [Fact]
+    public async Task Cloud_balance_keeps_top_ups_the_school_has_not_pulled_yet()
+    {
+        using var cloud = new TestDatabase();
+        using var local = new TestDatabase();
+        // La nube va por delante: 200 contra 100 en la escuela (una recarga sin bajar).
+        cloud.SeedRoster(SchoolId, StudentId, AccountId, balance: 200m);
+        local.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m);
+
+        var localBalance = new BalanceService(local.Context, new TestClock());
+        var movement = await localBalance.ChargeSaleAsync(AccountId, 30m, "VENTA-1", Guid.NewGuid());
+        movement.BalanceAfter.Should().Be(70m, "así quedó el saldo en la escuela");
+
+        await NewAgent(cloud, local).PushConsumptionAsync();
+
+        (await cloud.NewContext().Accounts.Where(a => a.Id == AccountId).Select(a => a.Balance).SingleAsync())
+            .Should().Be(170m, "200 recibidos menos 30 gastados; copiar el 70 local perdería una recarga");
+    }
+
+    /// <summary>Reintentar un lote ya subido no debe volver a descontar.</summary>
+    [Fact]
+    public async Task Re_pushing_does_not_double_count_the_balance()
+    {
+        using var cloud = new TestDatabase();
+        using var local = new TestDatabase();
+        cloud.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m);
+        local.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m);
+
+        var localBalance = new BalanceService(local.Context, new TestClock());
+        await localBalance.ChargeSaleAsync(AccountId, 30m, "VENTA-1", Guid.NewGuid());
+
+        var agent = NewAgent(cloud, local);
+        await agent.PushConsumptionAsync();
+        await agent.PushConsumptionAsync();   // idempotente
+
+        (await cloud.NewContext().Accounts.Where(a => a.Id == AccountId).Select(a => a.Balance).SingleAsync())
+            .Should().Be(70m);
+    }
 }
