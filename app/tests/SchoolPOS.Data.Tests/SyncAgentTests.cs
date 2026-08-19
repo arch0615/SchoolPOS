@@ -4,6 +4,7 @@ using SchoolPOS.Data.Services;
 using SchoolPOS.Data.Sync;
 using SchoolPOS.Data.Tests.TestSupport;
 using SchoolPOS.Domain.Enums;
+using SchoolPOS.Data.Security;
 
 namespace SchoolPOS.Data.Tests;
 
@@ -264,5 +265,134 @@ public class SyncAgentTests
 
         (await cloud.NewContext().Accounts.Where(a => a.Id == AccountId).Select(a => a.Balance).SingleAsync())
             .Should().Be(70m);
+    }
+
+    // ---- Padrón (FR-ADM-2): un alumno inscrito en el POS debe llegar a la nube ----
+
+    /// <summary>
+    /// Sin esto, un alumno dado de alta en el POS no existía en la nube: su tutor no podía
+    /// vincularlo por matrícula y, aunque pudiera, GuardianService.LinkStudentByEnrollmentAsync
+    /// consulta la tabla Students de la nube directamente — sin fila, sin vínculo posible.
+    /// </summary>
+    [Fact]
+    public async Task Locally_enrolled_student_becomes_linkable_by_the_parent_after_sync()
+    {
+        using var cloud = new TestDatabase();
+        using var local = new TestDatabase();
+        var school = local.SeedSchool();
+        cloud.Context.Schools.Add(new SchoolPOS.Domain.Entities.School
+        {
+            Id = school.Id, Name = school.Name, Currency = "MXN", CommissionRate = 0.05m,
+        });
+        await cloud.Context.SaveChangesAsync();
+
+        var registry = new StudentRegistry(local.Context, new TestClock());
+        var student = await registry.CreateAsync(school.Id, "A-900", "Nuevo Alumno", cardCode: "CARD-900");
+
+        var pushed = await NewAgent(cloud, local).PushRosterAsync();
+
+        pushed.Should().Be(1);
+        var cloudCtx = cloud.NewContext();
+        var cloudStudent = await cloudCtx.Students.SingleAsync(s => s.Id == student.Id);
+        cloudStudent.EnrollmentNo.Should().Be("A-900");
+        cloudStudent.CardCode.Should().Be("CARD-900");
+        (await cloudCtx.Accounts.Where(a => a.StudentId == student.Id).Select(a => a.Balance).SingleAsync())
+            .Should().Be(0m, "un alumno nuevo llega a la nube en $0.00, igual que en la escuela");
+
+        // Y ahora sí se puede vincular por matrícula, como hace el portal.
+        var guardians = new GuardianService(cloudCtx, new Pbkdf2PasswordHasher(), new TestClock());
+        var guardian = await guardians.RegisterAsync(school.Id, "padre@correo.mx", "clave123", "Padre");
+        await guardians.LinkStudentByEnrollmentAsync(guardian.Id, school.Id, "A-900");
+        (await guardians.GetLinkedStudentsAsync(guardian.Id)).Should().ContainSingle();
+    }
+
+    /// <summary>
+    /// El padrón se reconcilia completo cada corrida (no hay marca de "ya subido"), así que un
+    /// cambio hecho en el POS después del primer alta — renombrar, asignar credencial, dar de
+    /// baja — también debe llegar.
+    /// </summary>
+    [Fact]
+    public async Task Roster_edits_made_after_the_first_sync_are_also_pushed()
+    {
+        using var cloud = new TestDatabase();
+        using var local = new TestDatabase();
+        var school = local.SeedSchool();
+        cloud.Context.Schools.Add(new SchoolPOS.Domain.Entities.School
+        {
+            Id = school.Id, Name = school.Name, Currency = "MXN", CommissionRate = 0.05m,
+        });
+        await cloud.Context.SaveChangesAsync();
+
+        var registry = new StudentRegistry(local.Context, new TestClock());
+        var student = await registry.CreateAsync(school.Id, "A-901", "Nombre Viejo", cardCode: null);
+        var agent = NewAgent(cloud, local);
+        await agent.PushRosterAsync();
+
+        await registry.UpdateAsync(student.Id, "A-901", "Nombre Corregido", cardCode: "CARD-901");
+        await registry.SetActiveAsync(student.Id, false);
+        var pushed = await agent.PushRosterAsync();
+
+        pushed.Should().Be(1);
+        var cloudStudent = await cloud.NewContext().Students.SingleAsync(s => s.Id == student.Id);
+        cloudStudent.FullName.Should().Be("Nombre Corregido");
+        cloudStudent.CardCode.Should().Be("CARD-901");
+        cloudStudent.IsActive.Should().BeFalse();
+    }
+
+    /// <summary>Sin cambios en el padrón, la corrida no debe volver a escribir nada.</summary>
+    [Fact]
+    public async Task Roster_push_is_a_no_op_once_the_cloud_matches()
+    {
+        using var cloud = new TestDatabase();
+        using var local = new TestDatabase();
+        var school = local.SeedSchool();
+        cloud.Context.Schools.Add(new SchoolPOS.Domain.Entities.School
+        {
+            Id = school.Id, Name = school.Name, Currency = "MXN", CommissionRate = 0.05m,
+        });
+        await cloud.Context.SaveChangesAsync();
+
+        var registry = new StudentRegistry(local.Context, new TestClock());
+        await registry.CreateAsync(school.Id, "A-902", "Alumno Estable", cardCode: "CARD-902");
+        var agent = NewAgent(cloud, local);
+        await agent.PushRosterAsync();
+
+        (await agent.PushRosterAsync()).Should().Be(0);
+    }
+
+    /// <summary>
+    /// Antes de esta corrección, una venta al alumno recién inscrito quedaba descartada por
+    /// PushConsumptionAsync (la cuenta no existía en la nube) y el tutor nunca la veía. Con el
+    /// padrón subiendo primero, en la MISMA corrida, la venta ya no debería quedar pendiente.
+    /// </summary>
+    [Fact]
+    public async Task A_sale_for_a_brand_new_local_student_reaches_the_cloud_in_the_same_run()
+    {
+        using var cloud = new TestDatabase();
+        using var local = new TestDatabase();
+        var school = local.SeedSchool();
+        cloud.Context.Schools.Add(new SchoolPOS.Domain.Entities.School
+        {
+            Id = school.Id, Name = school.Name, Currency = "MXN", CommissionRate = 0.05m,
+        });
+        await cloud.Context.SaveChangesAsync();
+
+        var registry = new StudentRegistry(local.Context, new TestClock());
+        var student = await registry.CreateAsync(school.Id, "A-903", "Alumno Sale Mismo Ciclo", null);
+        var account = (await registry.ListAsync(school.Id)).Single().AccountId;
+
+        var clock = new TestClock();
+        var localBalance = new BalanceService(local.Context, clock);
+        await localBalance.AdjustAsync(account, 100m, "Fondeo inicial de prueba", Guid.NewGuid());
+        await localBalance.ChargeSaleAsync(account, 40m, "VENTA-903", Guid.NewGuid());
+
+        var agent = new SyncAgent(cloud.Context, local.Context, localBalance, clock);
+        var report = await agent.RunOnceAsync();
+
+        report.RosterPushed.Should().Be(1);
+        report.MovementsSkipped.Should().Be(0, "el padrón ya subió antes de intentar el consumo");
+        report.MovementsPushed.Should().Be(2, "el ajuste y la venta");
+        (await cloud.NewContext().Accounts.Where(a => a.Id == account).Select(a => a.Balance).SingleAsync())
+            .Should().Be(60m);
     }
 }

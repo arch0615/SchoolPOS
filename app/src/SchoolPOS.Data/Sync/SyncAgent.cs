@@ -48,8 +48,9 @@ public sealed class SyncAgent
     public async Task<SyncReport> RunOnceAsync(CancellationToken ct = default)
     {
         var (pulled, applied, failed) = await PullTopUpsAsync(ct);
+        var rosterPushed = await PushRosterAsync(ct);
         var (pushed, skipped) = await PushConsumptionAsync(ct);
-        return new SyncReport(pulled, applied, failed, pushed, skipped, _clock.UtcNow);
+        return new SyncReport(pulled, applied, failed, pushed, skipped, rosterPushed, _clock.UtcNow);
     }
 
     /// <summary>Baja recargas confirmadas y las aplica al libro mayor local (idempotente).</summary>
@@ -236,5 +237,99 @@ public sealed class SyncAgent
         });
         await _local.SaveChangesAsync(ct);
         return cloudTopUp.Id;
+    }
+
+    /// <summary>
+    /// Sube el padrón (alumnos + su cuenta) que nació en la escuela: FR-ADM-2 lo da de alta en el
+    /// POS, no en el portal, así que sin esto un alumno inscrito en la caja no existía para su
+    /// tutor — ni podía vincularlo por matrícula ni sus movimientos podían subir (los quedaba
+    /// descartando <see cref="PushConsumptionAsync"/> por no encontrar la cuenta en la nube).
+    /// <para>
+    /// A diferencia del consumo, aquí no hace falta una marca de "ya sincronizado": el padrón de
+    /// una escuela es acotado (cientos o miles de alumnos, no crece sin límite como el historial de
+    /// ventas), así que reconciliar el padrón completo en cada corrida es barato y además
+    /// autocorrectivo — recoge también renombres, cambios de credencial y bajas/altas hechos en el
+    /// POS después de la primera sincronización, que una marca de una sola vez se perdería.
+    /// </para>
+    /// <para>
+    /// El saldo de la cuenta nunca se toca aquí. Un alumno siempre nace con saldo $0 (el alta lo
+    /// garantiza) y cualquier movimiento posterior sube por <see cref="PushConsumptionAsync"/>;
+    /// mezclar los dos caminos podría pisar un saldo que el portal ya adelantó.
+    /// </para>
+    /// </summary>
+    /// <returns>Cuántos alumnos se crearon o actualizaron en la nube.</returns>
+    public async Task<int> PushRosterAsync(CancellationToken ct = default)
+    {
+        var locals = await (
+            from s in _local.Students.AsNoTracking()
+            join a in _local.Accounts.AsNoTracking() on s.Id equals a.StudentId
+            select new
+            {
+                s.Id, s.SchoolId, s.EnrollmentNo, s.CardCode, s.FullName, s.IsActive, s.CreatedAtUtc,
+                AccountId = a.Id,
+            })
+            .ToListAsync(ct);
+        if (locals.Count == 0)
+            return 0;
+
+        var ids = locals.Select(l => l.Id).ToList();
+        var cloudStudents = await _cloud.Students
+            .Where(s => ids.Contains(s.Id))
+            .ToDictionaryAsync(s => s.Id, ct);
+
+        var pushed = 0;
+        foreach (var l in locals)
+        {
+            try
+            {
+                if (cloudStudents.TryGetValue(l.Id, out var existing))
+                {
+                    // Solo lo que el POS puede editar después del alta. Balance/OverdraftLimit de
+                    // la cuenta quedan fuera a propósito: eso lo gobierna el consumo, no el padrón.
+                    if (existing.FullName == l.FullName && existing.EnrollmentNo == l.EnrollmentNo &&
+                        existing.CardCode == l.CardCode && existing.IsActive == l.IsActive)
+                        continue;
+
+                    existing.FullName = l.FullName;
+                    existing.EnrollmentNo = l.EnrollmentNo;
+                    existing.CardCode = l.CardCode;
+                    existing.IsActive = l.IsActive;
+                }
+                else
+                {
+                    _cloud.Students.Add(new Student
+                    {
+                        Id = l.Id,
+                        SchoolId = l.SchoolId,
+                        EnrollmentNo = l.EnrollmentNo,
+                        CardCode = l.CardCode,
+                        FullName = l.FullName,
+                        IsActive = l.IsActive,
+                        CreatedAtUtc = l.CreatedAtUtc,
+                    });
+                    _cloud.Accounts.Add(new Account
+                    {
+                        Id = l.AccountId,
+                        StudentId = l.Id,
+                        Balance = 0m,
+                        OverdraftLimit = 0m,
+                        UpdatedAtUtc = _clock.UtcNow,
+                    });
+                }
+
+                // Cada alumno en su propio SaveChanges: una matrícula o credencial que choque con
+                // otra escuela (o un valor manipulado a mano en la nube) no debe tumbar el resto
+                // del padrón, igual que cada recarga se procesa aislada en PullTopUpsAsync.
+                await _cloud.SaveChangesAsync(ct);
+                pushed++;
+            }
+            catch (Exception)
+            {
+                // Fila en conflicto (índice único, etc.): se reintenta en la próxima corrida tal
+                // cual está en la escuela; no hay nada que descartar ni marcar.
+            }
+        }
+
+        return pushed;
     }
 }

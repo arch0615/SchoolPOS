@@ -38,13 +38,14 @@ public sealed class Worker : BackgroundService
                 var agent = new SyncAgent(cloud, local, new BalanceService(local, _clock), _clock);
 
                 var report = await agent.RunOnceAsync(stoppingToken);
-                if (report.TopUpsPulled > 0 || report.MovementsPushed > 0 || report.HasFailures
-                    || report.HasPendingRoster)
+                if (report.TopUpsPulled > 0 || report.MovementsPushed > 0 || report.RosterPushed > 0
+                    || report.HasFailures || report.HasPendingRoster)
                     _logger.LogInformation(
                         "Sync: {Applied}/{Pulled} recargas aplicadas, {Failed} fallidas, " +
-                        "{Pushed} movimientos subidos, {Skipped} en espera del roster de la nube.",
+                        "{RosterPushed} alumnos subidos/actualizados, {Pushed} movimientos subidos, " +
+                        "{Skipped} en espera del roster de la nube.",
                         report.TopUpsApplied, report.TopUpsPulled, report.TopUpsFailed,
-                        report.MovementsPushed, report.MovementsSkipped);
+                        report.RosterPushed, report.MovementsPushed, report.MovementsSkipped);
             }
             catch (Exception ex)
             {
