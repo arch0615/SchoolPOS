@@ -14,11 +14,14 @@ public class SyncAgentTests
     private static readonly Guid StudentId = Guid.NewGuid();
     private static readonly Guid AccountId = Guid.NewGuid();
 
-    private static SyncAgent NewAgent(TestDatabase cloud, TestDatabase local)
+    // La mayoría de las pruebas siembra el padrón con este SchoolId de clase; las que dan de alta
+    // su propia escuela (SeedSchool, con un Id nuevo por prueba) pasan el suyo explícito.
+    private static SyncAgent NewAgent(TestDatabase cloud, TestDatabase local, Guid? schoolId = null)
     {
         var clock = new TestClock();
         var localBalance = new BalanceService(local.Context, clock);
-        return new SyncAgent(cloud.Context, local.Context, localBalance, clock);
+        var cloudClient = new SingleSchoolSyncApiClient(cloud.Context, clock, schoolId ?? SchoolId);
+        return new SyncAgent(cloudClient, local.Context, localBalance, clock);
     }
 
     [Fact]
@@ -289,7 +292,7 @@ public class SyncAgentTests
         var registry = new StudentRegistry(local.Context, new TestClock());
         var student = await registry.CreateAsync(school.Id, "A-900", "Nuevo Alumno", cardCode: "CARD-900");
 
-        var pushed = await NewAgent(cloud, local).PushRosterAsync();
+        var pushed = await NewAgent(cloud, local, school.Id).PushRosterAsync();
 
         pushed.Should().Be(1);
         var cloudCtx = cloud.NewContext();
@@ -325,7 +328,7 @@ public class SyncAgentTests
 
         var registry = new StudentRegistry(local.Context, new TestClock());
         var student = await registry.CreateAsync(school.Id, "A-901", "Nombre Viejo", cardCode: null);
-        var agent = NewAgent(cloud, local);
+        var agent = NewAgent(cloud, local, school.Id);
         await agent.PushRosterAsync();
 
         await registry.UpdateAsync(student.Id, "A-901", "Nombre Corregido", cardCode: "CARD-901");
@@ -354,7 +357,7 @@ public class SyncAgentTests
 
         var registry = new StudentRegistry(local.Context, new TestClock());
         await registry.CreateAsync(school.Id, "A-902", "Alumno Estable", cardCode: "CARD-902");
-        var agent = NewAgent(cloud, local);
+        var agent = NewAgent(cloud, local, school.Id);
         await agent.PushRosterAsync();
 
         (await agent.PushRosterAsync()).Should().Be(0);
@@ -386,7 +389,8 @@ public class SyncAgentTests
         await localBalance.AdjustAsync(account, 100m, "Fondeo inicial de prueba", Guid.NewGuid());
         await localBalance.ChargeSaleAsync(account, 40m, "VENTA-903", Guid.NewGuid());
 
-        var agent = new SyncAgent(cloud.Context, local.Context, localBalance, clock);
+        var cloudClient = new SingleSchoolSyncApiClient(cloud.Context, clock, school.Id);
+        var agent = new SyncAgent(cloudClient, local.Context, localBalance, clock);
         var report = await agent.RunOnceAsync();
 
         report.RosterPushed.Should().Be(1);

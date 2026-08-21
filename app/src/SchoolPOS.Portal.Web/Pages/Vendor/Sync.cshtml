@@ -1,0 +1,90 @@
+@page
+@model SchoolPOS.Portal.Web.Pages.Vendor.SyncModel
+@{
+    ViewData["Title"] = "Sincronización";
+}
+
+@if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
+@if (!string.IsNullOrEmpty(Model.Message)) { <div class="msg ok">@Model.Message</div> }
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow2">Panel del proveedor</div>
+        <h1 style="margin:8px 0 0">Sincronización — @Model.SchoolName</h1>
+        <p class="sub">Llaves que usa el Sync Agent del POS de esta escuela para hablar con el portal. Ninguna base de datos queda expuesta: solo esta llave, y solo para esta escuela.</p>
+    </div>
+    <a class="btn" href="/Vendor/Schools">← Escuelas</a>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.IssuedKey))
+{
+    <div class="card" style="border-color:var(--success)">
+        <h3 style="margin-top:0">Llave generada</h3>
+        <p class="muted">Cópiala ahora — no se puede volver a mostrar. Pégala en la configuración del Sync Agent de esta escuela (<code>Sync:ApiKey</code>).</p>
+        <pre style="background:var(--bg2,#f4f4f4);padding:12px 14px;border-radius:8px;overflow-x:auto;font-size:13px;user-select:all">@Model.IssuedKey</pre>
+    </div>
+}
+
+<div class="card">
+    <h3 style="margin-top:0">Generar una llave nueva</h3>
+    <form method="post" asp-page-handler="Issue" style="display:flex;gap:8px;align-items:flex-end">
+        <input type="hidden" name="SchoolId" value="@Model.SchoolId" />
+        <div style="flex:1">
+            <label>Etiqueta (opcional)</label>
+            <input type="text" name="label" placeholder="p. ej. Agente principal" maxlength="200" />
+        </div>
+        <button class="btn accent" type="submit">Generar llave</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0">Llaves de esta escuela</h3>
+    @if (Model.Keys.Count == 0)
+    {
+        <p class="muted">Todavía no se ha generado ninguna llave.</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Etiqueta</th>
+                    <th>Creada</th>
+                    <th>Último uso</th>
+                    <th>Estado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var k in Model.Keys)
+            {
+                <tr>
+                    <td>@k.Label</td>
+                    <td>@k.CreatedAtUtc.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@(k.LastUsedAtUtc?.ToString("dd/MM/yyyy HH:mm") ?? "—")</td>
+                    <td>
+                        @if (k.IsActive)
+                        {
+                            <span class="tag ok">Activa</span>
+                        }
+                        else
+                        {
+                            <span class="tag no">Revocada @k.RevokedAtUtc?.ToString("dd/MM/yyyy")</span>
+                        }
+                    </td>
+                    <td>
+                        @if (k.IsActive)
+                        {
+                            <form method="post" asp-page-handler="Revoke" onsubmit="return confirm('¿Revocar esta llave? El Sync Agent que la use dejará de poder sincronizar de inmediato.');">
+                                <input type="hidden" name="SchoolId" value="@Model.SchoolId" />
+                                <input type="hidden" name="keyId" value="@k.Id" />
+                                <button class="btn" style="padding:4px 10px;color:var(--danger,#c0392b)" type="submit">Revocar</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</div>

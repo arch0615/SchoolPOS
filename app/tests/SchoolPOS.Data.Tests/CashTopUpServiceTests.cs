@@ -109,7 +109,8 @@ public class CashTopUpServiceTests
         // Una recarga por pasarela que baja del portal y se aplica en la escuela.
         cloud.SeedConfirmedTopUp(schoolId, accountId, 100m, "MP-1");
         var clock = new TestClock();
-        var agent = new SyncAgent(cloud.Context, local.Context, new BalanceService(local.Context, clock), clock);
+        var cloudClient = new SingleSchoolSyncApiClient(cloud.Context, clock, schoolId);
+        var agent = new SyncAgent(cloudClient, local.Context, new BalanceService(local.Context, clock), clock);
         await agent.PullTopUpsAsync();
 
         // Y una en efectivo capturada en el mostrador.

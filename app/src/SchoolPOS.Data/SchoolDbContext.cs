@@ -51,6 +51,9 @@ public class SchoolDbContext : DbContext
     // Cuentas de pago conectadas por OAuth (marketplace)
     public DbSet<SchoolPaymentAccount> SchoolPaymentAccounts => Set<SchoolPaymentAccount>();
 
+    // Llaves de la API de sincronización (un Sync Agent por escuela, sin acceso directo a la DB)
+    public DbSet<SyncApiKey> SyncApiKeys => Set<SyncApiKey>();
+
     /// <summary>Precisión estándar del dinero en toda la DB.</summary>
     private const int MoneyPrecision = 18;
     private const int MoneyScale = 4;
@@ -98,6 +101,18 @@ public class SchoolDbContext : DbContext
             e.Property(x => x.AccessToken).HasMaxLength(2000).IsRequired();
             e.Property(x => x.RefreshToken).HasMaxLength(2000);
             e.HasIndex(x => new { x.SchoolId, x.Provider }).IsUnique();
+        });
+
+        b.Entity<SyncApiKey>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Label).HasMaxLength(200).IsRequired();
+            // pbkdf2$<iteraciones>$<sal base64>$<hash base64> (SaltSize=16, HashSize=32) — 100 de
+            // margen sobre el peor caso observado hoy, igual que en otras columnas de hash.
+            e.Property(x => x.SecretHash).HasMaxLength(200).IsRequired();
+            // Búsqueda al listar las llaves de una escuela en el panel del proveedor; la
+            // verificación en sí busca por Id (clave primaria), no por este índice.
+            e.HasIndex(x => x.SchoolId);
         });
 
         b.Entity<Student>(e =>

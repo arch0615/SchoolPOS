@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using SchoolPOS.Data.Services;
 using SchoolPOS.Domain.Abstractions;
 using SchoolPOS.Domain.Entities;
 using SchoolPOS.Domain.Enums;
@@ -17,10 +16,17 @@ namespace SchoolPOS.Data.Sync;
 /// Cada recarga se procesa de forma aislada: si la DB local no está disponible (escuela offline),
 /// la recarga queda pendiente en la nube y se aplica al reconectar (3.18); nunca se pierde ni se
 /// duplica (dedupe por <c>gateway_ref</c> + bandera <c>AppliedLocally</c> + idempotencia del ledger).
+/// <para>
+/// La nube se ve a través de <see cref="ISyncApiClient"/>, no de una segunda conexión a base de
+/// datos: el agente corre en la escuela y solo tiene la llave de <c>/api/sync/*</c>, nunca
+/// credenciales de base de datos (FR-SYNC-API). Toda la lógica de esta clase — orden de
+/// operaciones, deduplicación, reintentos — es la misma sin importar si esa interfaz habla HTTP
+/// (producción) o envuelve el servicio del portal directamente (pruebas).
+/// </para>
 /// </summary>
 public sealed class SyncAgent
 {
-    private readonly SchoolDbContext _cloud;
+    private readonly ISyncApiClient _cloud;
     private readonly SchoolDbContext _local;
     private readonly IBalanceService _localBalance;
     private readonly IClock _clock;
@@ -29,7 +35,7 @@ public sealed class SyncAgent
     private static readonly MovementType[] Consumption =
         { MovementType.Sale, MovementType.Refund, MovementType.Adjustment };
 
-    public SyncAgent(SchoolDbContext cloud, SchoolDbContext local, IBalanceService localBalance, IClock clock)
+    public SyncAgent(ISyncApiClient cloud, SchoolDbContext local, IBalanceService localBalance, IClock clock)
     {
         _cloud = cloud;
         _local = local;
@@ -56,23 +62,17 @@ public sealed class SyncAgent
     /// <summary>Baja recargas confirmadas y las aplica al libro mayor local (idempotente).</summary>
     public async Task<(int Pulled, int Applied, int Failed)> PullTopUpsAsync(CancellationToken ct = default)
     {
-        var confirmed = await _cloud.TopUps
-            .Where(t => t.Status == TopUpStatus.Confirmed && !t.AppliedLocally)
-            .ToListAsync(ct);
+        var confirmed = await _cloud.GetPendingTopUpsAsync(ct);
 
         int applied = 0, failed = 0;
+        var acked = new List<Guid>();
         foreach (var cloudTopUp in confirmed)
         {
             try
             {
                 var localId = await EnsureLocalTopUpAsync(cloudTopUp, ct);
                 await _localBalance.ApplyTopUpAsync(localId, ct); // acredita 100%, idempotente
-
-                // Acuse en la nube: evita reprocesar.
-                cloudTopUp.Status = TopUpStatus.Applied;
-                cloudTopUp.AppliedLocally = true;
-                cloudTopUp.AppliedAtUtc = _clock.UtcNow;
-                await _cloud.SaveChangesAsync(ct);
+                acked.Add(cloudTopUp.Id);
                 applied++;
             }
             catch (Exception)
@@ -81,6 +81,12 @@ public sealed class SyncAgent
                 failed++;
             }
         }
+
+        // Acuse en lote: si falla, la próxima corrida vuelve a ver estas recargas como pendientes
+        // y las reintenta — seguro, porque tanto EnsureLocalTopUpAsync (dedupe por gateway_ref)
+        // como ApplyTopUpAsync (idempotente) toleran reprocesar una ya aplicada.
+        if (acked.Count > 0)
+            await _cloud.AckTopUpsAsync(acked, ct);
 
         return (confirmed.Count, applied, failed);
     }
@@ -125,95 +131,45 @@ public sealed class SyncAgent
                 .Select(t => t.GatewayRef)
                 .ToListAsync(ct)).ToHashSet();
 
-        // Ya presentes en la nube: asientos subidos antes de que existiera la marca (o por una
-        // corrida que murió entre el guardado de la nube y el de la marca local).
-        var ids = pending.Select(m => m.Id).ToList();
-        var alreadyInCloud = (await _cloud.BalanceMovements.AsNoTracking()
-            .Where(m => ids.Contains(m.Id)).Select(m => m.Id).ToListAsync(ct)).ToHashSet();
-
-        var accountIds = pending.Select(m => m.AccountId).Distinct().ToList();
-        var cloudAccounts = (await _cloud.Accounts.AsNoTracking()
-            .Where(a => accountIds.Contains(a.Id)).Select(a => a.Id).ToListAsync(ct)).ToHashSet();
-
         var now = _clock.UtcNow;
-        int pushed = 0, skipped = 0;
-
-        // Variación de saldo por cuenta, para aplicarla a la nube junto con los asientos. Se
-        // acumula solo de lo que realmente se inserta: reaplicarla a un asiento que ya estaba
-        // arriba lo contaría dos veces.
-        var deltas = new Dictionary<Guid, decimal>();
+        var toSend = new List<ConsumptionEntryDto>();
 
         foreach (var m in pending)
         {
             // Recarga por pasarela: ya está en la nube por su propio camino. Se marca y no sube.
-            if (m.Type == MovementType.TopUp &&
-                (m.Reference is null || !cashRefs.Contains(m.Reference)))
+            if (m.Type == MovementType.TopUp && (m.Reference is null || !cashRefs.Contains(m.Reference)))
             {
                 m.SyncedToCloudAtUtc = now;
                 continue;
             }
 
-            if (!cloudAccounts.Contains(m.AccountId))
-            {
-                skipped++; // el roster de la nube aún no tiene la cuenta: sin marcar, se reintenta.
-                continue;
-            }
-
-            if (!alreadyInCloud.Contains(m.Id))
-            {
-                _cloud.BalanceMovements.Add(new BalanceMovement
-                {
-                    Id = m.Id,
-                    AccountId = m.AccountId,
-                    Type = m.Type,
-                    Amount = m.Amount,
-                    BalanceAfter = m.BalanceAfter,
-                    Reference = m.Reference,
-                    OperatorId = m.OperatorId,
-                    CreatedAtUtc = m.CreatedAtUtc,
-                });
-                deltas[m.AccountId] = deltas.GetValueOrDefault(m.AccountId) + m.Amount;
-                pushed++;
-            }
-
-            m.SyncedToCloudAtUtc = now;
+            toSend.Add(new ConsumptionEntryDto(
+                m.Id, m.AccountId, m.Type, m.Amount, m.BalanceAfter, m.Reference, m.OperatorId, m.CreatedAtUtc));
         }
 
-        // Orden deliberado: primero la nube, después la marca local. Si el guardado en la nube
-        // falla, no queda nada marcado y el lote entero se reintenta; el peor caso es reintentar
-        // un asiento ya subido, que el dedupe por Id de arriba vuelve a filtrar.
-        if (pushed > 0)
-            await _cloud.ExecuteAtomicAsync(async () =>
+        int pushed = 0, skipped = 0;
+        if (toSend.Count > 0)
+        {
+            var result = await _cloud.PushConsumptionAsync(toSend, ct);
+            var applied = result.Applied.ToHashSet();
+            pushed = result.Applied.Count;
+            skipped = result.Skipped.Count;
+
+            foreach (var m in pending)
             {
-                await _cloud.SaveChangesAsync(ct);
+                if (applied.Contains(m.Id))
+                    m.SyncedToCloudAtUtc = now;
+                // Lo "skipped" queda sin marcar a propósito: el roster de la nube aún no tiene la
+                // cuenta, y sin marcar se reintenta tal cual en la próxima corrida.
+            }
+        }
 
-                // El saldo de la cuenta en la nube es lo que el portal le muestra al tutor. Sin
-                // esto solo subían los asientos: la lista de movimientos mostraba la compra pero
-                // el saldo seguía igual y de más, y las dos cifras de la misma pantalla se
-                // contradecían de forma permanente.
-                //
-                // Se aplica la VARIACIÓN, no el BalanceAfter local: si la nube ya confirmó una
-                // recarga que la escuela todavía no baja, su saldo va por delante a propósito y
-                // copiar el local borraría dinero que el tutor ya pagó. El UPDATE condicional
-                // (Balance + delta) además no pierde una recarga que el portal aplique a la vez.
-                foreach (var (accountId, delta) in deltas)
-                {
-                    await _cloud.Accounts
-                        .Where(a => a.Id == accountId)
-                        .ExecuteUpdateAsync(s => s
-                            .SetProperty(a => a.Balance, a => a.Balance + delta)
-                            .SetProperty(a => a.UpdatedAtUtc, now), ct);
-                }
-
-                return 0;
-            }, ct);
         await _local.SaveChangesAsync(ct);
-
         return (pushed, skipped);
     }
 
     /// <summary>Inserta la recarga en la DB local si no existe (dedupe por gateway_ref) y devuelve su Id.</summary>
-    private async Task<Guid> EnsureLocalTopUpAsync(TopUp cloudTopUp, CancellationToken ct)
+    private async Task<Guid> EnsureLocalTopUpAsync(PendingTopUpDto cloudTopUp, CancellationToken ct)
     {
         var existingId = await _local.TopUps
             .Where(t => t.GatewayRef == cloudTopUp.GatewayRef)
@@ -263,73 +219,13 @@ public sealed class SyncAgent
         var locals = await (
             from s in _local.Students.AsNoTracking()
             join a in _local.Accounts.AsNoTracking() on s.Id equals a.StudentId
-            select new
-            {
-                s.Id, s.SchoolId, s.EnrollmentNo, s.CardCode, s.FullName, s.IsActive, s.CreatedAtUtc,
-                AccountId = a.Id,
-            })
+            select new RosterEntryDto(
+                s.Id, s.EnrollmentNo, s.CardCode, s.FullName, s.IsActive, s.CreatedAtUtc, a.Id))
             .ToListAsync(ct);
         if (locals.Count == 0)
             return 0;
 
-        var ids = locals.Select(l => l.Id).ToList();
-        var cloudStudents = await _cloud.Students
-            .Where(s => ids.Contains(s.Id))
-            .ToDictionaryAsync(s => s.Id, ct);
-
-        var pushed = 0;
-        foreach (var l in locals)
-        {
-            try
-            {
-                if (cloudStudents.TryGetValue(l.Id, out var existing))
-                {
-                    // Solo lo que el POS puede editar después del alta. Balance/OverdraftLimit de
-                    // la cuenta quedan fuera a propósito: eso lo gobierna el consumo, no el padrón.
-                    if (existing.FullName == l.FullName && existing.EnrollmentNo == l.EnrollmentNo &&
-                        existing.CardCode == l.CardCode && existing.IsActive == l.IsActive)
-                        continue;
-
-                    existing.FullName = l.FullName;
-                    existing.EnrollmentNo = l.EnrollmentNo;
-                    existing.CardCode = l.CardCode;
-                    existing.IsActive = l.IsActive;
-                }
-                else
-                {
-                    _cloud.Students.Add(new Student
-                    {
-                        Id = l.Id,
-                        SchoolId = l.SchoolId,
-                        EnrollmentNo = l.EnrollmentNo,
-                        CardCode = l.CardCode,
-                        FullName = l.FullName,
-                        IsActive = l.IsActive,
-                        CreatedAtUtc = l.CreatedAtUtc,
-                    });
-                    _cloud.Accounts.Add(new Account
-                    {
-                        Id = l.AccountId,
-                        StudentId = l.Id,
-                        Balance = 0m,
-                        OverdraftLimit = 0m,
-                        UpdatedAtUtc = _clock.UtcNow,
-                    });
-                }
-
-                // Cada alumno en su propio SaveChanges: una matrícula o credencial que choque con
-                // otra escuela (o un valor manipulado a mano en la nube) no debe tumbar el resto
-                // del padrón, igual que cada recarga se procesa aislada en PullTopUpsAsync.
-                await _cloud.SaveChangesAsync(ct);
-                pushed++;
-            }
-            catch (Exception)
-            {
-                // Fila en conflicto (índice único, etc.): se reintenta en la próxima corrida tal
-                // cual está en la escuela; no hay nada que descartar ni marcar.
-            }
-        }
-
-        return pushed;
+        var result = await _cloud.PushRosterAsync(locals, ct);
+        return result.Pushed;
     }
 }

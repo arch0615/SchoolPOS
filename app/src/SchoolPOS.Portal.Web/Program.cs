@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.WebUtilities;
@@ -140,7 +141,12 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
             ctx.Response.Redirect(QueryHelpers.AddQueryString(loginPath, "ReturnUrl", returnUrl));
             return Task.CompletedTask;
         };
-    });
+    })
+    // Esquema separado para el Sync Agent: una llave por escuela (Authorization: Bearer), nunca
+    // la cookie de sesión. El esquema por defecto sigue siendo la cookie — este solo se activa en
+    // los endpoints que lo piden explícitamente (política "SyncAgent").
+    .AddScheme<AuthenticationSchemeOptions, SyncApiKeyAuthenticationHandler>(
+        SyncApiKeyAuthenticationHandler.SchemeName, _ => { });
 builder.Services.AddAuthorization(options =>
 {
     // Portal del tutor: sesión autenticada que NO es de proveedor ni de tienda (esas llevan
@@ -162,8 +168,21 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("SchoolAdmin", policy => policy
         .RequireClaim(ClaimsExtensions.PortalRoleClaim, "school")
         .RequireRole(nameof(UserRole.Admin)));
+    // Sync Agent de una escuela: solo el esquema de llave, nunca la cookie de sesión de un
+    // navegador — un tutor o un operador con sesión abierta no debe poder llamar /api/sync/*.
+    options.AddPolicy("SyncAgent", policy => policy
+        .AddAuthenticationSchemes(SyncApiKeyAuthenticationHandler.SchemeName)
+        .RequireAuthenticatedUser());
 });
 builder.Services.AddRazorPages();
+// /api/sync/* usa las mismas opciones de JSON (MovementType como texto) que el cliente del Sync
+// Agent — SyncJson.Options es la única fuente de verdad para ese contrato, no una copia local.
+// Solo afecta a los endpoints con Results.Ok/parámetros de minimal API, no a Razor Pages.
+builder.Services.ConfigureHttpJsonOptions(o =>
+{
+    foreach (var converter in SchoolPOS.Data.Sync.SyncJson.Options.Converters)
+        o.SerializerOptions.Converters.Add(converter);
+});
 
 var app = builder.Build();
 
@@ -191,6 +210,7 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapRazorPages();
+app.MapSyncEndpoints();
 
 // Webhook de la pasarela: confirma el pago server-side (NUNCA por la redirección del navegador,
 // NFR-3) y aplica la recarga al libro mayor de forma idempotente.

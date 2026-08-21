@@ -48,6 +48,7 @@
                     <th style="text-align:right">Recargas</th>
                     <th style="text-align:right">Recargado</th>
                     <th style="text-align:right">Comisión del periodo</th>
+                    <th>Sync Agent</th>
                 </tr>
             </thead>
             <tbody>
@@ -92,6 +93,7 @@
                     <td style="text-align:right">@r.TopUpCount</td>
                     <td style="text-align:right">@r.TotalRecharged.ToString("C2")</td>
                     <td style="text-align:right;font-weight:700;color:var(--success)">@r.TotalCommission.ToString("C2")</td>
+                    <td><a class="btn" style="padding:4px 10px" href="/Vendor/Sync?schoolId=@r.SchoolId">Llaves →</a></td>
                 </tr>
             }
             </tbody>

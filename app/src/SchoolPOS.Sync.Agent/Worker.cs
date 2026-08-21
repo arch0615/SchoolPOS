@@ -8,20 +8,25 @@ namespace SchoolPOS.Sync.Agent;
 
 /// <summary>
 /// Servicio en segundo plano que ejecuta el <see cref="SyncAgent"/> en un intervalo. Corre en cada
-/// escuela: baja recargas confirmadas de la nube al ledger local y sube el consumo. Tolerante a
-/// fallas: si una corrida falla (p. ej. sin internet), se registra y se reintenta en la siguiente.
+/// escuela: baja recargas confirmadas de la nube al ledger local y sube el consumo. La nube se ve
+/// por <c>/api/sync/*</c> (<see cref="HttpSyncApiClient"/>) — este proceso solo tiene la llave de
+/// esta escuela, nunca una cadena de conexión a la base de datos de la nube (FR-SYNC-API).
+/// Tolerante a fallas: si una corrida falla (p. ej. sin internet), se registra y se reintenta en
+/// la siguiente.
 /// </summary>
 public sealed class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
     private readonly IConfiguration _config;
     private readonly IClock _clock;
+    private readonly HttpSyncApiClient _cloud;
 
-    public Worker(ILogger<Worker> logger, IConfiguration config, IClock clock)
+    public Worker(ILogger<Worker> logger, IConfiguration config, IClock clock, HttpSyncApiClient cloud)
     {
         _logger = logger;
         _config = config;
         _clock = clock;
+        _cloud = cloud;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -33,9 +38,8 @@ public sealed class Worker : BackgroundService
         {
             try
             {
-                await using var cloud = CreateContext("Cloud");
-                await using var local = CreateContext("Local");
-                var agent = new SyncAgent(cloud, local, new BalanceService(local, _clock), _clock);
+                await using var local = CreateLocalContext();
+                var agent = new SyncAgent(_cloud, local, new BalanceService(local, _clock), _clock);
 
                 var report = await agent.RunOnceAsync(stoppingToken);
                 if (report.TopUpsPulled > 0 || report.MovementsPushed > 0 || report.RosterPushed > 0
@@ -57,11 +61,11 @@ public sealed class Worker : BackgroundService
         }
     }
 
-    private SchoolDbContext CreateContext(string name)
+    private SchoolDbContext CreateLocalContext()
     {
         var provider = _config["Database:Provider"] ?? "Sqlite";
-        var connectionString = _config.GetConnectionString(name)
-            ?? throw new InvalidOperationException($"Falta ConnectionStrings:{name}.");
+        var connectionString = _config.GetConnectionString("Local")
+            ?? throw new InvalidOperationException("Falta ConnectionStrings:Local.");
 
         var options = new DbContextOptionsBuilder<SchoolDbContext>();
         if (string.Equals(provider, "SqlServer", StringComparison.OrdinalIgnoreCase))

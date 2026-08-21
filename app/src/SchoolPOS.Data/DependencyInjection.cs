@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SchoolPOS.Domain.Abstractions;
 using SchoolPOS.Data.Security;
 using SchoolPOS.Data.Services;
+using SchoolPOS.Data.Sync;
 
 namespace SchoolPOS.Data;
 
@@ -41,6 +42,8 @@ public static class DependencyInjection
         services.AddScoped<IStudentRegistry, StudentRegistry>();
         services.AddScoped<IOperatorRegistry, OperatorRegistry>();
         services.AddScoped<ISchoolPaymentAccountStore, SchoolPaymentAccountStore>();
+        services.AddScoped<ISyncApiKeyService, SyncApiKeyService>();
+        services.AddScoped<ISyncCloudService, SyncCloudService>();
         services.AddScoped<IBalanceService, BalanceService>();
         services.AddScoped<IInventoryService, InventoryService>();
         services.AddScoped<ISalesService, SalesService>();
