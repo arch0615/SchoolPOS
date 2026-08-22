@@ -310,3 +310,10 @@ app.MapGet("/oauth/mercadopago/sandbox", (string state, string redirect_uri) =>
 });
 
 app.Run();
+
+/// <summary>
+/// Hace público el Program implícito de las top-level statements: WebApplicationFactory&lt;Program&gt;
+/// (pruebas de integración) necesita poder verlo desde el ensamblado de pruebas — por omisión es
+/// internal y la referencia ni compila.
+/// </summary>
+public partial class Program { }

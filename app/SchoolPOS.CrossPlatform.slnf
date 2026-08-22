@@ -12,6 +12,7 @@
       "tools/SchoolPOS.Provision/SchoolPOS.Provision.csproj",
       "tests/SchoolPOS.Domain.Tests/SchoolPOS.Domain.Tests.csproj",
       "tests/SchoolPOS.Data.Tests/SchoolPOS.Data.Tests.csproj",
+      "tests/SchoolPOS.Portal.Web.Tests/SchoolPOS.Portal.Web.Tests.csproj",
       "tests/SchoolPOS.Payments.MercadoPago.Tests/SchoolPOS.Payments.MercadoPago.Tests.csproj"
     ]
   }
