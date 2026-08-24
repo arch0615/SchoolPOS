@@ -94,7 +94,9 @@ public sealed class RefundsViewModel : ViewModelBase, IAsyncLoadable
             var db = scope.ServiceProvider.GetRequiredService<SchoolDbContext>();
 
             var since = MxTime.ToUtc(MxTime.TodayLocal(_clock.UtcNow).AddDays(-LookbackDays));
-            var term = Search.Trim();
+            // En minúsculas: SQLite distingue mayúsculas en Contains() y SQL Server no, así que
+            // sin esto la búsqueda se comporta distinto según el modo de instalación.
+            var term = Search.Trim().ToLower();
 
             // Ya devueltas por completo no se listan: no queda nada que devolver en ellas.
             // LEFT JOIN al alumno porque una venta en efectivo puede no tener alumno asociado.
@@ -105,7 +107,7 @@ public sealed class RefundsViewModel : ViewModelBase, IAsyncLoadable
                       && s.Status != SaleStatus.Refunded
                 join st in db.Students.AsNoTracking() on s.StudentId equals st.Id into students
                 from st in students.DefaultIfEmpty()
-                where term == "" || (st != null && (st.FullName.Contains(term) || st.EnrollmentNo.Contains(term)))
+                where term == "" || (st != null && (st.FullName.ToLower().Contains(term) || st.EnrollmentNo.ToLower().Contains(term)))
                 orderby s.CreatedAtUtc descending
                 select new
                 {

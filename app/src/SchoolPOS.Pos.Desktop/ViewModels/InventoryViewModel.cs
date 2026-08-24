@@ -113,7 +113,12 @@ public sealed class InventoryViewModel : ViewModelBase, IAsyncLoadable
 
             var query = db.Products.AsNoTracking().Where(p => p.SchoolId == _session.SchoolId && p.IsActive);
             if (!string.IsNullOrWhiteSpace(Search))
-                query = query.Where(p => p.Name.Contains(Search) || (p.Barcode != null && p.Barcode.Contains(Search)));
+            {
+                // En minúsculas: SQLite distingue mayúsculas en Contains() y SQL Server no, así
+                // que sin esto la búsqueda se comporta distinto según el modo de instalación.
+                var needle = Search.Trim().ToLower();
+                query = query.Where(p => p.Name.ToLower().Contains(needle) || (p.Barcode != null && p.Barcode.ToLower().Contains(needle)));
+            }
 
             var rows = await query.OrderBy(p => p.Name)
                 .Select(p => new ProductRow(p.Id, p.Name, p.Barcode, p.Price, p.StockOnHand, p.MinStock))

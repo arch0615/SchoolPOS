@@ -28,10 +28,13 @@ public sealed class AuditLogQueryService : IAuditLogQueryService
         // El actor se guarda como el Id del operador. Mostrarlo así deja una bitácora ilegible
         // ("quién hizo esto" es justamente su razón de ser), de modo que se resuelve al usuario.
         // Se hace en memoria y sobre lo ya paginado: son 500 filas como máximo.
+        // Comparación insensible a mayúsculas: Actor se escribe como operatorId.ToString() (minúsculas),
+        // pero el proveedor de SQLite guarda los Guid como texto en mayúsculas, así que u.Id.ToString()
+        // (traducido a SQL, no formateado por .NET) viene en mayúsculas y una comparación ordinal nunca calza.
         var operators = await _db.Users.AsNoTracking()
             .Where(u => u.SchoolId == schoolId)
             .Select(u => new { Id = u.Id.ToString(), u.Username })
-            .ToDictionaryAsync(u => u.Id, u => u.Username, ct);
+            .ToDictionaryAsync(u => u.Id, u => u.Username, StringComparer.OrdinalIgnoreCase, ct);
 
         return rows
             .Select(r => operators.TryGetValue(r.Actor ?? string.Empty, out var name)
