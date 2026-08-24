@@ -27,6 +27,9 @@ public partial class SetupWindow : Window
     private void ConfirmBox_OnPasswordChanged(object sender, RoutedEventArgs e) =>
         _viewModel.AdminPasswordConfirm = ((PasswordBox)sender).Password;
 
+    private void SqlPasswordBox_OnPasswordChanged(object sender, RoutedEventArgs e) =>
+        _viewModel.SqlPassword = ((PasswordBox)sender).Password;
+
     private void OnSetupCompleted()
     {
         DialogResult = true;

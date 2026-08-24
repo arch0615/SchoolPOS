@@ -61,6 +61,9 @@ public class AddSchoolModel : PageModel
         public string? PostalCode { get; set; }
         public string? CfdiUse { get; set; }
 
+        [EmailAddress(ErrorMessage = "El correo de facturación debe ser una dirección válida.")]
+        public string? BillingEmail { get; set; }
+
         [Required(ErrorMessage = "El usuario administrador es obligatorio.")]
         [EmailAddress(ErrorMessage = "El usuario administrador debe ser un correo electrónico.")]
         public string AdminUsername { get; set; } = string.Empty;
@@ -98,6 +101,7 @@ public class AddSchoolModel : PageModel
             TaxRegime = string.IsNullOrWhiteSpace(Input.TaxRegime) ? null : Input.TaxRegime.Trim(),
             PostalCode = string.IsNullOrWhiteSpace(Input.PostalCode) ? null : Input.PostalCode.Trim(),
             CfdiUse = string.IsNullOrWhiteSpace(Input.CfdiUse) ? null : Input.CfdiUse.Trim(),
+            BillingEmail = string.IsNullOrWhiteSpace(Input.BillingEmail) ? null : Input.BillingEmail.Trim(),
             CreatedAtUtc = DateTime.UtcNow,
         };
 

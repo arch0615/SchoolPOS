@@ -26,6 +26,7 @@ public sealed class SettingsViewModel : ViewModelBase, IAsyncLoadable
     private string _taxRegime = string.Empty;
     private string _postalCode = string.Empty;
     private string _cfdiUse = string.Empty;
+    private string _billingEmail = string.Empty;
 
     private string _statusMessage = string.Empty;
     private string _errorMessage = string.Empty;
@@ -61,6 +62,9 @@ public sealed class SettingsViewModel : ViewModelBase, IAsyncLoadable
     public string PostalCode { get => _postalCode; set => SetProperty(ref _postalCode, value); }
     public string CfdiUse { get => _cfdiUse; set => SetProperty(ref _cfdiUse, value); }
 
+    /// <summary>Correo al que se envía el CFDI de comisión al timbrarse (opcional).</summary>
+    public string BillingEmail { get => _billingEmail; set => SetProperty(ref _billingEmail, value); }
+
     public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
     public string ErrorMessage { get => _errorMessage; set => SetProperty(ref _errorMessage, value); }
 
@@ -93,6 +97,7 @@ public sealed class SettingsViewModel : ViewModelBase, IAsyncLoadable
             TaxRegime = school.TaxRegime ?? string.Empty;
             PostalCode = school.PostalCode ?? string.Empty;
             CfdiUse = school.CfdiUse ?? string.Empty;
+            BillingEmail = school.BillingEmail ?? string.Empty;
         }
         catch (Exception ex)
         {
@@ -120,6 +125,7 @@ public sealed class SettingsViewModel : ViewModelBase, IAsyncLoadable
             school.TaxRegime = string.IsNullOrWhiteSpace(TaxRegime) ? null : TaxRegime.Trim();
             school.PostalCode = string.IsNullOrWhiteSpace(PostalCode) ? null : PostalCode.Trim();
             school.CfdiUse = string.IsNullOrWhiteSpace(CfdiUse) ? null : CfdiUse.Trim();
+            school.BillingEmail = string.IsNullOrWhiteSpace(BillingEmail) ? null : BillingEmail.Trim();
 
             await db.SaveChangesAsync();
             StatusMessage = "Configuración guardada.";

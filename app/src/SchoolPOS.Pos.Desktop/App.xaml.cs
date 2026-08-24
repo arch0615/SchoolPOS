@@ -110,6 +110,17 @@ public partial class App : Application
             Services = _host.Services;
             _logger = Services.GetRequiredService<ILogger<App>>();
 
+            // El asistente de primer arranque migra la base al crearla, pero eso solo corre una
+            // vez: sin este paso, una caja ya configurada que se actualiza a una versión con
+            // migraciones nuevas se queda con el esquema viejo y revienta en la primera pantalla
+            // que toque una columna que todavía no existe (se reprodujo así al agregar
+            // School.BillingEmail contra una base de una instalación anterior).
+            using (var scope = Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<SchoolDbContext>();
+                db.Database.Migrate();
+            }
+
             var login = Services.GetRequiredService<LoginWindow>();
             login.Show();
 

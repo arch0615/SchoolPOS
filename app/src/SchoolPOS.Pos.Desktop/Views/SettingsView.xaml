@@ -53,7 +53,12 @@
                     <TextBox Text="{Binding PostalCode, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,10" />
 
                     <TextBlock Text="Uso de CFDI (código SAT)" Foreground="{StaticResource MutedBrush}" />
-                    <TextBox Text="{Binding CfdiUse, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,16" />
+                    <TextBox Text="{Binding CfdiUse, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,10" />
+
+                    <TextBlock Text="Correo para facturación" Foreground="{StaticResource MutedBrush}" />
+                    <TextBox Text="{Binding BillingEmail, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,2" />
+                    <TextBlock Text="Ahí se envía el CFDI de comisión (XML y PDF) cada vez que se timbra."
+                               Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,0,0,16" />
 
                     <Button Content="Guardar cambios" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left"
                             Command="{Binding SaveCommand}" />

@@ -12,9 +12,16 @@ public sealed class LoggingEmailSender : IEmailSender
 
     public LoggingEmailSender(ILogger<LoggingEmailSender> logger) => _logger = logger;
 
-    public Task SendAsync(string toEmail, string subject, string htmlBody, CancellationToken ct = default)
+    public Task SendAsync(
+        string toEmail, string subject, string htmlBody,
+        IReadOnlyList<EmailAttachment>? attachments = null, CancellationToken ct = default)
     {
-        _logger.LogInformation("[CORREO-DEV] Para: {To} · Asunto: {Subject}\n{Body}", toEmail, subject, htmlBody);
+        var attachmentNote = attachments is { Count: > 0 }
+            ? $" (adjuntos: {string.Join(", ", attachments.Select(a => a.FileName))})"
+            : string.Empty;
+        _logger.LogInformation(
+            "[CORREO-DEV] Para: {To} · Asunto: {Subject}{Attachments}\n{Body}",
+            toEmail, subject, attachmentNote, htmlBody);
         return Task.CompletedTask;
     }
 }

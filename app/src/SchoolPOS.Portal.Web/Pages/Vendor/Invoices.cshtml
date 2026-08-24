@@ -59,6 +59,7 @@
                     <th>Estado</th>
                     <th>Folio fiscal (UUID)</th>
                     <th>Emitida</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -77,6 +78,13 @@
                     </td>
                     <td class="muted" style="font-size:12px">@inv.Uuid</td>
                     <td class="muted" style="font-size:12px">@((inv.StampedAtUtc ?? inv.CreatedAtUtc).ToString("dd/MM/yyyy HH:mm"))</td>
+                    <td>
+                        @if (inv.Status == CfdiStatus.Stamped)
+                        {
+                            <a class="btn ghost" style="padding:4px 10px" href="?handler=Xml&id=@inv.Id">XML</a>
+                            <a class="btn ghost" style="padding:4px 10px" href="?handler=Pdf&id=@inv.Id">PDF</a>
+                        }
+                    </td>
                 </tr>
             }
             </tbody>

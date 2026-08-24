@@ -17,8 +17,13 @@ public class InvoicesModel : PageModel
     private const int PageSize = 100;
 
     private readonly SchoolDbContext _db;
+    private readonly Infrastructure.CommissionInvoicePdfRenderer _pdfRenderer;
 
-    public InvoicesModel(SchoolDbContext db) => _db = db;
+    public InvoicesModel(SchoolDbContext db, Infrastructure.CommissionInvoicePdfRenderer pdfRenderer)
+    {
+        _db = db;
+        _pdfRenderer = pdfRenderer;
+    }
 
     public IReadOnlyList<Row> Invoices { get; private set; } = Array.Empty<Row>();
     public IReadOnlyList<SchoolOption> Schools { get; private set; } = Array.Empty<SchoolOption>();
@@ -51,7 +56,7 @@ public class InvoicesModel : PageModel
             .OrderByDescending(x => x.ci.CreatedAtUtc)
             .Take(PageSize)
             .Select(x => new Row(
-                x.ci.SchoolId, x.Name, x.ci.PeriodFromUtc, x.ci.PeriodToUtc,
+                x.ci.Id, x.ci.SchoolId, x.Name, x.ci.PeriodFromUtc, x.ci.PeriodToUtc,
                 x.ci.CommissionAmount, x.ci.Currency, x.ci.Status, x.ci.Uuid,
                 x.ci.CreatedAtUtc, x.ci.StampedAtUtc, x.ci.Error))
             .ToListAsync();
@@ -59,6 +64,32 @@ public class InvoicesModel : PageModel
         StampedCount = Invoices.Count(i => i.Status == CfdiStatus.Stamped);
         StampedTotal = Invoices.Where(i => i.Status == CfdiStatus.Stamped).Sum(i => i.Amount);
         FailedCount = Invoices.Count(i => i.Status == CfdiStatus.Failed);
+    }
+
+    /// <summary>Descarga el XML timbrado de una factura de comisión.</summary>
+    public async Task<IActionResult> OnGetXmlAsync(Guid id)
+    {
+        var invoice = await _db.CommissionInvoices.AsNoTracking().FirstOrDefaultAsync(i => i.Id == id);
+        if (invoice is null || invoice.Status != CfdiStatus.Stamped || string.IsNullOrEmpty(invoice.StampedXml))
+            return NotFound();
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(invoice.StampedXml);
+        return File(bytes, "application/xml", $"CFDI-{invoice.Uuid}.xml");
+    }
+
+    /// <summary>Descarga la representación impresa (PDF) de una factura de comisión.</summary>
+    public async Task<IActionResult> OnGetPdfAsync(Guid id)
+    {
+        var invoice = await _db.CommissionInvoices.AsNoTracking().FirstOrDefaultAsync(i => i.Id == id);
+        if (invoice is null || invoice.Status != CfdiStatus.Stamped)
+            return NotFound();
+
+        var school = await _db.Schools.AsNoTracking().FirstOrDefaultAsync(s => s.Id == invoice.SchoolId);
+        if (school is null)
+            return NotFound();
+
+        var bytes = _pdfRenderer.Render(invoice, school);
+        return File(bytes, "application/pdf", $"CFDI-{invoice.Uuid}.pdf");
     }
 
     /// <summary>Etiqueta en español del estado del CFDI.</summary>
@@ -74,7 +105,7 @@ public class InvoicesModel : PageModel
     public sealed record SchoolOption(Guid Id, string Name);
 
     public sealed record Row(
-        Guid SchoolId, string SchoolName, DateTime PeriodFrom, DateTime PeriodTo,
+        Guid Id, Guid SchoolId, string SchoolName, DateTime PeriodFrom, DateTime PeriodTo,
         decimal Amount, string Currency, CfdiStatus Status, string? Uuid,
         DateTime CreatedAtUtc, DateTime? StampedAtUtc, string? Error);
 }

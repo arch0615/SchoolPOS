@@ -6,5 +6,7 @@ namespace SchoolPOS.Domain.Abstractions;
 /// </summary>
 public interface IEmailSender
 {
-    Task SendAsync(string toEmail, string subject, string htmlBody, CancellationToken ct = default);
+    Task SendAsync(
+        string toEmail, string subject, string htmlBody,
+        IReadOnlyList<EmailAttachment>? attachments = null, CancellationToken ct = default);
 }

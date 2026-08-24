@@ -34,5 +34,9 @@ public class School
     /// <summary>Uso del CFDI (código SAT, p. ej. "G03").</summary>
     public string? CfdiUse { get; set; }
 
+    /// <summary>Correo al que se envía el CFDI de comisión al timbrarse. Sin él, no se envía nada
+    /// (el CFDI queda igual disponible para descarga desde el panel del proveedor).</summary>
+    public string? BillingEmail { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
 }

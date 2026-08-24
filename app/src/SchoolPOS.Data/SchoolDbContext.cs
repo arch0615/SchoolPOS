@@ -81,6 +81,7 @@ public class SchoolDbContext : DbContext
             e.Property(x => x.TaxRegime).HasMaxLength(10);
             e.Property(x => x.PostalCode).HasMaxLength(10);
             e.Property(x => x.CfdiUse).HasMaxLength(10);
+            e.Property(x => x.BillingEmail).HasMaxLength(200);
         });
 
         b.Entity<CommissionInvoice>(e =>

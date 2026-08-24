@@ -20,13 +20,26 @@ public sealed class SmtpEmailSender : IEmailSender
         _logger = logger;
     }
 
-    public async Task SendAsync(string toEmail, string subject, string htmlBody, CancellationToken ct = default)
+    public async Task SendAsync(
+        string toEmail, string subject, string htmlBody,
+        IReadOnlyList<EmailAttachment>? attachments = null, CancellationToken ct = default)
     {
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(_options.FromName, _options.FromEmail));
         message.To.Add(MailboxAddress.Parse(toEmail));
         message.Subject = subject;
-        message.Body = new TextPart("html") { Text = htmlBody };
+
+        if (attachments is { Count: > 0 })
+        {
+            var builder = new BodyBuilder { HtmlBody = htmlBody };
+            foreach (var attachment in attachments)
+                builder.Attachments.Add(attachment.FileName, attachment.Content, ContentType.Parse(attachment.ContentType));
+            message.Body = builder.ToMessageBody();
+        }
+        else
+        {
+            message.Body = new TextPart("html") { Text = htmlBody };
+        }
 
         using var client = new SmtpClient();
         await client.ConnectAsync(_options.Host, _options.Port, ResolveSecurity(), ct);

@@ -682,6 +682,10 @@ namespace SchoolPOS.Data.Migrations.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("BillingEmail")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("CfdiUse")
                         .HasMaxLength(10)
                         .HasColumnType("TEXT");

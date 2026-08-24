@@ -11,6 +11,19 @@
   <ItemGroup>
     <PackageReference Include="MailKit" Version="4.13.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.8" />
+    <PackageReference Include="PdfSharp" Version="6.2.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Fuente incrustada para el renderer de PDF (CommissionInvoicePdfRenderer): PDFsharp 6.x no
+      trae fuentes base ni depende de las del sistema operativo, así que sin una fuente propia el
+      renderizado revienta en cualquier entorno sin las mismas fuentes que un Windows de escritorio
+      — como el contenedor Linux donde corre el portal en producción. Roboto, licencia Apache 2.0
+      (ver Assets/Fonts/Roboto-LICENSE.txt): libre para redistribuir en un producto comercial.
+    -->
+    <EmbeddedResource Include="Assets\Fonts\Roboto-Regular.ttf" />
+    <EmbeddedResource Include="Assets\Fonts\Roboto-Bold.ttf" />
   </ItemGroup>
 
   <PropertyGroup>

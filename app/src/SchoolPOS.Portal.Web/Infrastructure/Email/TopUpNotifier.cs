@@ -49,7 +49,7 @@ public static class TopUpNotifier
                     $"<p>Confirmamos tu recarga de <strong>{topUp.Amount:C2}</strong> " +
                     $"para <strong>{WebUtility.HtmlEncode(student.FullName)}</strong>. " +
                     "El saldo ya está disponible para usarse en la tienda escolar.</p>";
-                await email.SendAsync(guardian.Email, "Recarga confirmada", body, ct);
+                await email.SendAsync(guardian.Email, "Recarga confirmada", body, ct: ct);
             }
             catch (Exception ex)
             {

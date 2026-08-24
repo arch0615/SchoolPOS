@@ -11,8 +11,15 @@ namespace SchoolPOS.Invoicing.Sw;
 ///
 /// ⚠️ IMPORTANTE: genera <b>documentos fiscales reales</b>. Usar primero contra el <i>sandbox</i>
 /// de SW (BaseUrl de pruebas) y VALIDAR con el contador los catálogos SAT (ClaveProdServ, régimen,
-/// IVA, uso CFDI) y el esquema/endpoints exactos contra la documentación vigente de SW antes de
-/// producción. Los nombres de campos y rutas aquí son una base y deben confirmarse.
+/// IVA, uso CFDI) antes de producción.
+/// <para>
+/// La autenticación (<c>/v2/security/authenticate</c>, cuerpo <c>{user, password}</c>, token en
+/// <c>data.token</c>) y el esquema de respuesta del timbrado (<c>status</c>/<c>message</c>/
+/// <c>data.uuid</c>/<c>data.cfdi</c>) están confirmados contra developers.sw.com.mx. La ruta del
+/// endpoint de timbrado (<see cref="SwCfdiOptions.IssueEndpointPath"/>) sigue sin confirmar de
+/// forma consistente entre las páginas públicas de SW — validar contra la cuenta real antes de
+/// producción (ver comentario en <see cref="SwCfdiOptions"/>).
+/// </para>
 /// </summary>
 public sealed class SwCfdiIssuer : ICfdiIssuer
 {
@@ -34,11 +41,16 @@ public sealed class SwCfdiIssuer : ICfdiIssuer
             var token = await GetTokenAsync(ct);
             var payload = BuildCfdi(request);
 
-            // TODO(SW): validar la ruta y el esquema exactos contra la documentación vigente de SW.
-            using var http = new HttpRequestMessage(HttpMethod.Post, "/v4/cfdi40/issue/json/v4")
+            // Ruta configurable (ver comentario en SwCfdiOptions.IssueEndpointPath): la doc pública
+            // de SW confirma el segmento "cfdi33" incluso para CFDI 4.0, pero es inconsistente sobre
+            // el resto de la ruta entre sus propias páginas — validar contra la cuenta real.
+            using var http = new HttpRequestMessage(HttpMethod.Post, _options.IssueEndpointPath)
             {
                 Content = JsonContent.Create(payload),
             };
+            // Confirmado en la doc de SW: el endpoint de timbrado espera este content-type, no
+            // application/json (que sí aplica al endpoint de autenticación).
+            http.Content.Headers.ContentType = new MediaTypeHeaderValue("application/jsontoxml");
             http.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             using var response = await _http.SendAsync(http, ct);
@@ -48,7 +60,8 @@ public sealed class SwCfdiIssuer : ICfdiIssuer
                 !string.Equals(stamp.Status, "success", StringComparison.OrdinalIgnoreCase) ||
                 string.IsNullOrEmpty(stamp.Data?.Uuid))
             {
-                return CfdiResult.Fail(stamp?.Message ?? $"SW error HTTP {(int)response.StatusCode}");
+                var reason = stamp?.MessageDetail ?? stamp?.Message ?? $"SW error HTTP {(int)response.StatusCode}";
+                return CfdiResult.Fail(reason);
             }
 
             return CfdiResult.Ok(stamp.Data!.Uuid!, stamp.Data.Cfdi);
@@ -157,6 +170,7 @@ public sealed class SwCfdiIssuer : ICfdiIssuer
     private sealed record SwStampResponse(
         [property: JsonPropertyName("status")] string? Status,
         [property: JsonPropertyName("message")] string? Message,
+        [property: JsonPropertyName("messageDetail")] string? MessageDetail,
         [property: JsonPropertyName("data")] SwStampData? Data);
 
     private sealed record SwStampData(

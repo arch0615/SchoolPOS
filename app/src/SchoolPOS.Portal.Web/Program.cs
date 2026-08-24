@@ -116,6 +116,7 @@ if (string.Equals(config["Cfdi:Provider"], "Sw", StringComparison.OrdinalIgnoreC
     });
 }
 // else: NullCfdiIssuer ya está registrado por AddSchoolPosData (default de desarrollo).
+builder.Services.AddSingleton<SchoolPOS.Portal.Web.Infrastructure.CommissionInvoicePdfRenderer>();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>

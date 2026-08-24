@@ -108,6 +108,7 @@ public class SchoolsModel : PageModel
                 s.LegalName,
                 s.TaxRegime,
                 s.PostalCode,
+                s.CfdiUse,
                 Connected = a != null,
                 // Nullable explícito: con LEFT JOIN sin conexión la columna llega NULL.
                 ConnectedAtUtc = a != null ? (DateTime?)a.ConnectedAtUtc : null,
@@ -117,11 +118,14 @@ public class SchoolsModel : PageModel
         Rows = schools.Select(s =>
         {
             activity.TryGetValue(s.Id, out var act);
+            // Debe calzar exactamente con lo que CommissionInvoiceService.BuildReceiver exige,
+            // o el indicador "listo para facturar" mentiría (CfdiUse faltaba aquí antes).
             var fiscalComplete =
                 !string.IsNullOrWhiteSpace(s.Rfc) &&
                 !string.IsNullOrWhiteSpace(s.LegalName) &&
                 !string.IsNullOrWhiteSpace(s.TaxRegime) &&
-                !string.IsNullOrWhiteSpace(s.PostalCode);
+                !string.IsNullOrWhiteSpace(s.PostalCode) &&
+                !string.IsNullOrWhiteSpace(s.CfdiUse);
 
             return new Row(
                 s.Id, s.Name, s.CommissionRate, s.Currency,

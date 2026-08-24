@@ -16,6 +16,19 @@ public sealed class SwCfdiOptions
     /// <summary>Token persistente de SW (si se prefiere sobre user/password).</summary>
     public string? Token { get; set; }
 
+    /// <summary>
+    /// Ruta del endpoint de timbrado JSON, relativa a <see cref="BaseUrl"/>. La documentación
+    /// pública de SW (developers.sw.com.mx) es inconsistente entre sus propias páginas sobre el
+    /// prefijo de versión exacto — se ha visto <c>/cfdi33/issue/json/v4</c>,
+    /// <c>/v3/cfdi33/issue/json/v4</c> y <c>/cfdi33/issue/json/v4/b64</c> (este último con
+    /// respuesta en base64, no texto plano). Lo único confirmado de forma consistente: el
+    /// segmento es <c>cfdi33</c> aunque se esté timbrando CFDI 4.0 ("por compatibilidad, aunque
+    /// la ruta indique /cfdi33, el mismo endpoint acepta la versión vigente del CFDI" — doc SW).
+    /// <b>Confirmar la ruta exacta contra la colección de Postman de la cuenta real antes de
+    /// producción</b>: https://documenter.getpostman.com/view/15933150/2s9YXnyyKn
+    /// </summary>
+    public string IssueEndpointPath { get; set; } = "/cfdi33/issue/json/v4";
+
     // --- Datos fiscales del emisor (proveedor) ---
     public string IssuerRfc { get; set; } = string.Empty;
     public string IssuerName { get; set; } = string.Empty;

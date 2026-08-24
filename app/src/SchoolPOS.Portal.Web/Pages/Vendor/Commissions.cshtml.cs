@@ -1,9 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using SchoolPOS.Data;
 using SchoolPOS.Domain.Abstractions;
 using SchoolPOS.Domain.Common;
 using SchoolPOS.Domain.Enums;
+using SchoolPOS.Portal.Web.Infrastructure;
+using SchoolPOS.Portal.Web.Infrastructure.Email;
 
 namespace SchoolPOS.Portal.Web.Pages.Vendor;
 
@@ -16,11 +19,21 @@ public class CommissionsModel : PageModel
 {
     private readonly ICommissionReportService _reports;
     private readonly ICommissionInvoiceService _invoices;
+    private readonly SchoolDbContext _db;
+    private readonly IEmailSender _email;
+    private readonly CommissionInvoicePdfRenderer _pdfRenderer;
+    private readonly ILogger<CommissionsModel> _logger;
 
-    public CommissionsModel(ICommissionReportService reports, ICommissionInvoiceService invoices)
+    public CommissionsModel(
+        ICommissionReportService reports, ICommissionInvoiceService invoices, SchoolDbContext db,
+        IEmailSender email, CommissionInvoicePdfRenderer pdfRenderer, ILogger<CommissionsModel> logger)
     {
         _reports = reports;
         _invoices = invoices;
+        _db = db;
+        _email = email;
+        _pdfRenderer = pdfRenderer;
+        _logger = logger;
     }
 
     public VendorCommissionRollup Rollup { get; private set; } =
@@ -63,9 +76,16 @@ public class CommissionsModel : PageModel
             // exactamente con la comisión que la pantalla muestra para ese periodo.
             var invoice = await _invoices.IssueForPeriodAsync(
                 schoolId, MxTime.ToUtc(from.Value.Date), MxTime.EndOfDayUtc(to)!.Value);
-            Message = invoice.Status == CfdiStatus.Stamped
-                ? $"CFDI emitido: {invoice.Uuid} · {invoice.CommissionAmount:C2}"
-                : $"No se pudo timbrar: {invoice.Error}";
+            if (invoice.Status == CfdiStatus.Stamped)
+            {
+                Message = $"CFDI emitido: {invoice.Uuid} · {invoice.CommissionAmount:C2}";
+                // Nunca debe poder tumbar la respuesta: el CFDI ya quedó timbrado y guardado.
+                await CommissionInvoiceNotifier.SendStampedAsync(_db, _email, _pdfRenderer, _logger, invoice.Id);
+            }
+            else
+            {
+                Message = $"No se pudo timbrar: {invoice.Error}";
+            }
         }
         catch (Exception ex)
         {

@@ -7,9 +7,10 @@ namespace SchoolPOS.Pos.Desktop.ViewModels;
 /// mano y correr una herramienta de consola: la escuela elige modo, captura su nombre y su
 /// administrador, y el asistente crea la base y guarda la configuración.
 /// <para>
-/// El modo "servidor de la escuela" (varias cajas contra un SQL Server) está previsto en la
-/// pantalla pero todavía no implementado; se deja visible y deshabilitado para que la instalación
-/// de una sola caja no se rediseñe cuando llegue.
+/// El modo "servidor de la escuela" apunta a un SQL Server compartido por varias cajas. No crea
+/// una segunda escuela si ya existe una en esa base: <see cref="PosProvisioner.ProvisionAsync"/>
+/// reutiliza la escuela existente y solo agrega el operador capturado aquí — así, correr el
+/// asistente en la segunda caja de una escuela simplemente "se une" a la primera.
 /// </para>
 /// </summary>
 public sealed class SetupViewModel : ViewModelBase
@@ -19,6 +20,12 @@ public sealed class SetupViewModel : ViewModelBase
     private string _errorMessage = string.Empty;
     private string _statusMessage = string.Empty;
     private bool _isBusy;
+
+    private bool _isServerMode;
+    private string _serverAddress = string.Empty;
+    private string _databaseName = "SchoolPOS";
+    private bool _useSqlAuth;
+    private string _sqlUsername = string.Empty;
 
     public SetupViewModel()
     {
@@ -41,6 +48,44 @@ public sealed class SetupViewModel : ViewModelBase
     public string AdminPassword { private get; set; } = string.Empty;
     public string AdminPasswordConfirm { private get; set; } = string.Empty;
 
+    /// <summary>Falso = única caja (SQLite local); verdadero = servidor compartido (SQL Server).</summary>
+    public bool IsServerMode
+    {
+        get => _isServerMode;
+        set
+        {
+            if (SetProperty(ref _isServerMode, value))
+            {
+                OnPropertyChanged(nameof(DatabasePathText));
+                FinishCommand.RaiseCanExecuteChanged();
+            }
+        }
+    }
+
+    public string ServerAddress
+    {
+        get => _serverAddress;
+        set { if (SetProperty(ref _serverAddress, value)) OnPropertyChanged(nameof(DatabasePathText)); }
+    }
+
+    public string DatabaseName
+    {
+        get => _databaseName;
+        set { if (SetProperty(ref _databaseName, value)) OnPropertyChanged(nameof(DatabasePathText)); }
+    }
+
+    /// <summary>
+    /// Falso (por defecto) = autenticación de Windows: no hay contraseña de SQL que administrar,
+    /// sirve si el servicio del POS corre con una cuenta que ya tiene acceso a la base. Verdadero =
+    /// usuario y contraseña de SQL Server, para servidores sin dominio o con acceso restringido.
+    /// </summary>
+    public bool UseSqlAuth { get => _useSqlAuth; set => SetProperty(ref _useSqlAuth, value); }
+
+    public string SqlUsername { get => _sqlUsername; set => SetProperty(ref _sqlUsername, value); }
+
+    /// <summary>Contraseña de SQL (se asigna desde el code-behind, igual que <see cref="AdminPassword"/>).</summary>
+    public string SqlPassword { private get; set; } = string.Empty;
+
     public string ErrorMessage { get => _errorMessage; set => SetProperty(ref _errorMessage, value); }
     public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
 
@@ -51,7 +96,11 @@ public sealed class SetupViewModel : ViewModelBase
     }
 
     /// <summary>Dónde quedará la base, para que el usuario sepa qué respaldar.</summary>
-    public string DatabasePathText => PosConfig.SqliteDatabasePath;
+    public string DatabasePathText => IsServerMode
+        ? (string.IsNullOrWhiteSpace(ServerAddress) || string.IsNullOrWhiteSpace(DatabaseName)
+            ? "En el servidor que indiques abajo."
+            : $"Servidor {ServerAddress}, base \"{DatabaseName}\". Ya no vive en esta computadora.")
+        : PosConfig.SqliteDatabasePath;
 
     public AsyncRelayCommand FinishCommand { get; }
 
@@ -84,23 +133,52 @@ public sealed class SetupViewModel : ViewModelBase
             return;
         }
 
+        string provider;
+        string connectionString;
+
+        if (IsServerMode)
+        {
+            if (string.IsNullOrWhiteSpace(ServerAddress))
+            {
+                ErrorMessage = "Escriba la dirección del servidor.";
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(DatabaseName))
+            {
+                ErrorMessage = "Escriba el nombre de la base de datos.";
+                return;
+            }
+            if (UseSqlAuth && string.IsNullOrWhiteSpace(SqlUsername))
+            {
+                ErrorMessage = "Escriba el usuario de SQL Server.";
+                return;
+            }
+
+            provider = PosConfig.SqlServerProvider;
+            connectionString = BuildSqlServerConnectionString();
+        }
+        else
+        {
+            provider = PosConfig.SqliteProvider;
+            connectionString = PosConfig.SqliteConnectionString;
+        }
+
         IsBusy = true;
         try
         {
             StatusMessage = "Preparando la base de datos…";
             System.IO.Directory.CreateDirectory(PosConfig.Directory);
 
-            var provider = PosConfig.SqliteProvider;
-            var connectionString = PosConfig.SqliteConnectionString;
-
             var failure = await PosProvisioner.TestAsync(provider, connectionString);
             if (failure is not null)
             {
-                ErrorMessage = $"No se pudo crear la base de datos: {failure}";
+                ErrorMessage = $"No se pudo {(IsServerMode ? "conectar al servidor" : "crear la base de datos")}: {failure}";
                 return;
             }
 
-            StatusMessage = "Creando la escuela y el administrador…";
+            StatusMessage = IsServerMode
+                ? "Conectando con la escuela en el servidor…"
+                : "Creando la escuela y el administrador…";
             var schoolId = await PosProvisioner.ProvisionAsync(
                 provider, connectionString, SchoolName, AdminUser, AdminPassword);
 
@@ -119,5 +197,19 @@ public sealed class SetupViewModel : ViewModelBase
         {
             IsBusy = false;
         }
+    }
+
+    private string BuildSqlServerConnectionString()
+    {
+        var server = ServerAddress.Trim();
+        var database = DatabaseName.Trim();
+
+        // TrustServerCertificate: los SQL Server de escuela normalmente corren sin un certificado
+        // TLS firmado por una CA pública; sin esto, Microsoft.Data.SqlClient (que valida el
+        // certificado por defecto desde la v18) rechaza la conexión aunque el usuario/contraseña
+        // sean correctos, con un error de TLS que no dice nada sobre el problema real.
+        return UseSqlAuth
+            ? $"Server={server};Database={database};User Id={SqlUsername.Trim()};Password={SqlPassword};TrustServerCertificate=True;"
+            : $"Server={server};Database={database};Integrated Security=True;TrustServerCertificate=True;";
     }
 }
