@@ -18,9 +18,13 @@
 #define AppExe         "SchoolPOS.Pos.Desktop.exe"
 ; Carpeta con la publicación self-contained (la genera build-installer.ps1).
 #define PayloadDir     "..\..\..\artifacts\pos-publish"
+#define AppIcon        "..\..\src\SchoolPOS.Pos.Desktop\Assets\AppIcon.ico"
 
 [Setup]
 AppId={{8E6F1C2A-4B7D-4E31-9A55-2C1D9F7B3A64}
+; Sin esto, el instalador (LoncherApp-Setup-*.exe) muestra el ícono genérico de Inno Setup en vez
+; del logotipo — es aparte de UninstallDisplayIcon más abajo, que ya usa el del propio {#AppExe}.
+SetupIconFile={#AppIcon}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher={#AppPublisher}

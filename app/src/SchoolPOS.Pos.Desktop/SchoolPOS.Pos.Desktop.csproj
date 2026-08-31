@@ -11,6 +11,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <RootNamespace>SchoolPOS.Pos.Desktop</RootNamespace>
+    <!-- Sin esto el .exe compila con el ícono genérico de .NET, y todo acceso directo que Windows
+         cree a partir de él (escritorio, menú Inicio) hereda ese mismo ícono genérico. -->
+    <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
