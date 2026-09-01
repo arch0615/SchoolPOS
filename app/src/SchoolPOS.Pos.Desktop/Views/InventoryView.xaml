@@ -39,25 +39,49 @@
         <!-- Categorías + alta de producto (FR-INV-2) -->
         <Border DockPanel.Dock="Top" Background="White" CornerRadius="8" Padding="14" Margin="0,0,0,12">
             <StackPanel>
-                <TextBlock Text="Categorías y nuevo producto" FontWeight="SemiBold" Margin="0,0,0,8" />
+                <TextBlock Text="Categorías y productos" FontWeight="SemiBold" Margin="0,0,0,8" />
+                <TextBlock Text="Selecciona un producto de la lista para editarlo (precio, costo, categoría, mínimo)."
+                           Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,0,0,8" />
                 <Grid Margin="0,0,0,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="220" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <TextBox Grid.Column="0" Text="{Binding NewCategoryName, UpdateSourceTrigger=PropertyChanged}"
-                             Tag="Nueva categoría…" />
-                    <Button Grid.Column="1" Content="Agregar categoría" Command="{Binding AddCategoryCommand}" />
+                    <StackPanel Grid.Column="0" Margin="0,0,6,0">
+                        <TextBlock Text="Nombre de categoría" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                        <TextBox Text="{Binding NewCategoryName, UpdateSourceTrigger=PropertyChanged}" />
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="Agregar categoría" Command="{Binding AddCategoryCommand}" VerticalAlignment="Bottom" />
                 </Grid>
                 <WrapPanel>
-                    <TextBox Width="180" Margin="0,0,6,6" Text="{Binding NewProductName, UpdateSourceTrigger=PropertyChanged}" Tag="Nombre" />
-                    <TextBox Width="130" Margin="0,0,6,6" Text="{Binding NewProductBarcode, UpdateSourceTrigger=PropertyChanged}" Tag="Código de barras" />
-                    <ComboBox Width="140" Margin="0,0,6,6" ItemsSource="{Binding Categories}"
-                              DisplayMemberPath="Name" SelectedItem="{Binding NewProductCategory}" />
-                    <TextBox Width="80" Margin="0,0,6,6" Text="{Binding NewProductPrice, UpdateSourceTrigger=LostFocus}" Tag="Precio" />
-                    <TextBox Width="80" Margin="0,0,6,6" Text="{Binding NewProductCost, UpdateSourceTrigger=LostFocus}" Tag="Costo" />
-                    <TextBox Width="80" Margin="0,0,6,6" Text="{Binding NewProductMinStock, UpdateSourceTrigger=LostFocus}" Tag="Mínimo" />
-                    <Button Content="Crear producto" Style="{StaticResource PrimaryButton}" Command="{Binding CreateProductCommand}" />
+                    <StackPanel Margin="0,0,6,6">
+                        <TextBlock Text="Nombre" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                        <TextBox Width="180" Text="{Binding NewProductName, UpdateSourceTrigger=PropertyChanged}" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,6,6">
+                        <TextBlock Text="Código de barras" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                        <TextBox Width="130" Text="{Binding NewProductBarcode, UpdateSourceTrigger=PropertyChanged}" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,6,6">
+                        <TextBlock Text="Categoría" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                        <ComboBox Width="140" ItemsSource="{Binding Categories}"
+                                  DisplayMemberPath="Name" SelectedItem="{Binding NewProductCategory}" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,6,6">
+                        <TextBlock Text="Precio" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                        <TextBox Width="80" Text="{Binding NewProductPrice, UpdateSourceTrigger=LostFocus}" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,6,6">
+                        <TextBlock Text="Costo" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                        <TextBox Width="80" Text="{Binding NewProductCost, UpdateSourceTrigger=LostFocus}" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,6,6">
+                        <TextBlock Text="Mínimo" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                        <TextBox Width="80" Text="{Binding NewProductMinStock, UpdateSourceTrigger=LostFocus}" />
+                    </StackPanel>
+                    <Button Content="{Binding SaveProductButtonText}" Style="{StaticResource PrimaryButton}" Command="{Binding SaveProductCommand}" VerticalAlignment="Bottom" Margin="0,0,6,6" />
+                    <Button Content="Nuevo producto" Command="{Binding NewProductCommand}" VerticalAlignment="Bottom" Margin="0,0,0,6"
+                            Visibility="{Binding IsEditingProduct, Converter={StaticResource BoolToVisibility}}" />
                 </WrapPanel>
             </StackPanel>
         </Border>

@@ -39,7 +39,8 @@ public sealed class InventoryViewModel : ViewModelBase, IAsyncLoadable
         RefreshCommand = new AsyncRelayCommand(LoadAsync);
         RegisterEntryCommand = new AsyncRelayCommand(RegisterEntryAsync, () => Selected is not null && EntryQuantity > 0m);
         AddCategoryCommand = new AsyncRelayCommand(AddCategoryAsync, () => NewCategoryName.Trim().Length > 0);
-        CreateProductCommand = new AsyncRelayCommand(CreateProductAsync, () => NewProductName.Trim().Length > 0);
+        SaveProductCommand = new AsyncRelayCommand(SaveProductAsync, () => NewProductName.Trim().Length > 0);
+        NewProductCommand = new RelayCommand(ClearProductForm);
     }
 
     public ObservableCollection<ProductRow> Products { get; } = new();
@@ -60,7 +61,7 @@ public sealed class InventoryViewModel : ViewModelBase, IAsyncLoadable
     public string NewProductName
     {
         get => _newProductName;
-        set { if (SetProperty(ref _newProductName, value)) CreateProductCommand.RaiseCanExecuteChanged(); }
+        set { if (SetProperty(ref _newProductName, value)) SaveProductCommand.RaiseCanExecuteChanged(); }
     }
 
     public string NewProductBarcode { get => _newProductBarcode; set => SetProperty(ref _newProductBarcode, value); }
@@ -71,12 +72,39 @@ public sealed class InventoryViewModel : ViewModelBase, IAsyncLoadable
     public decimal NewProductCost { get => _newProductCost; set => SetProperty(ref _newProductCost, value); }
     public decimal NewProductMinStock { get => _newProductMinStock; set => SetProperty(ref _newProductMinStock, value); }
 
-    public AsyncRelayCommand CreateProductCommand { get; }
+    /// <summary>Crea si no hay producto seleccionado; guarda cambios sobre el seleccionado si lo hay.</summary>
+    public AsyncRelayCommand SaveProductCommand { get; }
+
+    /// <summary>Limpia el formulario y quita la selección, para volver a modo "crear".</summary>
+    public RelayCommand NewProductCommand { get; }
+
+    public bool IsEditingProduct => Selected is not null;
+    public string SaveProductButtonText => IsEditingProduct ? "Guardar cambios" : "Crear producto";
 
     public ProductRow? Selected
     {
         get => _selected;
-        set { if (SetProperty(ref _selected, value)) RegisterEntryCommand.RaiseCanExecuteChanged(); }
+        set
+        {
+            if (!SetProperty(ref _selected, value))
+                return;
+
+            // Igual que en Alumnos: elegir un producto pasa el formulario a modo edición con sus
+            // datos actuales, en vez de dejarlo como un formulario de alta ciego a lo ya existente.
+            if (value is not null)
+            {
+                NewProductName = value.Name;
+                NewProductBarcode = value.Barcode ?? string.Empty;
+                NewProductCategory = Categories.FirstOrDefault(c => c.Id == value.CategoryId);
+                NewProductPrice = value.Price;
+                NewProductCost = value.Cost;
+                NewProductMinStock = value.MinStock;
+            }
+
+            RegisterEntryCommand.RaiseCanExecuteChanged();
+            OnPropertyChanged(nameof(IsEditingProduct));
+            OnPropertyChanged(nameof(SaveProductButtonText));
+        }
     }
 
     public decimal EntryQuantity
@@ -121,13 +149,17 @@ public sealed class InventoryViewModel : ViewModelBase, IAsyncLoadable
             }
 
             var rows = await query.OrderBy(p => p.Name)
-                .Select(p => new ProductRow(p.Id, p.Name, p.Barcode, p.Price, p.StockOnHand, p.MinStock))
+                .Select(p => new ProductRow(p.Id, p.Name, p.Barcode, p.Price, p.Cost, p.StockOnHand, p.MinStock, p.CategoryId))
                 .Take(200)
                 .ToListAsync();
 
+            var selectedId = Selected?.Id;
             Products.Clear();
             foreach (var r in rows)
                 Products.Add(r);
+            // Recupera la selección tras recargar (Guardar cambios llama a LoadAsync): si no se
+            // vuelve a seleccionar, el usuario pierde el modo edición justo después de guardar.
+            Selected = Products.FirstOrDefault(p => p.Id == selectedId);
         }
         catch (Exception ex)
         {
@@ -160,7 +192,7 @@ public sealed class InventoryViewModel : ViewModelBase, IAsyncLoadable
         }
     }
 
-    private async Task CreateProductAsync()
+    private async Task SaveProductAsync()
     {
         var name = NewProductName.Trim();
         if (name.Length == 0)
@@ -172,32 +204,62 @@ public sealed class InventoryViewModel : ViewModelBase, IAsyncLoadable
         {
             using var scope = _scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<SchoolDbContext>();
-            var product = new Product
-            {
-                SchoolId = _session.SchoolId,
-                Name = name,
-                Barcode = string.IsNullOrWhiteSpace(NewProductBarcode) ? null : NewProductBarcode.Trim(),
-                CategoryId = NewProductCategory?.Id,
-                Price = NewProductPrice,
-                Cost = NewProductCost,
-                MinStock = NewProductMinStock,
-                CreatedAtUtc = DateTime.UtcNow,
-            };
-            db.Products.Add(product);
-            await db.SaveChangesAsync();
+            var barcode = string.IsNullOrWhiteSpace(NewProductBarcode) ? null : NewProductBarcode.Trim();
 
-            StatusMessage = $"'{name}' creado.";
-            NewProductName = string.Empty;
-            NewProductBarcode = string.Empty;
-            NewProductPrice = 0m;
-            NewProductCost = 0m;
-            NewProductMinStock = 0m;
+            if (Selected is { } editing)
+            {
+                // Editar uno existente: antes no había forma de corregir un precio equivocado sin
+                // tocar la base de datos a mano. No toca StockOnHand — eso solo se mueve por
+                // Entrada/Salida/Ajuste, con su propio asiento de Kardex.
+                var product = await db.Products.FirstOrDefaultAsync(p => p.Id == editing.Id)
+                    ?? throw new InvalidOperationException("El producto ya no existe.");
+                product.Name = name;
+                product.Barcode = barcode;
+                product.CategoryId = NewProductCategory?.Id;
+                product.Price = NewProductPrice;
+                product.Cost = NewProductCost;
+                product.MinStock = NewProductMinStock;
+                await db.SaveChangesAsync();
+
+                StatusMessage = $"'{name}' actualizado.";
+            }
+            else
+            {
+                var product = new Product
+                {
+                    SchoolId = _session.SchoolId,
+                    Name = name,
+                    Barcode = barcode,
+                    CategoryId = NewProductCategory?.Id,
+                    Price = NewProductPrice,
+                    Cost = NewProductCost,
+                    MinStock = NewProductMinStock,
+                    CreatedAtUtc = DateTime.UtcNow,
+                };
+                db.Products.Add(product);
+                await db.SaveChangesAsync();
+
+                StatusMessage = $"'{name}' creado.";
+                ClearProductForm();
+            }
+
             await LoadAsync();
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"No se pudo crear el producto: {ex.Message}";
+            ErrorMessage = $"No se pudo guardar el producto: {ex.Message}";
         }
+    }
+
+    private void ClearProductForm()
+    {
+        Selected = null;
+        NewProductName = string.Empty;
+        NewProductBarcode = string.Empty;
+        NewProductCategory = null;
+        NewProductPrice = 0m;
+        NewProductCost = 0m;
+        NewProductMinStock = 0m;
     }
 
     private async Task RegisterEntryAsync()
@@ -225,7 +287,9 @@ public sealed class InventoryViewModel : ViewModelBase, IAsyncLoadable
 }
 
 /// <summary>Fila del catálogo de inventario.</summary>
-public sealed record ProductRow(Guid Id, string Name, string? Barcode, decimal Price, decimal StockOnHand, decimal MinStock)
+public sealed record ProductRow(
+    Guid Id, string Name, string? Barcode, decimal Price, decimal Cost, decimal StockOnHand,
+    decimal MinStock, Guid? CategoryId)
 {
     public bool IsLow => StockOnHand <= MinStock;
 }
