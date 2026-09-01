@@ -87,18 +87,23 @@ de ahí su escuela viaja en la sesión. No hay que desplegar un portal por escue
 
 ### 5.A Instalador (recomendado — escuela de una sola caja)
 
-La escuela **no necesita SQL Server, ni .NET, ni editar archivos**. Se genera un instalador
-(`.exe`) y la escuela hace doble clic:
+La escuela **no necesita SQL Server, ni .NET, ni editar archivos**. Un solo instalador (`.exe`)
+trae el POS **y** el Agente de Sincronización (§6); la escuela hace doble clic una sola vez:
 
 ```powershell
 cd app\deploy\installer
-.\build-installer.ps1                 # publica el POS y compila el instalador
-# → artifacts\LoncherApp-Setup-1.0.0.exe  (~53 MB)
+.\build-installer.ps1                 # publica POS + agente y compila el instalador
+# → artifacts\LoncherApp-Setup-1.0.0.exe  (~80 MB)
 ```
 
 Lo que ve la escuela: siguiente → instalar → al abrir por primera vez, un **asistente** que pide
-el nombre de la escuela y el usuario/contraseña del administrador. El asistente crea la base de
-datos y guarda la configuración; a partir del segundo arranque entra directo al acceso.
+el nombre de la escuela, el usuario/contraseña del administrador y, opcionalmente, la **llave de
+sincronización** de esa escuela (si ya la tienen a la mano). El asistente crea la base de datos y
+guarda la configuración; a partir del segundo arranque entra directo al acceso.
+
+El instalador también registra e inicia el Agente de Sincronización como **servicio de Windows**
+(arranque automático, sin ícono, sin que nadie lo abra) — ver §6 para los detalles y qué hacer si
+la llave no se capturó durante el asistente.
 
 | | |
 |---|---|
@@ -130,18 +135,40 @@ datos y guarda la configuración; a partir del segundo arranque entra directo al
 
 ## 6. Agente de sincronización (por escuela)
 
+El agente habla con la nube por **`/api/sync/*` autenticado con una llave por escuela**
+(`Sync:ApiKey`); nunca tiene una cadena de conexión a la base de datos de la nube.
+
+### 6.A Con el instalador (5.A — el caso normal)
+
+El instalador **ya lo instaló y lo inició** como servicio de Windows (`SchoolPOSSync`,
+arranque automático) junto con el POS — no hay nada que publicar ni registrar a mano. Lo único
+que puede faltar es la **llave de la escuela**:
+
+- Si se capturó en el asistente de primer arranque, el agente ya está sincronizando.
+- Si no (la escuela no la tenía a la mano todavía), el servicio queda **instalado y corriendo,
+  pero en espera**: no falla ni se detiene, solo no hace nada hasta que se le dé la llave. Se
+  captura después desde el POS: **Configuración → Sincronización con la nube**, pegar la llave y
+  guardar. No hace falta reiniciar el servicio ni la computadora — la recoge sola en el siguiente
+  ciclo (hasta 30 s).
+- La llave la entrega el proveedor por escuela: **Vendor → Escuelas → Llaves**.
+- La configuración de máquina del agente vive en `C:\ProgramData\LoncherApp\sync-agent.settings.json`
+  (mismo directorio que la config del POS); no se edita a mano en operación normal.
+
+### 6.B Instalación manual (5.B — servidor de varias cajas, sin el instalador)
+
 1. Copia `deploy/config-templates/sync-agent.appsettings.json` a
-   `src/SchoolPOS.Sync.Agent/appsettings.json` y completa `ConnectionStrings:Cloud`
-   (DB nube) y `ConnectionStrings:Local` (DB de la escuela).
-2. Publica y ejecuta como servicio (recomendado):
+   `src/SchoolPOS.Sync.Agent/appsettings.json` y completa `ConnectionStrings:Local` (DB de la
+   escuela), `Database:Provider` y `Sync:ApiKey`.
+2. Publica y ejecuta como servicio:
    ```powershell
    dotnet publish src\SchoolPOS.Sync.Agent -c Release -r win-x64 --self-contained -o C:\SchoolPOS\Sync
    # Registrar como servicio de Windows:
    sc.exe create SchoolPOSSync binPath= "C:\SchoolPOS\Sync\SchoolPOS.Sync.Agent.exe" start= auto
    sc.exe start SchoolPOSSync
    ```
-   El agente baja recargas confirmadas al ledger local (idempotente) y sube el
-   consumo a la nube. Si no hay internet, reintenta en el siguiente ciclo.
+
+En ambos casos, el agente baja recargas confirmadas al ledger local (idempotente) y sube el
+consumo a la nube. Si no hay internet, reintenta en el siguiente ciclo.
 
 ## 7. Mercado Pago (split de comisión)
 
@@ -186,6 +213,31 @@ cobros hasta reconectar).
       de la escuela B.
 - [ ] El saldo recargado aparece en el POS tras un ciclo del agente de sincronización.
 - [ ] Panel del proveedor (`/Vendor/Login`) muestra la comisión de la escuela.
+
+## 10. Recuperación de acceso (nadie puede entrar al POS)
+
+El POS es un sistema local sin correo propio, así que no hay un "olvidé mi contraseña" de
+autoservicio en la pantalla de acceso — un Administrador ya logueado restablece la contraseña de
+cualquier operador desde **Operadores**. El caso sin salida es cuando **nadie** puede entrar (el
+único Administrador olvidó la suya, o quedó bloqueado): ahí soporte técnico (BulldogTI) corre
+`SchoolPOS.Provision` directo contra la DB local de la escuela:
+
+```powershell
+dotnet run --project tools\SchoolPOS.Provision -- `
+  --ConnectionString "<misma cadena de conexión de esa escuela>" `
+  --SchoolId <SchoolId de esa escuela> `
+  --ResetPasswordFor admin --NewPassword "Nueva-Contraseña-Temporal" `
+  [--Provider SqlServer|Sqlite]
+```
+
+- Requiere la cadena de conexión de la DB de **esa** escuela (SQL Server) o la ruta del archivo
+  `.db` (SQLite, normalmente `C:\ProgramData\LoncherApp\schoolpos.db`) y su `SchoolId` — ambos
+  quedan anotados desde la provisión inicial (§3).
+- También reactiva y desbloquea la cuenta: si el bloqueo por intentos fallidos era parte del
+  problema, una contraseña nueva que sigue bloqueada no resuelve nada.
+- Entrega la contraseña temporal al operador en persona o por un canal ya verificado — nunca por
+  correo sin más — y pídele que la cambie por una propia en cuanto entre (Operadores → Restablecer
+  contraseña, sobre su propio usuario).
 
 ## Notas de operación
 

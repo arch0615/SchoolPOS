@@ -19,6 +19,15 @@ using SchoolPOS.Domain.Enums;
 //     [--CommissionRate 0.05] [--TaxRate 0] [--TaxInclusive true] \
 //     [--Rfc XAXX010101000] [--LegalName "Escuela SA"] [--TaxRegime 601] \
 //     [--PostalCode 23089] [--CfdiUse G03]   (datos fiscales para facturar comisión)
+//
+// Recuperación de acceso — nadie puede entrar al POS (p. ej. el único Admin olvidó su
+// contraseña): soporte corre este mismo ejecutable en modo "reset", directo contra la DB local de
+// la escuela. No hay recuperación por correo: el POS es un sistema local sin infraestructura de
+// correo propia, así que esto reemplaza a un "olvidé mi contraseña" de autoservicio.
+//   dotnet run --project tools/SchoolPOS.Provision -- \
+//     --ConnectionString "Server=localhost\SQLEXPRESS;Database=SchoolPOS_MiEscuela;Trusted_Connection=True;TrustServerCertificate=True;" \
+//     --SchoolId <guid-de-la-escuela> --ResetPasswordFor admin --NewPassword "NuevaSecreta123" \
+//     [--Provider SqlServer|Sqlite]
 // ---------------------------------------------------------------------------
 
 var opts = ArgParser.Parse(args);
@@ -33,6 +42,9 @@ string Optional(string key, string fallback) =>
 
 decimal Dec(string key, string fallback) =>
     decimal.Parse(Optional(key, fallback), CultureInfo.InvariantCulture);
+
+if (opts.ContainsKey("ResetPasswordFor"))
+    return await ResetPasswordAsync();
 
 try
 {
@@ -144,6 +156,48 @@ catch (Exception ex)
 {
     Console.Error.WriteLine($"✖ Error de provisión: {ex.Message}");
     return 1;
+}
+
+async Task<int> ResetPasswordAsync()
+{
+    try
+    {
+        var provider = Optional("Provider", "SqlServer");
+        var connectionString = Require("ConnectionString");
+        var schoolId = Guid.Parse(Require("SchoolId"));
+        var username = Require("ResetPasswordFor");
+        var newPassword = Require("NewPassword");
+
+        var builder = new DbContextOptionsBuilder<SchoolDbContext>();
+        var isSqlite = string.Equals(provider, "Sqlite", StringComparison.OrdinalIgnoreCase);
+        if (isSqlite) builder.UseSqlite(connectionString, o => o.MigrationsAssembly(SqliteMigrations.AssemblyName));
+        else builder.UseSqlServer(connectionString);
+
+        await using var db = new SchoolDbContext(builder.Options);
+        await db.Database.MigrateAsync();
+
+        var user = await db.Users.FirstOrDefaultAsync(u => u.SchoolId == schoolId && u.Username == username);
+        if (user is null)
+        {
+            Console.Error.WriteLine($"✖ No existe el operador '{username}' en esa escuela.");
+            return 1;
+        }
+
+        var registry = new OperatorRegistry(db, new Pbkdf2PasswordHasher(), new SystemClock());
+        await registry.ResetPasswordAsync(user.Id, newPassword);
+        // Reactivar también, por si el bloqueo por intentos fallidos era justo lo que los dejó
+        // fuera: una contraseña nueva que sigue bloqueada no resuelve nada.
+        await registry.SetActiveAsync(user.Id, true);
+
+        Console.WriteLine($"✔ Contraseña de '{username}' restablecida y la cuenta quedó activa/desbloqueada.");
+        Console.WriteLine("  Entrégasela al operador en persona o por un canal ya verificado — nunca por correo sin más.");
+        return 0;
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"✖ Error al restablecer la contraseña: {ex.Message}");
+        return 1;
+    }
 }
 
 /// <summary>Parser mínimo de argumentos: soporta --clave valor y --clave=valor.</summary>
