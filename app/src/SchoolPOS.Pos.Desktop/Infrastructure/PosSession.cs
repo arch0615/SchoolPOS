@@ -55,6 +55,13 @@ public sealed class PosSession
     /// <summary>Configuración de la escuela: función administrativa.</summary>
     public bool CanManageSettings => Role is UserRole.Admin;
 
+    /// <summary>
+    /// Ajuste manual de saldo (FR-ADM-2), para corregir una recarga o cargo mal aplicado sin pasar
+    /// por una venta/devolución que no encaja con el error real. Administrador solamente: mueve
+    /// dinero fuera del flujo normal de venta/recarga, igual que <see cref="CanRefund"/>.
+    /// </summary>
+    public bool CanAdjustBalance => Role is UserRole.Admin;
+
     public void SignIn(User user) => Operator = user;
 
     public void SignOut() => Operator = null;

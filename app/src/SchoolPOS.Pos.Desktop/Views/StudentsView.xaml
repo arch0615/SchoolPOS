@@ -102,6 +102,25 @@
                                Margin="0,10,0,0" />
                 </StackPanel>
             </Border>
+
+            <!-- Ajuste manual: corrige un saldo mal aplicado sin forzar una venta/devolución. -->
+            <Border Background="White" CornerRadius="8" Padding="18" Margin="0,12,0,0"
+                    Visibility="{Binding CanAdjustBalance, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <TextBlock Text="Ajustar saldo" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,8" />
+                    <TextBlock Text="Para corregir un saldo mal aplicado (recarga con monto equivocado, cargo duplicado, etc.). No pasa por caja."
+                               Foreground="{StaticResource MutedBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10" />
+
+                    <TextBlock Text="Importe (positivo abona, negativo carga)" Foreground="{StaticResource MutedBrush}" />
+                    <TextBox Text="{Binding AdjustAmount, UpdateSourceTrigger=LostFocus}" Margin="0,2,0,10" />
+
+                    <TextBlock Text="Motivo (queda en la bitácora)" Foreground="{StaticResource MutedBrush}" />
+                    <TextBox Text="{Binding AdjustReason, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,10" />
+
+                    <Button Content="Aplicar ajuste" Style="{StaticResource PrimaryButton}" Height="42"
+                            Command="{Binding AdjustCommand}" />
+                </StackPanel>
+            </Border>
               </StackPanel>
             </ScrollViewer>
         </Grid>

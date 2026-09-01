@@ -30,8 +30,11 @@
                     <StackPanel>
                         <TextBlock Text="No tienes una caja abierta" FontWeight="SemiBold" Margin="0,0,0,8" />
                         <StackPanel Orientation="Horizontal">
-                            <TextBox Width="120" Margin="0,0,6,0" Text="{Binding OpeningFloat, UpdateSourceTrigger=LostFocus}" Tag="Fondo inicial" />
-                            <Button Content="Abrir caja" Style="{StaticResource PrimaryButton}" Command="{Binding OpenSessionCommand}" />
+                            <StackPanel Margin="0,0,6,0">
+                                <TextBlock Text="Fondo inicial" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                                <TextBox Width="120" Text="{Binding OpeningFloat, UpdateSourceTrigger=LostFocus}" />
+                            </StackPanel>
+                            <Button Content="Abrir caja" Style="{StaticResource PrimaryButton}" Command="{Binding OpenSessionCommand}" VerticalAlignment="Bottom" />
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -56,9 +59,15 @@
                                          IsChecked="{Binding IsIncomeSelected}" />
                             <RadioButton Content="Egreso" Margin="0,0,10,0" VerticalAlignment="Center"
                                          IsChecked="{Binding IsExpenseSelected}" />
-                            <TextBox Width="90" Margin="0,0,6,0" Text="{Binding MovementAmount, UpdateSourceTrigger=LostFocus}" Tag="Importe" />
-                            <TextBox Width="200" Margin="0,0,6,0" Text="{Binding MovementReason, UpdateSourceTrigger=PropertyChanged}" Tag="Motivo" />
-                            <Button Content="Registrar" Command="{Binding RegisterMovementCommand}" />
+                            <StackPanel Margin="0,0,6,0">
+                                <TextBlock Text="Importe" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                                <TextBox Width="90" Text="{Binding MovementAmount, UpdateSourceTrigger=LostFocus}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,6,0">
+                                <TextBlock Text="Motivo" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                                <TextBox Width="200" Text="{Binding MovementReason, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                            <Button Content="Registrar" Command="{Binding RegisterMovementCommand}" VerticalAlignment="Bottom" />
                         </StackPanel>
 
                         <DataGrid ItemsSource="{Binding Movements}" AutoGenerateColumns="False" IsReadOnly="True"
@@ -75,8 +84,11 @@
                         <Separator Margin="0,14" />
                         <TextBlock Text="Cerrar caja (arqueo)" FontWeight="SemiBold" Margin="0,0,0,6" />
                         <StackPanel Orientation="Horizontal">
-                            <TextBox Width="120" Margin="0,0,6,0" Text="{Binding CountedAmount, UpdateSourceTrigger=LostFocus}" Tag="Monto contado" />
-                            <Button Content="Cerrar caja" Style="{StaticResource PrimaryButton}" Command="{Binding CloseSessionCommand}" />
+                            <StackPanel Margin="0,0,6,0">
+                                <TextBlock Text="Monto contado" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                                <TextBox Width="120" Text="{Binding CountedAmount, UpdateSourceTrigger=LostFocus}" />
+                            </StackPanel>
+                            <Button Content="Cerrar caja" Style="{StaticResource PrimaryButton}" Command="{Binding CloseSessionCommand}" VerticalAlignment="Bottom" />
                         </StackPanel>
                     </StackPanel>
                 </Border>

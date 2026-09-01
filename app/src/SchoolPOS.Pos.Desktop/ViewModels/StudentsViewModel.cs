@@ -37,6 +37,7 @@ public sealed class StudentsViewModel : ViewModelBase, IAsyncLoadable
         SaveCommand = new AsyncRelayCommand(SaveAsync);
         ToggleActiveCommand = new AsyncRelayCommand(ToggleActiveAsync, () => Selected is not null);
         TopUpCommand = new AsyncRelayCommand(TopUpAsync, () => Selected is not null);
+        AdjustCommand = new AsyncRelayCommand(AdjustAsync, () => Selected is not null);
     }
 
     public ObservableCollection<StudentRow> Students { get; } = new();
@@ -69,8 +70,11 @@ public sealed class StudentsViewModel : ViewModelBase, IAsyncLoadable
             OnPropertyChanged(nameof(ToggleActiveText));
             ToggleActiveCommand.RaiseCanExecuteChanged();
             TopUpCommand.RaiseCanExecuteChanged();
+            AdjustCommand.RaiseCanExecuteChanged();
         }
     }
+
+    public bool CanAdjustBalance => _session.CanAdjustBalance;
 
     public bool IsEditing => Selected is not null;
     public string SaveButtonText => IsEditing ? "Guardar cambios" : "Dar de alta";
@@ -242,6 +246,62 @@ public sealed class StudentsViewModel : ViewModelBase, IAsyncLoadable
 
             StatusMessage = $"Recarga de {TopUpAmount:C2} aplicada a {student.FullName}.";
             TopUpAmount = 0m;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Describe();
+        }
+    }
+
+    // ---- Ajuste manual de saldo (FR-ADM-2) ----
+    // Para corregir un saldo mal aplicado (recarga con el monto equivocado, cargo duplicado, etc.)
+    // sin forzar una venta/devolución que no corresponde al error real. No toca caja/arqueo: es un
+    // asiento directo al libro mayor, con motivo obligatorio para la bitácora (acción sensible,
+    // FR-ADM-4) — por eso solo el administrador la ve (PosSession.CanAdjustBalance).
+
+    private decimal _adjustAmount;
+    private string _adjustReason = string.Empty;
+
+    /// <summary>Importe con signo: positivo abona, negativo carga. Nunca puede ser cero.</summary>
+    public decimal AdjustAmount { get => _adjustAmount; set => SetProperty(ref _adjustAmount, value); }
+
+    /// <summary>Motivo del ajuste, obligatorio: queda en la bitácora junto al monto y quién lo aplicó.</summary>
+    public string AdjustReason { get => _adjustReason; set => SetProperty(ref _adjustReason, value); }
+
+    public AsyncRelayCommand AdjustCommand { get; private set; } = null!;
+
+    private async Task AdjustAsync()
+    {
+        ErrorMessage = string.Empty;
+        StatusMessage = string.Empty;
+
+        if (Selected is not { } student)
+        {
+            ErrorMessage = "Elija un alumno de la lista.";
+            return;
+        }
+        if (AdjustAmount == 0m)
+        {
+            ErrorMessage = "Escriba el importe del ajuste (positivo abona, negativo carga).";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(AdjustReason))
+        {
+            ErrorMessage = "Escriba el motivo del ajuste: queda en la bitácora.";
+            return;
+        }
+
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var balance = scope.ServiceProvider.GetRequiredService<IBalanceService>();
+            await balance.AdjustAsync(
+                student.AccountId, AdjustAmount, AdjustReason.Trim(), _session.Operator!.Id);
+
+            StatusMessage = $"Ajuste de {AdjustAmount:C2} aplicado a {student.FullName}.";
+            AdjustAmount = 0m;
+            AdjustReason = string.Empty;
             await LoadAsync();
         }
         catch (Exception ex)
