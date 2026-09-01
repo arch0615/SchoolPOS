@@ -130,8 +130,22 @@ public sealed class TreasuryViewModel : ViewModelBase, IAsyncLoadable
             else
             {
                 OpenSession = new OpenSessionRow(open.Id, open.OpeningFloat, open.OpenedAtUtc);
-                foreach (var m in open.Movements.OrderByDescending(m => m.CreatedAtUtc))
-                    Movements.Add(new CashMovementRow(m.Type, m.Amount, m.Reason, m.CreatedAtUtc));
+
+                // Las ventas en efectivo no generan un CashMovement propio (su importe ya se suma
+                // aparte al cerrar caja, en ExpectedAmount); sin esto la lista de movimientos solo
+                // mostraba egresos manuales o de devolución, nunca el ingreso real de una venta.
+                var cashSales = await db.Sales.AsNoTracking()
+                    .Where(s => s.CashSessionId == open.Id && s.Tender == TenderType.Cash)
+                    .Select(s => new { s.Id, s.Total, s.CreatedAtUtc })
+                    .ToListAsync();
+
+                var rows = open.Movements
+                    .Select(m => new CashMovementRow(m.Type, m.Amount, m.Reason, m.CreatedAtUtc))
+                    .Concat(cashSales.Select(s => new CashMovementRow(
+                        CashMovementType.Income, s.Total, $"Venta {s.Id}", s.CreatedAtUtc)))
+                    .OrderByDescending(m => m.CreatedAtUtc);
+                foreach (var r in rows)
+                    Movements.Add(r);
             }
 
             // El histórico de arqueos de toda la escuela es información administrativa: un cajero
