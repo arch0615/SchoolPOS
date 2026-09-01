@@ -140,12 +140,31 @@ public class InventoryModel : PageModel
                 var product = await _db.Products.FirstOrDefaultAsync(p => p.Id == existingId && p.SchoolId == schoolId)
                     ?? throw new InvalidOperationException("Producto no encontrado.");
 
+                var oldPrice = product.Price;
                 product.Name = Input.Name.Trim();
                 product.Barcode = string.IsNullOrWhiteSpace(Input.Barcode) ? null : Input.Barcode.Trim();
                 product.CategoryId = Input.CategoryId;
                 product.Price = Input.Price;
                 product.Cost = Input.Cost;
                 product.MinStock = Input.MinStock;
+
+                // Bitácora: un precio equivocado corregido en silencio no deja rastro de qué era
+                // antes ni quién lo cambió (FR-ADM-4).
+                if (oldPrice != product.Price)
+                {
+                    _db.AuditLogs.Add(new AuditLog
+                    {
+                        SchoolId = schoolId,
+                        Actor = User.GetOperatorId().ToString(),
+                        Action = "PriceChange",
+                        Entity = nameof(Product),
+                        EntityId = product.Id.ToString(),
+                        Before = oldPrice.ToString("0.00"),
+                        After = product.Price.ToString("0.00"),
+                        CreatedAtUtc = DateTime.UtcNow,
+                    });
+                }
+
                 await _db.SaveChangesAsync();
                 Message = $"'{product.Name}' actualizado.";
             }

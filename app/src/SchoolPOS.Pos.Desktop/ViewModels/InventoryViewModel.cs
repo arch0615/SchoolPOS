@@ -213,12 +213,31 @@ public sealed class InventoryViewModel : ViewModelBase, IAsyncLoadable
                 // Entrada/Salida/Ajuste, con su propio asiento de Kardex.
                 var product = await db.Products.FirstOrDefaultAsync(p => p.Id == editing.Id)
                     ?? throw new InvalidOperationException("El producto ya no existe.");
+                var oldPrice = product.Price;
                 product.Name = name;
                 product.Barcode = barcode;
                 product.CategoryId = NewProductCategory?.Id;
                 product.Price = NewProductPrice;
                 product.Cost = NewProductCost;
                 product.MinStock = NewProductMinStock;
+
+                // Bitácora: un precio equivocado corregido en silencio no deja rastro de qué era
+                // antes ni quién lo cambió (FR-ADM-4).
+                if (oldPrice != product.Price)
+                {
+                    db.AuditLogs.Add(new AuditLog
+                    {
+                        SchoolId = _session.SchoolId,
+                        Actor = _session.Operator!.Id.ToString(),
+                        Action = "PriceChange",
+                        Entity = nameof(Product),
+                        EntityId = product.Id.ToString(),
+                        Before = oldPrice.ToString("0.00"),
+                        After = product.Price.ToString("0.00"),
+                        CreatedAtUtc = DateTime.UtcNow,
+                    });
+                }
+
                 await db.SaveChangesAsync();
 
                 StatusMessage = $"'{name}' actualizado.";
