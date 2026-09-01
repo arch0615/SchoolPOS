@@ -30,6 +30,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-SchoolPOS.Portal.Web-a7e3f9c2-8b41-4d6a-9c0e-5f2d1b6a7e84</UserSecretsId>
     <!--
       NU1902: aviso de vulnerabilidad transitiva de MailKit sin versión corregida en el feed.
       Se mantiene como advertencia (visible), no como error, para no bloquear el build.
@@ -37,5 +38,14 @@
     -->
     <WarningsNotAsErrors>NU1902;NU1903</WarningsNotAsErrors>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Por si alguien vuelve a crear un secrets.json suelto en esta carpeta por costumbre: el SDK
+      Web lo incluiría en la publicación por omisión (así se filtró la config de desarrollo a
+      producción una vez). Los secretos de desarrollo van con `dotnet user-secrets`, nunca aquí.
+    -->
+    <Content Remove="secrets.json" />
+  </ItemGroup>
 
 </Project>

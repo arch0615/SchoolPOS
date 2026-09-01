@@ -13,10 +13,14 @@ using SchoolPOS.Portal.Web.Infrastructure.Email;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// secrets.json: overrides locales fuera de control de versiones (ya está en .gitignore). Se
-// aplica después de appsettings.json/appsettings.{Environment}.json, así que gana sobre ambos;
-// optional=true para que su ausencia no rompa un clon nuevo del repo sin credenciales todavía.
-builder.Configuration.AddJsonFile("secrets.json", optional: true, reloadOnChange: true);
+// Secretos de desarrollo: dotnet user-secrets (fuera del árbol del proyecto por diseño), NUNCA un
+// secrets.json suelto en esta carpeta — el SDK Web incluye cualquier archivo del proyecto en la
+// publicación por omisión, así que un secrets.json aquí viaja calladito en cada `dotnet publish` y
+// puede terminar en el servidor con credenciales de otro entorno (ya nos pasó: producción quedó
+// apuntando a la DB de desarrollo por esto exacto). Solo en Development; en producción no hay
+// almacén de user-secrets, así que esto no hace nada ahí.
+if (builder.Environment.IsDevelopment())
+    builder.Configuration.AddUserSecrets<Program>();
 var config = builder.Configuration;
 
 var provider = config["Database:Provider"] ?? "Sqlite";

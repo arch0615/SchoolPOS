@@ -46,6 +46,15 @@ The filled-in `appsettings.Production.json` is gitignored; the `loncherapp.env` 
 outside the repo. **Never commit either.** Nested keys in the env-file use `__`
 (e.g. `Smtp__Password`, `ConnectionStrings__Portal`).
 
+> **Never create a `secrets.json` file inside `src/SchoolPOS.Portal.Web/`** for local dev
+> credentials — use `dotnet user-secrets set Key Value --project app/src/SchoolPOS.Portal.Web`
+> instead (it's stored outside the repo/project tree entirely). A loose `secrets.json` there
+> used to get silently swept into `dotnet publish`'s output by the SDK's default file
+> globbing and load *after* `appsettings.Production.json`, quietly overriding it — this is
+> exactly how production once ended up pointed at a dev database. The project now excludes
+> `secrets.json` from publish (`<Content Remove>`) as a second line of defense, but don't
+> rely on that: just don't create the file there at all.
+
 ## 2. Install the .NET 8 runtime + run the service
 ```bash
 sudo apt-get update
