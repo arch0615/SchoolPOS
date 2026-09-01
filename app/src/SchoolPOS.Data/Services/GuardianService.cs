@@ -28,27 +28,49 @@ public sealed class GuardianService : IGuardianService
     }
 
     public async Task<Guardian> RegisterAsync(
-        Guid schoolId, string email, string password, string fullName, CancellationToken ct = default)
+        Guid schoolId, string email, string password, string fullName,
+        bool acceptedTerms = true, bool acceptedPrivacy = true, bool acceptNotifications = true,
+        CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(email))
             throw new ArgumentException("El correo es obligatorio.", nameof(email));
         if (string.IsNullOrEmpty(password) || password.Length < 6)
             throw new ArgumentException("La contraseña debe tener al menos 6 caracteres.", nameof(password));
+        if (!acceptedTerms || !acceptedPrivacy)
+            throw new ArgumentException(
+                "Debes aceptar los Términos y el Aviso de Privacidad para crear una cuenta.");
 
         var normalized = email.Trim().ToLowerInvariant();
         var exists = await _db.Guardians.AnyAsync(g => g.SchoolId == schoolId && g.Email == normalized, ct);
         if (exists)
             throw new InvalidOperationException("Ya existe una cuenta con ese correo.");
 
+        var now = _clock.UtcNow;
         var guardian = new Guardian
         {
             SchoolId = schoolId,
             Email = normalized,
             FullName = fullName,
             PasswordHash = _hasher.Hash(password),
-            CreatedAtUtc = _clock.UtcNow,
+            CreatedAtUtc = now,
+            AcceptedTermsAtUtc = now,
+            AcceptedPrivacyAtUtc = now,
         };
         _db.Guardians.Add(guardian);
+
+        // Preferencias iniciales: sin esto, mientras no exista fila el resto del sistema asume los
+        // valores por omisión de la entidad (saldo bajo/recarga confirmada = sí) sin importar lo
+        // que el tutor haya elegido aquí — con la casilla sin marcar debe quedar todo apagado.
+        _db.GuardianNotificationPreferences.Add(new GuardianNotificationPreference
+        {
+            GuardianId = guardian.Id,
+            LowBalance = acceptNotifications,
+            TopUpConfirmed = acceptNotifications,
+            PurchaseMade = false,
+            DailySummary = false,
+            UpdatedAtUtc = now,
+        });
+
         await _db.SaveChangesAsync(ct);
         return guardian;
     }
@@ -168,6 +190,25 @@ public sealed class GuardianService : IGuardianService
         guardian.PasswordResetExpiresUtc = _clock.UtcNow.AddHours(1);
         await _db.SaveChangesAsync(ct);
         return token;
+    }
+
+    public async Task<IReadOnlyList<(Guid SchoolId, string Token)>> RequestPasswordResetsAsync(
+        string email, CancellationToken ct = default)
+    {
+        var normalized = email.Trim().ToLowerInvariant();
+        var guardians = await _db.Guardians.Where(g => g.Email == normalized).ToListAsync(ct);
+
+        var results = new List<(Guid, string)>();
+        foreach (var guardian in guardians)
+        {
+            var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+            guardian.PasswordResetTokenHash = _hasher.Hash(token);
+            guardian.PasswordResetExpiresUtc = _clock.UtcNow.AddHours(1);
+            results.Add((guardian.SchoolId, token));
+        }
+        if (results.Count > 0)
+            await _db.SaveChangesAsync(ct);
+        return results;
     }
 
     public async Task<bool> ResetPasswordAsync(

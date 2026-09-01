@@ -24,9 +24,15 @@ public sealed record MovementRow(
 /// </summary>
 public interface IGuardianService
 {
-    /// <summary>Registra un tutor con contraseña hasheada (FR-WP-2). Email único por escuela.</summary>
+    /// <summary>
+    /// Registra un tutor con contraseña hasheada (FR-WP-2). Email único por escuela. Exige aceptar
+    /// Términos y Aviso de Privacidad (lanza si alguno es <c>false</c>); <paramref name="acceptNotifications"/>
+    /// fija las preferencias de aviso iniciales (saldo bajo / recarga confirmada).
+    /// </summary>
     Task<Guardian> RegisterAsync(
-        Guid schoolId, string email, string password, string fullName, CancellationToken ct = default);
+        Guid schoolId, string email, string password, string fullName,
+        bool acceptedTerms = true, bool acceptedPrivacy = true, bool acceptNotifications = true,
+        CancellationToken ct = default);
 
     /// <summary>
     /// Autentica al tutor con bloqueo tras N intentos fallidos (FR-WP-3). Devuelve un resultado
@@ -58,6 +64,17 @@ public interface IGuardianService
     /// no existe (no se revela la existencia de la cuenta).
     /// </summary>
     Task<string?> RequestPasswordResetAsync(Guid schoolId, string email, CancellationToken ct = default);
+
+    /// <summary>
+    /// Igual que <see cref="RequestPasswordResetAsync"/> pero sin escuela conocida de antemano: un
+    /// tutor con hijos en más de una escuela tiene una cuenta por escuela con el mismo correo, y
+    /// pedirle que adivine cuál eligió al registrarse es la forma más común de que "recuperar
+    /// contraseña" falle en silencio (misma respuesta neutra, cero correo). Busca el correo en
+    /// todas las escuelas y genera un token por cada cuenta encontrada — la lista puede venir vacía,
+    /// sin revelar si el correo existe.
+    /// </summary>
+    Task<IReadOnlyList<(Guid SchoolId, string Token)>> RequestPasswordResetsAsync(
+        string email, CancellationToken ct = default);
 
     /// <summary>Restablece la contraseña con un token válido y vigente. El token es de un solo uso.</summary>
     Task<bool> ResetPasswordAsync(

@@ -25,6 +25,13 @@ public class Guardian
     public string? PasswordResetTokenHash { get; set; }
     public DateTime? PasswordResetExpiresUtc { get; set; }
 
+    /// <summary>
+    /// Constancia de aceptación (evidencia exigible para el Aviso de Privacidad, LFPDPPP). Nulo en
+    /// cuentas creadas antes de que existiera esta casilla en el alta.
+    /// </summary>
+    public DateTime? AcceptedTermsAtUtc { get; set; }
+    public DateTime? AcceptedPrivacyAtUtc { get; set; }
+
     public ICollection<GuardianStudent> Students { get; set; } = new List<GuardianStudent>();
 
     public DateTime CreatedAtUtc { get; set; }

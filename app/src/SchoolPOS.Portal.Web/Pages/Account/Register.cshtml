@@ -37,10 +37,19 @@
                 <label>Correo electrónico</label>
                 <input asp-for="Input.Email" type="email" placeholder="tu@correo.com" />
                 <label>Contraseña <span style="font-weight:400">(mínimo 6 caracteres)</span></label>
-                <input asp-for="Input.Password" type="password" placeholder="••••••••" />
+                <div class="pwd-wrap">
+                    <input asp-for="Input.Password" type="password" placeholder="••••••••" />
+                    <button type="button" class="pwd-toggle" data-target="Input_Password" aria-label="Mostrar contraseña">👁</button>
+                </div>
+
+                <label class="check"><input asp-for="Input.AcceptTerms" type="checkbox" /> Acepto los <a href="/Legal/Terms" target="_blank">Términos y condiciones</a></label>
+                <label class="check"><input asp-for="Input.AcceptPrivacy" type="checkbox" /> Acepto el <a href="/Legal/PrivacyNotice" target="_blank">Aviso de Privacidad</a></label>
+                <label class="check"><input asp-for="Input.AcceptNotifications" type="checkbox" /> Quiero recibir notificaciones (saldo bajo, recargas confirmadas)</label>
+
                 <button class="btn" type="submit">Registrarme</button>
                 <p class="alt">¿Ya tienes cuenta? <a href="/Account/Login">Ingresar</a></p>
             </form>
         </div>
     </div>
 </div>
+<script src="/js/password-toggle.js" asp-append-version="true"></script>

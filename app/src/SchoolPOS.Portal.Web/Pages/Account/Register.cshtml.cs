@@ -41,6 +41,16 @@ public class RegisterModel : PageModel
 
         [Required, MinLength(6, ErrorMessage = "La contraseña debe tener al menos 6 caracteres.")]
         public string Password { get; set; } = string.Empty;
+
+        [Range(typeof(bool), "true", "true", ErrorMessage = "Debes aceptar los Términos y Condiciones.")]
+        public bool AcceptTerms { get; set; }
+
+        [Range(typeof(bool), "true", "true", ErrorMessage = "Debes aceptar el Aviso de Privacidad.")]
+        public bool AcceptPrivacy { get; set; }
+
+        /// <summary>Marcada por omisión: a diferencia de Términos/Privacidad, no es un consentimiento
+        /// legal exigido, es una preferencia — tiene sentido partir de "sí, avísame".</summary>
+        public bool AcceptNotifications { get; set; } = true;
     }
 
     public async Task OnGetAsync()
@@ -69,7 +79,8 @@ public class RegisterModel : PageModel
         try
         {
             var guardian = await _guardians.RegisterAsync(
-                Input.SchoolId, Input.Email, Input.Password, Input.FullName);
+                Input.SchoolId, Input.Email, Input.Password, Input.FullName,
+                Input.AcceptTerms, Input.AcceptPrivacy, Input.AcceptNotifications);
             await PortalSignIn.SignInAsync(HttpContext, guardian);
             return RedirectToPage("/Dashboard");
         }

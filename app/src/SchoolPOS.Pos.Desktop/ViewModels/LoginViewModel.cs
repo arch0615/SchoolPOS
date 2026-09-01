@@ -13,6 +13,7 @@ public sealed class LoginViewModel : ViewModelBase
     private string _username = string.Empty;
     private string _errorMessage = string.Empty;
     private bool _isBusy;
+    private bool _showPassword;
 
     public LoginViewModel(IServiceScopeFactory scopeFactory, PosSession session)
     {
@@ -29,6 +30,18 @@ public sealed class LoginViewModel : ViewModelBase
 
     /// <summary>Contraseña (asignada desde el code-behind por seguridad del PasswordBox).</summary>
     public string Password { private get; set; } = string.Empty;
+
+    /// <summary>
+    /// "Mostrar contraseña": intercambia el PasswordBox (enmascarado) por un TextBox normal. El
+    /// code-behind sincroniza el texto entre ambos al alternar (ver LoginWindow.xaml.cs).
+    /// </summary>
+    public bool ShowPassword
+    {
+        get => _showPassword;
+        set { if (SetProperty(ref _showPassword, value)) OnPropertyChanged(nameof(IsPasswordMasked)); }
+    }
+
+    public bool IsPasswordMasked => !ShowPassword;
 
     public string ErrorMessage
     {

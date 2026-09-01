@@ -36,7 +36,10 @@
                 <label>Correo electrónico</label>
                 <input asp-for="Input.Email" type="email" placeholder="tu@correo.com" autofocus />
                 <label>Contraseña</label>
-                <input asp-for="Input.Password" type="password" placeholder="••••••••" />
+                <div class="pwd-wrap">
+                    <input asp-for="Input.Password" type="password" placeholder="••••••••" />
+                    <button type="button" class="pwd-toggle" data-target="Input_Password" aria-label="Mostrar contraseña">👁</button>
+                </div>
                 <a class="forgot" href="/Account/ForgotPassword">¿Olvidaste tu contraseña?</a>
                 <button class="btn" type="submit">Entrar</button>
                 <p class="alt">¿No tienes cuenta? <a href="/Account/Register">Crear cuenta</a></p>
@@ -44,3 +47,4 @@
         </div>
     </div>
 </div>
+<script src="/js/password-toggle.js" asp-append-version="true"></script>

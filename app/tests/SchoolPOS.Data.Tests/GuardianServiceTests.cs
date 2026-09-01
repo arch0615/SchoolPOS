@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using SchoolPOS.Data.Security;
 using SchoolPOS.Data.Services;
 using SchoolPOS.Data.Tests.TestSupport;
@@ -94,6 +95,51 @@ public class GuardianServiceTests
         linked[0].Balance.Should().Be(75m);
         linked[0].AccountId.Should().Be(account.Id);
         (await svc.OwnsStudentAsync(guardian.Id, linked[0].StudentId)).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Register_without_accepting_terms_or_privacy_is_rejected()
+    {
+        using var db = new TestDatabase();
+        var school = db.SeedSchool();
+        var svc = NewService(db);
+
+        var noTerms = () => svc.RegisterAsync(school.Id, "p@c.com", "clave123", "P", acceptedTerms: false);
+        await noTerms.Should().ThrowAsync<ArgumentException>();
+
+        var noPrivacy = () => svc.RegisterAsync(school.Id, "p@c.com", "clave123", "P", acceptedPrivacy: false);
+        await noPrivacy.Should().ThrowAsync<ArgumentException>();
+
+        // Ninguno de los dos intentos debe haber dejado una cuenta a medias.
+        (await db.Context.Guardians.AnyAsync(g => g.SchoolId == school.Id)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Register_records_consent_timestamps_and_initial_notification_preferences()
+    {
+        using var db = new TestDatabase();
+        var school = db.SeedSchool();
+        var svc = NewService(db);
+
+        var accepted = await svc.RegisterAsync(
+            school.Id, "acepta@c.com", "clave123", "Acepta", acceptedTerms: true, acceptedPrivacy: true,
+            acceptNotifications: true);
+        accepted.AcceptedTermsAtUtc.Should().NotBeNull();
+        accepted.AcceptedPrivacyAtUtc.Should().NotBeNull();
+
+        var withPrefs = await db.Context.GuardianNotificationPreferences
+            .SingleAsync(p => p.GuardianId == accepted.Id);
+        withPrefs.LowBalance.Should().BeTrue();
+        withPrefs.TopUpConfirmed.Should().BeTrue();
+
+        // Casilla de notificaciones sin marcar: nada debe quedar prendido por omisión.
+        var declined = await svc.RegisterAsync(
+            school.Id, "declina@c.com", "clave123", "Declina", acceptedTerms: true, acceptedPrivacy: true,
+            acceptNotifications: false);
+        var withoutPrefs = await db.Context.GuardianNotificationPreferences
+            .SingleAsync(p => p.GuardianId == declined.Id);
+        withoutPrefs.LowBalance.Should().BeFalse();
+        withoutPrefs.TopUpConfirmed.Should().BeFalse();
     }
 
     [Fact]

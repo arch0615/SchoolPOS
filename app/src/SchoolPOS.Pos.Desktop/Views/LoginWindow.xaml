@@ -39,8 +39,17 @@
 
         <StackPanel Grid.Row="4" Margin="0,8,0,0">
             <TextBlock Text="Contraseña" FontWeight="SemiBold" />
-            <PasswordBox x:Name="PasswordBox" Padding="8,6" Margin="0,4" FontSize="14"
-                         PasswordChanged="PasswordBox_OnPasswordChanged" />
+            <Grid Margin="0,4">
+                <PasswordBox x:Name="PasswordBox" Padding="8,6" FontSize="14"
+                             PasswordChanged="PasswordBox_OnPasswordChanged"
+                             Visibility="{Binding IsPasswordMasked, Converter={StaticResource BoolToVisibility}}" />
+                <TextBox x:Name="PlainPasswordBox" Padding="8,6" FontSize="14"
+                         TextChanged="PlainPasswordBox_OnTextChanged"
+                         Visibility="{Binding ShowPassword, Converter={StaticResource BoolToVisibility}}" />
+            </Grid>
+            <CheckBox Content="Mostrar contraseña" FontSize="11" Margin="0,2,0,0"
+                      IsChecked="{Binding ShowPassword}"
+                      Checked="ShowPassword_OnChecked" Unchecked="ShowPassword_OnUnchecked" />
         </StackPanel>
 
         <StackPanel Grid.Row="5" Margin="0,16,0,0">

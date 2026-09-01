@@ -359,6 +359,12 @@ namespace SchoolPOS.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime?>("AcceptedPrivacyAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("AcceptedTermsAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 

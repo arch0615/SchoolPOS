@@ -80,6 +80,37 @@ public class PasswordRecoveryTests
     }
 
     [Fact]
+    public async Task Requesting_reset_without_school_finds_accounts_across_all_schools()
+    {
+        using var db = new TestDatabase();
+        var schoolA = db.SeedSchool();
+        var schoolB = db.SeedSchool();
+        var svc = NewService(db, new TestClock());
+        // Mismo correo, dos escuelas: un tutor con hijos en cada una.
+        await svc.RegisterAsync(schoolA.Id, "padre@c.com", "claveA12", "Padre");
+        await svc.RegisterAsync(schoolB.Id, "padre@c.com", "claveB12", "Padre");
+
+        var results = await svc.RequestPasswordResetsAsync("Padre@C.com");
+
+        results.Should().HaveCount(2);
+        results.Select(r => r.SchoolId).Should().BeEquivalentTo(new[] { schoolA.Id, schoolB.Id });
+        // Cada token debe restablecer solo la cuenta de su propia escuela.
+        var forA = results.Single(r => r.SchoolId == schoolA.Id).Token;
+        (await svc.ResetPasswordAsync(schoolA.Id, "padre@c.com", forA, "nuevaA123")).Should().BeTrue();
+        (await svc.AuthenticateAsync(schoolB.Id, "padre@c.com", "nuevaA123")).Succeeded.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Requesting_reset_for_unknown_email_returns_empty_without_revealing()
+    {
+        using var db = new TestDatabase();
+        db.SeedSchool();
+        var svc = NewService(db, new TestClock());
+
+        (await svc.RequestPasswordResetsAsync("noexiste@c.com")).Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task Change_password_requires_correct_current()
     {
         using var db = new TestDatabase();
