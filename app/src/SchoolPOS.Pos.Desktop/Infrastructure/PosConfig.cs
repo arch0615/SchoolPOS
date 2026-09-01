@@ -48,6 +48,27 @@ public static class PosConfig
         }
     }
 
+    /// <summary>Provider y cadena de conexión actuales de esta caja (para replicarlos al escribir
+    /// la config del Agente de Sincronización desde Configuración).</summary>
+    public static (string Provider, string ConnectionString)? ReadDatabaseSettings()
+    {
+        if (!File.Exists(FilePath))
+            return null;
+        try
+        {
+            var root = JsonNode.Parse(File.ReadAllText(FilePath))?.AsObject();
+            var provider = root?["Database"]?["Provider"]?.GetValue<string>();
+            var connection = root?["ConnectionStrings"]?["Local"]?.GetValue<string>();
+            return string.IsNullOrWhiteSpace(provider) || string.IsNullOrWhiteSpace(connection)
+                ? null
+                : (provider, connection);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
     /// <summary>Escribe la configuración de la caja, creando la carpeta si hace falta.</summary>
     public static void Save(Guid schoolId, string provider, string connectionString)
     {

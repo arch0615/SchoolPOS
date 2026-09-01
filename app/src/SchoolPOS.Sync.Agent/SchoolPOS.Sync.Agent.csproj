@@ -9,12 +9,19 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SchoolPOS.Data\SchoolPOS.Data.csproj" />
     <ProjectReference Include="..\SchoolPOS.Domain\SchoolPOS.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Ver el comentario en Program.cs: nunca un secrets.json suelto aquí. -->
+    <Content Remove="secrets.json" />
   </ItemGroup>
 </Project>

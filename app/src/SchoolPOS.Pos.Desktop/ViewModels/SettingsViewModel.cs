@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using SchoolPOS.Data;
+using SchoolPOS.Data.Sync;
 using SchoolPOS.Pos.Desktop.Infrastructure;
 
 namespace SchoolPOS.Pos.Desktop.ViewModels;
@@ -28,6 +29,9 @@ public sealed class SettingsViewModel : ViewModelBase, IAsyncLoadable
     private string _cfdiUse = string.Empty;
     private string _billingEmail = string.Empty;
 
+    private string _syncApiKey = string.Empty;
+    private bool _isSyncConfigured;
+
     private string _statusMessage = string.Empty;
     private string _errorMessage = string.Empty;
 
@@ -37,6 +41,7 @@ public sealed class SettingsViewModel : ViewModelBase, IAsyncLoadable
         _session = session;
         RefreshCommand = new AsyncRelayCommand(LoadAsync);
         SaveCommand = new AsyncRelayCommand(SaveAsync);
+        SaveSyncKeyCommand = new RelayCommand(SaveSyncKey, () => SyncApiKey.Trim().Length > 0);
     }
 
     public string SchoolName { get => _schoolName; private set => SetProperty(ref _schoolName, value); }
@@ -65,11 +70,24 @@ public sealed class SettingsViewModel : ViewModelBase, IAsyncLoadable
     /// <summary>Correo al que se envía el CFDI de comisión al timbrarse (opcional).</summary>
     public string BillingEmail { get => _billingEmail; set => SetProperty(ref _billingEmail, value); }
 
+    /// <summary>Llave de esta escuela para el Agente de Sincronización (ver Vendor &gt; Escuelas &gt;
+    /// Llaves). Se guarda aparte del resto (archivo de máquina, no la base de datos): la lee el
+    /// servicio de sincronización, que ya está instalado y corriendo desde el instalador.</summary>
+    public string SyncApiKey
+    {
+        get => _syncApiKey;
+        set { if (SetProperty(ref _syncApiKey, value)) SaveSyncKeyCommand.RaiseCanExecuteChanged(); }
+    }
+
+    /// <summary>Si ya hay una llave capturada (no se vuelve a mostrar en claro tras guardarla).</summary>
+    public bool IsSyncConfigured { get => _isSyncConfigured; private set => SetProperty(ref _isSyncConfigured, value); }
+
     public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
     public string ErrorMessage { get => _errorMessage; set => SetProperty(ref _errorMessage, value); }
 
     public AsyncRelayCommand RefreshCommand { get; }
     public AsyncRelayCommand SaveCommand { get; }
+    public RelayCommand SaveSyncKeyCommand { get; }
 
     public async Task LoadAsync()
     {
@@ -98,10 +116,40 @@ public sealed class SettingsViewModel : ViewModelBase, IAsyncLoadable
             PostalCode = school.PostalCode ?? string.Empty;
             CfdiUse = school.CfdiUse ?? string.Empty;
             BillingEmail = school.BillingEmail ?? string.Empty;
+
+            // No se repite la llave en claro: solo si ya hay una capturada, para no tentar a
+            // copiarla/mostrarla en pantalla sin necesidad.
+            IsSyncConfigured = SyncAgentConfigFile.Read()?.ApiKey is not null;
         }
         catch (Exception ex)
         {
             ErrorMessage = $"No se pudo cargar la configuración: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Captura o reemplaza la llave de sincronización sin tocar lo demás. El servicio ya está
+    /// instalado y corriendo (lo instala el instalador junto con el POS); recarga la config solo
+    /// y retoma en el siguiente ciclo, sin reiniciar nada.
+    /// </summary>
+    private void SaveSyncKey()
+    {
+        ErrorMessage = string.Empty;
+        StatusMessage = string.Empty;
+        try
+        {
+            var db = PosConfig.ReadDatabaseSettings()
+                ?? throw new InvalidOperationException("No se encontró la configuración de esta caja.");
+            SyncAgentConfigFile.Save(
+                db.Provider, db.ConnectionString, SyncAgentConfigFile.DefaultApiBaseUrl, SyncApiKey.Trim());
+
+            SyncApiKey = string.Empty;
+            IsSyncConfigured = true;
+            StatusMessage = "Llave de sincronización guardada.";
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"No se pudo guardar la llave de sincronización: {ex.Message}";
         }
     }
 

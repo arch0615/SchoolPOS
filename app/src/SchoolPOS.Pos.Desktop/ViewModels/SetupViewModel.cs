@@ -1,3 +1,4 @@
+using SchoolPOS.Data.Sync;
 using SchoolPOS.Pos.Desktop.Infrastructure;
 
 namespace SchoolPOS.Pos.Desktop.ViewModels;
@@ -26,6 +27,7 @@ public sealed class SetupViewModel : ViewModelBase
     private string _databaseName = "SchoolPOS";
     private bool _useSqlAuth;
     private string _sqlUsername = string.Empty;
+    private string _syncApiKey = string.Empty;
 
     public SetupViewModel()
     {
@@ -85,6 +87,14 @@ public sealed class SetupViewModel : ViewModelBase
 
     /// <summary>Contraseña de SQL (se asigna desde el code-behind, igual que <see cref="AdminPassword"/>).</summary>
     public string SqlPassword { private get; set; } = string.Empty;
+
+    /// <summary>
+    /// Llave de esta escuela para el Agente de Sincronización (ver Vendor &gt; Escuelas &gt; Llaves).
+    /// Opcional aquí a propósito: si la escuela todavía no la tiene a la mano, el asistente no debe
+    /// bloquearse por eso — el servicio de sincronización queda instalado e inicia solo, y se puede
+    /// capturar después desde Configuración &gt; Sincronización sin reinstalar nada.
+    /// </summary>
+    public string SyncApiKey { get => _syncApiKey; set => SetProperty(ref _syncApiKey, value); }
 
     public string ErrorMessage { get => _errorMessage; set => SetProperty(ref _errorMessage, value); }
     public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
@@ -185,6 +195,13 @@ public sealed class SetupViewModel : ViewModelBase
             // La configuración se escribe al final: si algo falló antes, la caja sigue "sin
             // configurar" y el asistente vuelve a abrirse en el siguiente arranque.
             PosConfig.Save(schoolId, provider, connectionString);
+
+            // El servicio de sincronización ya quedó instalado por el instalador; aquí solo le
+            // damos con qué DB local hablar y, si ya la tienen, la llave de la escuela. Sin llave
+            // el servicio simplemente espera (ver Worker) hasta que se capture en Configuración.
+            SyncAgentConfigFile.Save(
+                provider, connectionString, SyncAgentConfigFile.DefaultApiBaseUrl,
+                string.IsNullOrWhiteSpace(SyncApiKey) ? null : SyncApiKey.Trim());
 
             StatusMessage = "Listo.";
             SetupCompleted?.Invoke();

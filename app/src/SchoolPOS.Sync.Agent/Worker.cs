@@ -38,6 +38,17 @@ public sealed class Worker : BackgroundService
         {
             try
             {
+                // Instalador nuevo, llave todavía no capturada (Configuración > Sincronización):
+                // el servicio ya está corriendo, pero no hay con qué autenticarse todavía. Esperar
+                // en vez de fallar evita un ciclo de arranque/caída en el Visor de eventos.
+                if (string.IsNullOrWhiteSpace(_config["Sync:ApiKey"]))
+                {
+                    _logger.LogWarning(
+                        "Falta la llave de sincronización (Sync:ApiKey); en espera de configuración.");
+                    await Task.Delay(interval, stoppingToken);
+                    continue;
+                }
+
                 await using var local = CreateLocalContext();
                 var agent = new SyncAgent(_cloud, local, new BalanceService(local, _clock), _clock);
 
