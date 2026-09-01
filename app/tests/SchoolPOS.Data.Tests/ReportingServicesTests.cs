@@ -32,13 +32,13 @@ public class ReportingServicesTests
         var ctx = NewCtx(db);
         var cashier = Guid.NewGuid();
 
-        // Venta 1: saldo, 2xA + 1xB = 40
+        // Venta 1: saldo, alumno identificado, 2xA + 1xB = 40
         await ctx.Sales.RegisterSaleAsync(new SaleRequest(school.Id, cashier, TenderType.Balance,
             new[] { new SaleLineRequest(pA.Id, "A", 2m, 10m), new SaleLineRequest(pB.Id, "B", 1m, 20m) },
-            StudentId: null, AccountId: account.Id));
-        // Venta 2: efectivo, 3xA = 30
+            StudentId: account.StudentId, AccountId: account.Id));
+        // Venta 2: efectivo, de mostrador (sin alumno identificado), 3xA = 30
         await ctx.Sales.RegisterSaleAsync(new SaleRequest(school.Id, cashier, TenderType.Cash,
-            new[] { new SaleLineRequest(pA.Id, "A", 3m, 10m) }));
+            new[] { new SaleLineRequest(pA.Id, "A", 3m, 10m) }, AmountTendered: 30m));
 
         var reports = new SalesReportService(db.Context);
         var summary = await reports.GetSummaryAsync(school.Id, null, null);
@@ -54,6 +54,14 @@ public class ReportingServicesTests
         var byCashier = await reports.GetByCashierAsync(school.Id, null, null);
         byCashier.Single().Total.Should().Be(70m);
         byCashier.Single().SaleCount.Should().Be(2);
+
+        // Solo la venta 1 tiene alumno identificado; la de mostrador (venta 2) no debe aparecer.
+        var byStudent = await reports.GetByStudentAsync(school.Id, null, null);
+        var studentRow = byStudent.Single();
+        studentRow.StudentId.Should().Be(account.StudentId);
+        studentRow.StudentName.Should().Be("Alumno Prueba");
+        studentRow.SaleCount.Should().Be(1);
+        studentRow.Total.Should().Be(40m);
     }
 
     [Fact]
@@ -70,7 +78,7 @@ public class ReportingServicesTests
         await ctx.Treasury.RegisterMovementAsync(session.Id, CashMovementType.Expense, 20m, "Gasto", Guid.NewGuid());
         // Venta en efectivo ligada a la sesión: 2x10 = 20
         await ctx.Sales.RegisterSaleAsync(new SaleRequest(school.Id, Guid.NewGuid(), TenderType.Cash,
-            new[] { new SaleLineRequest(product.Id, "P", 2m, 10m) }, CashSessionId: session.Id));
+            new[] { new SaleLineRequest(product.Id, "P", 2m, 10m) }, CashSessionId: session.Id, AmountTendered: 20m));
 
         var fin = new FinancialReportService(db.Context);
         var flow = await fin.GetCashFlowAsync(school.Id, null, null);

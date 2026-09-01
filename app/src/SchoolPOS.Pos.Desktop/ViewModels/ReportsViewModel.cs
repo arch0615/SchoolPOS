@@ -32,6 +32,8 @@ public sealed class ReportsViewModel : ViewModelBase, IAsyncLoadable
         _session = session;
         RefreshCommand = new AsyncRelayCommand(LoadAsync);
         ExportProductsCommand = new RelayCommand(ExportProducts, () => TopProducts.Count > 0);
+        ExportPurchasesCommand = new RelayCommand(ExportPurchases, () => PurchasesBySupplier.Count > 0);
+        ExportStudentSalesCommand = new RelayCommand(ExportStudentSales, () => SalesByStudent.Count > 0);
     }
 
     public DateTime? From { get => _from; set => SetProperty(ref _from, value); }
@@ -44,12 +46,16 @@ public sealed class ReportsViewModel : ViewModelBase, IAsyncLoadable
     public string SalesTotalText => Sales.Total.ToString("C2");
 
     public ObservableCollection<ProductSalesRow> TopProducts { get; } = new();
+    public ObservableCollection<SupplierPurchaseRow> PurchasesBySupplier { get; } = new();
+    public ObservableCollection<StudentSalesRow> SalesByStudent { get; } = new();
 
     public string ErrorMessage { get => _errorMessage; set => SetProperty(ref _errorMessage, value); }
     public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
 
     public AsyncRelayCommand RefreshCommand { get; }
     public RelayCommand ExportProductsCommand { get; }
+    public RelayCommand ExportPurchasesCommand { get; }
+    public RelayCommand ExportStudentSalesCommand { get; }
 
     public async Task LoadAsync()
     {
@@ -64,6 +70,7 @@ public sealed class ReportsViewModel : ViewModelBase, IAsyncLoadable
             using var scope = _scopeFactory.CreateScope();
             var salesReports = scope.ServiceProvider.GetRequiredService<ISalesReportService>();
             var finReports = scope.ServiceProvider.GetRequiredService<IFinancialReportService>();
+            var purchasingReports = scope.ServiceProvider.GetRequiredService<IPurchasingReportService>();
 
             Sales = await salesReports.GetSummaryAsync(_session.SchoolId, fromUtc, toUtc);
             CashFlow = await finReports.GetCashFlowAsync(_session.SchoolId, fromUtc, toUtc);
@@ -74,6 +81,18 @@ public sealed class ReportsViewModel : ViewModelBase, IAsyncLoadable
             foreach (var p in byProduct)
                 TopProducts.Add(p);
             ExportProductsCommand.RaiseCanExecuteChanged();
+
+            var bySupplier = await purchasingReports.GetBySupplierAsync(_session.SchoolId, fromUtc, toUtc);
+            PurchasesBySupplier.Clear();
+            foreach (var p in bySupplier)
+                PurchasesBySupplier.Add(p);
+            ExportPurchasesCommand.RaiseCanExecuteChanged();
+
+            var byStudent = await salesReports.GetByStudentAsync(_session.SchoolId, fromUtc, toUtc);
+            SalesByStudent.Clear();
+            foreach (var s in byStudent)
+                SalesByStudent.Add(s);
+            ExportStudentSalesCommand.RaiseCanExecuteChanged();
         }
         catch (Exception ex)
         {
@@ -98,6 +117,58 @@ public sealed class ReportsViewModel : ViewModelBase, IAsyncLoadable
             var csv = Csv.Build(
                 new[] { "Producto", "Cantidad", "Ingreso" },
                 TopProducts.Select(p => new[] { p.Description, p.Quantity.ToString("0.##"), p.Revenue.ToString("0.00") }));
+            File.WriteAllText(dialog.FileName, csv);
+            StatusMessage = $"Exportado a {dialog.FileName}.";
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"No se pudo exportar el CSV: {ex.Message}";
+        }
+    }
+
+    private void ExportPurchases()
+    {
+        ErrorMessage = string.Empty;
+        StatusMessage = string.Empty;
+        try
+        {
+            var dialog = new SaveFileDialog
+            {
+                FileName = $"compras_por_proveedor_{DateTime.UtcNow:yyyyMMdd}.csv",
+                Filter = "CSV (*.csv)|*.csv",
+            };
+            if (dialog.ShowDialog() != true)
+                return;
+
+            var csv = Csv.Build(
+                new[] { "Proveedor", "Órdenes", "Total" },
+                PurchasesBySupplier.Select(p => new[] { p.SupplierName, p.OrderCount.ToString(), p.Total.ToString("0.00") }));
+            File.WriteAllText(dialog.FileName, csv);
+            StatusMessage = $"Exportado a {dialog.FileName}.";
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"No se pudo exportar el CSV: {ex.Message}";
+        }
+    }
+
+    private void ExportStudentSales()
+    {
+        ErrorMessage = string.Empty;
+        StatusMessage = string.Empty;
+        try
+        {
+            var dialog = new SaveFileDialog
+            {
+                FileName = $"ventas_por_alumno_{DateTime.UtcNow:yyyyMMdd}.csv",
+                Filter = "CSV (*.csv)|*.csv",
+            };
+            if (dialog.ShowDialog() != true)
+                return;
+
+            var csv = Csv.Build(
+                new[] { "Alumno", "Ventas", "Total" },
+                SalesByStudent.Select(s => new[] { s.StudentName, s.SaleCount.ToString(), s.Total.ToString("0.00") }));
             File.WriteAllText(dialog.FileName, csv);
             StatusMessage = $"Exportado a {dialog.FileName}.";
         }

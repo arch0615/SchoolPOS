@@ -71,12 +71,38 @@
             <TextBlock Text="Ventas por producto" FontWeight="SemiBold" FontSize="15" />
             <Button Content="Exportar CSV" Command="{Binding ExportProductsCommand}" HorizontalAlignment="Right" DockPanel.Dock="Right" />
         </DockPanel>
-        <DataGrid ItemsSource="{Binding TopProducts}" AutoGenerateColumns="False" IsReadOnly="True"
+        <DataGrid DockPanel.Dock="Top" Height="150" Margin="0,0,0,14" ItemsSource="{Binding TopProducts}" AutoGenerateColumns="False" IsReadOnly="True"
                   HeadersVisibility="Column" GridLinesVisibility="Horizontal" Background="White" RowBackground="White">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Producto" Binding="{Binding Description}" Width="*" />
                 <DataGridTextColumn Header="Cantidad" Binding="{Binding Quantity}" Width="140" />
                 <DataGridTextColumn Header="Ingreso" Binding="{Binding Revenue, StringFormat=C2}" Width="160" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+            <TextBlock Text="Compras por proveedor" FontWeight="SemiBold" FontSize="15" />
+            <Button Content="Exportar CSV" Command="{Binding ExportPurchasesCommand}" HorizontalAlignment="Right" DockPanel.Dock="Right" />
+        </DockPanel>
+        <DataGrid DockPanel.Dock="Top" Height="150" Margin="0,0,0,14" ItemsSource="{Binding PurchasesBySupplier}" AutoGenerateColumns="False" IsReadOnly="True"
+                  HeadersVisibility="Column" GridLinesVisibility="Horizontal" Background="White" RowBackground="White">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Proveedor" Binding="{Binding SupplierName}" Width="*" />
+                <DataGridTextColumn Header="Órdenes" Binding="{Binding OrderCount}" Width="140" />
+                <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=C2}" Width="160" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+            <TextBlock Text="Ventas por alumno" FontWeight="SemiBold" FontSize="15" />
+            <Button Content="Exportar CSV" Command="{Binding ExportStudentSalesCommand}" HorizontalAlignment="Right" DockPanel.Dock="Right" />
+        </DockPanel>
+        <DataGrid ItemsSource="{Binding SalesByStudent}" AutoGenerateColumns="False" IsReadOnly="True"
+                  HeadersVisibility="Column" GridLinesVisibility="Horizontal" Background="White" RowBackground="White">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Alumno" Binding="{Binding StudentName}" Width="*" />
+                <DataGridTextColumn Header="Ventas" Binding="{Binding SaleCount}" Width="140" />
+                <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=C2}" Width="160" />
             </DataGrid.Columns>
         </DataGrid>
     </DockPanel>

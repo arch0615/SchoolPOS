@@ -15,8 +15,11 @@ public sealed record ProductSalesRow(Guid ProductId, string Description, decimal
 /// <summary>Ventas agregadas por cajero.</summary>
 public sealed record CashierSalesRow(Guid CashierId, int SaleCount, decimal Total);
 
+/// <summary>Ventas agregadas por alumno. Solo incluye ventas ligadas a un alumno identificado.</summary>
+public sealed record StudentSalesRow(Guid StudentId, string StudentName, int SaleCount, decimal Total);
+
 /// <summary>
-/// Reportes de ventas (FR-SAL-6): por periodo, producto, cajero y método de cobro
+/// Reportes de ventas (FR-SAL-6): por periodo, producto, cajero, alumno y método de cobro
 /// (saldo/efectivo). Datos para exhibir y exportar.
 /// </summary>
 public interface ISalesReportService
@@ -27,5 +30,13 @@ public interface ISalesReportService
         Guid schoolId, DateTime? fromUtc, DateTime? toUtc, CancellationToken ct = default);
 
     Task<IReadOnlyList<CashierSalesRow>> GetByCashierAsync(
+        Guid schoolId, DateTime? fromUtc, DateTime? toUtc, CancellationToken ct = default);
+
+    /// <summary>
+    /// Ventas por alumno (las de mostrador sin alumno identificado no entran, no tienen a quién
+    /// atribuirse). Incluye tanto cobro por saldo como en efectivo cuando el alumno fue
+    /// identificado.
+    /// </summary>
+    Task<IReadOnlyList<StudentSalesRow>> GetByStudentAsync(
         Guid schoolId, DateTime? fromUtc, DateTime? toUtc, CancellationToken ct = default);
 }

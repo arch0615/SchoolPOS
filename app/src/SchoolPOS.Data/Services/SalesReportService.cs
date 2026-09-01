@@ -60,6 +60,23 @@ public sealed class SalesReportService : ISalesReportService
             .ToList();
     }
 
+    public async Task<IReadOnlyList<StudentSalesRow>> GetByStudentAsync(
+        Guid schoolId, DateTime? fromUtc, DateTime? toUtc, CancellationToken ct = default)
+    {
+        var rows = await
+            (from sale in SalesInRange(schoolId, fromUtc, toUtc)
+             where sale.StudentId != null
+             join student in _db.Students.AsNoTracking() on sale.StudentId equals student.Id
+             select new { StudentId = sale.StudentId!.Value, student.FullName, sale.Total })
+            .ToListAsync(ct);
+
+        return rows
+            .GroupBy(r => new { r.StudentId, r.FullName })
+            .Select(g => new StudentSalesRow(g.Key.StudentId, g.Key.FullName, g.Count(), Round(g.Sum(x => x.Total))))
+            .OrderByDescending(r => r.Total)
+            .ToList();
+    }
+
     private IQueryable<Domain.Entities.Sale> SalesInRange(Guid schoolId, DateTime? fromUtc, DateTime? toUtc)
     {
         var query = _db.Sales.AsNoTracking().Where(s => s.SchoolId == schoolId);
