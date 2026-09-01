@@ -32,7 +32,6 @@ public sealed class PurchasingViewModel : ViewModelBase, IAsyncLoadable
 
     // ---- Nueva orden ----
     private SupplierRow? _orderSupplier;
-    private string _orderNumber = string.Empty;
     private DateTime? _orderExpectedDate;
     private string _orderNotes = string.Empty;
     private ProductOption? _lineProduct;
@@ -62,7 +61,7 @@ public sealed class PurchasingViewModel : ViewModelBase, IAsyncLoadable
         AddLineCommand = new RelayCommand(AddLine, () => LineProduct is not null && LineQuantity > 0m);
         RemoveLineCommand = new RelayCommand(RemoveSelectedLine, () => SelectedLine is not null);
         CreateOrderCommand = new AsyncRelayCommand(CreateOrderAsync,
-            () => OrderSupplier is not null && OrderNumber.Trim().Length > 0 && OrderLines.Count > 0);
+            () => OrderSupplier is not null && OrderLines.Count > 0);
         MarkSentCommand = new AsyncRelayCommand(MarkSentAsync, () => SelectedOrder is { Status: PurchaseOrderStatus.Draft });
         ReceiveGoodsCommand = new AsyncRelayCommand(ReceiveGoodsAsync,
             () => SelectedOrder is { Status: PurchaseOrderStatus.Sent or PurchaseOrderStatus.PartiallyReceived });
@@ -98,12 +97,6 @@ public sealed class PurchasingViewModel : ViewModelBase, IAsyncLoadable
     {
         get => _orderSupplier;
         set { if (SetProperty(ref _orderSupplier, value)) CreateOrderCommand.RaiseCanExecuteChanged(); }
-    }
-
-    public string OrderNumber
-    {
-        get => _orderNumber;
-        set { if (SetProperty(ref _orderNumber, value)) CreateOrderCommand.RaiseCanExecuteChanged(); }
     }
 
     public DateTime? OrderExpectedDate { get => _orderExpectedDate; set => SetProperty(ref _orderExpectedDate, value); }
@@ -319,7 +312,7 @@ public sealed class PurchasingViewModel : ViewModelBase, IAsyncLoadable
 
     private async Task CreateOrderAsync()
     {
-        if (OrderSupplier is null || OrderNumber.Trim().Length == 0 || OrderLines.Count == 0)
+        if (OrderSupplier is null || OrderLines.Count == 0)
             return;
 
         ErrorMessage = string.Empty;
@@ -332,11 +325,10 @@ public sealed class PurchasingViewModel : ViewModelBase, IAsyncLoadable
                 .Select(l => new PurchaseOrderLineRequest(l.ProductId, l.Quantity, l.UnitCost))
                 .ToList();
             var order = await purchasing.CreateOrderAsync(
-                _session.SchoolId, OrderSupplier.Id, OrderNumber.Trim(), lines, OrderExpectedDate,
+                _session.SchoolId, OrderSupplier.Id, lines, OrderExpectedDate,
                 string.IsNullOrWhiteSpace(OrderNotes) ? null : OrderNotes.Trim());
 
             StatusMessage = $"Orden '{order.OrderNumber}' creada por {order.Total:C2}.";
-            OrderNumber = string.Empty;
             OrderExpectedDate = null;
             OrderNotes = string.Empty;
             OrderLines.Clear();

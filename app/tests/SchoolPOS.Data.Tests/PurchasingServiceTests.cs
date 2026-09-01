@@ -36,11 +36,51 @@ public class PurchasingServiceTests
         var product = db.SeedProduct(school.Id);
         var svc = NewService(db);
 
-        var order = await svc.CreateOrderAsync(school.Id, supplier.Id, "OC-100",
+        var order = await svc.CreateOrderAsync(school.Id, supplier.Id,
             new[] { new PurchaseOrderLineRequest(product.Id, 10m, 6m) }, expectedDate: null, notes: null);
 
         order.Status.Should().Be(PurchaseOrderStatus.Draft);
         order.Total.Should().Be(60m);
+    }
+
+    [Fact]
+    public async Task CreateOrder_assigns_consecutive_order_numbers_per_school()
+    {
+        using var db = new TestDatabase();
+        var school = db.SeedSchool();
+        var supplier = SeedSupplier(db, school.Id);
+        var product = db.SeedProduct(school.Id);
+        var svc = NewService(db);
+        var line = new[] { new PurchaseOrderLineRequest(product.Id, 1m, 1m) };
+
+        var first = await svc.CreateOrderAsync(school.Id, supplier.Id, line, null, null);
+        var second = await svc.CreateOrderAsync(school.Id, supplier.Id, line, null, null);
+        var third = await svc.CreateOrderAsync(school.Id, supplier.Id, line, null, null);
+
+        first.OrderNumber.Should().Be("1");
+        second.OrderNumber.Should().Be("2");
+        third.OrderNumber.Should().Be("3");
+    }
+
+    [Fact]
+    public async Task CreateOrder_numbers_are_independent_per_school()
+    {
+        using var db = new TestDatabase();
+        var schoolA = db.SeedSchool();
+        var schoolB = db.SeedSchool();
+        var supplierA = SeedSupplier(db, schoolA.Id);
+        var supplierB = SeedSupplier(db, schoolB.Id);
+        var productA = db.SeedProduct(schoolA.Id);
+        var productB = db.SeedProduct(schoolB.Id);
+        var svc = NewService(db);
+
+        await svc.CreateOrderAsync(schoolA.Id, supplierA.Id,
+            new[] { new PurchaseOrderLineRequest(productA.Id, 1m, 1m) }, null, null);
+        var orderB = await svc.CreateOrderAsync(schoolB.Id, supplierB.Id,
+            new[] { new PurchaseOrderLineRequest(productB.Id, 1m, 1m) }, null, null);
+
+        // La escuela B no hereda la numeración de A: cada escuela empieza en 1.
+        orderB.OrderNumber.Should().Be("1");
     }
 
     [Fact]
@@ -52,7 +92,7 @@ public class PurchasingServiceTests
         var product = db.SeedProduct(school.Id, stock: 0m);
         var svc = NewService(db);
 
-        var order = await svc.CreateOrderAsync(school.Id, supplier.Id, "OC-101",
+        var order = await svc.CreateOrderAsync(school.Id, supplier.Id,
             new[] { new PurchaseOrderLineRequest(product.Id, 10m, 6m) }, null, null);
         var poLineId = (await db.NewContext().PurchaseOrderLines.SingleAsync(l => l.PurchaseOrderId == order.Id)).Id;
 
@@ -76,7 +116,7 @@ public class PurchasingServiceTests
         var product = db.SeedProduct(school.Id, stock: 0m);
         var svc = NewService(db);
 
-        var order = await svc.CreateOrderAsync(school.Id, supplier.Id, "OC-102",
+        var order = await svc.CreateOrderAsync(school.Id, supplier.Id,
             new[] { new PurchaseOrderLineRequest(product.Id, 10m, 6m) }, null, null);
         var poLineId = (await db.NewContext().PurchaseOrderLines.SingleAsync(l => l.PurchaseOrderId == order.Id)).Id;
 

@@ -27,7 +27,7 @@ public sealed class PurchasingService : IPurchasingService
     }
 
     public Task<PurchaseOrder> CreateOrderAsync(
-        Guid schoolId, Guid supplierId, string orderNumber,
+        Guid schoolId, Guid supplierId,
         IReadOnlyList<PurchaseOrderLineRequest> lines, DateTime? expectedDate, string? notes,
         CancellationToken ct = default)
     {
@@ -44,24 +44,53 @@ public sealed class PurchasingService : IPurchasingService
                 UnitCost = l.UnitCost,
                 LineTotal = Round(l.Quantity * l.UnitCost),
             }).ToList();
+            var total = Round(poLines.Sum(l => l.LineTotal));
 
-            var order = new PurchaseOrder
+            // Folio consecutivo por escuela, no capturado a mano (antes lo tecleaba el operador,
+            // lo que dejaba huecos, duplicados o números fuera de orden). El índice único
+            // (SchoolId, OrderNumber) es la red de seguridad real: con el modo "servidor de la
+            // escuela" dos cajas pueden crear una orden casi al mismo tiempo, así que ante un
+            // choque se relee el máximo y se reintenta en vez de fallar la operación completa.
+            for (var attempt = 0; ; attempt++)
             {
-                SchoolId = schoolId,
-                SupplierId = supplierId,
-                OrderNumber = orderNumber,
-                Status = PurchaseOrderStatus.Draft,
-                Total = Round(poLines.Sum(l => l.LineTotal)),
-                OrderDate = now,
-                ExpectedDate = expectedDate,
-                Notes = notes,
-                Lines = poLines,
-                CreatedAtUtc = now,
-            };
-            _db.PurchaseOrders.Add(order);
-            await _db.SaveChangesAsync(ct);
-            return order;
+                var order = new PurchaseOrder
+                {
+                    SchoolId = schoolId,
+                    SupplierId = supplierId,
+                    OrderNumber = await NextOrderNumberAsync(schoolId, ct),
+                    Status = PurchaseOrderStatus.Draft,
+                    Total = total,
+                    OrderDate = now,
+                    ExpectedDate = expectedDate,
+                    Notes = notes,
+                    Lines = poLines,
+                    CreatedAtUtc = now,
+                };
+                _db.PurchaseOrders.Add(order);
+                try
+                {
+                    await _db.SaveChangesAsync(ct);
+                    return order;
+                }
+                catch (DbUpdateException) when (attempt < 5)
+                {
+                    _db.Entry(order).State = EntityState.Detached;
+                    foreach (var line in poLines)
+                        _db.Entry(line).State = EntityState.Detached;
+                }
+            }
         }, ct);
+    }
+
+    /// <summary>Siguiente folio consecutivo de la escuela: máximo numérico existente + 1 (1 si no hay ninguno).</summary>
+    private async Task<string> NextOrderNumberAsync(Guid schoolId, CancellationToken ct)
+    {
+        var existing = await _db.PurchaseOrders.AsNoTracking()
+            .Where(o => o.SchoolId == schoolId)
+            .Select(o => o.OrderNumber)
+            .ToListAsync(ct);
+        var max = existing.Select(n => int.TryParse(n, out var v) ? v : 0).DefaultIfEmpty(0).Max();
+        return (max + 1).ToString();
     }
 
     public Task<PurchaseOrder> MarkSentAsync(Guid orderId, CancellationToken ct = default) =>

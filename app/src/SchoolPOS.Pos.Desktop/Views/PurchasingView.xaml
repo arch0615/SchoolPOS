@@ -29,12 +29,27 @@
                     <StackPanel>
                         <TextBlock Text="Proveedores" FontWeight="SemiBold" Margin="0,0,0,8" />
                         <WrapPanel Margin="0,0,0,10">
-                            <TextBox Width="160" Margin="0,0,6,6" Text="{Binding NewSupplierName, UpdateSourceTrigger=PropertyChanged}" Tag="Nombre" />
-                            <TextBox Width="120" Margin="0,0,6,6" Text="{Binding NewSupplierRfc, UpdateSourceTrigger=PropertyChanged}" Tag="RFC" />
-                            <TextBox Width="140" Margin="0,0,6,6" Text="{Binding NewSupplierContact, UpdateSourceTrigger=PropertyChanged}" Tag="Contacto" />
-                            <TextBox Width="110" Margin="0,0,6,6" Text="{Binding NewSupplierPhone, UpdateSourceTrigger=PropertyChanged}" Tag="Teléfono" />
-                            <TextBox Width="160" Margin="0,0,6,6" Text="{Binding NewSupplierEmail, UpdateSourceTrigger=PropertyChanged}" Tag="Correo" />
-                            <Button Content="Agregar proveedor" Command="{Binding AddSupplierCommand}" />
+                            <StackPanel Margin="0,0,6,6">
+                                <TextBlock Text="Nombre" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                                <TextBox Width="160" Text="{Binding NewSupplierName, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,6,6">
+                                <TextBlock Text="RFC" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                                <TextBox Width="120" Text="{Binding NewSupplierRfc, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,6,6">
+                                <TextBlock Text="Contacto" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                                <TextBox Width="140" Text="{Binding NewSupplierContact, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,6,6">
+                                <TextBlock Text="Teléfono" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                                <TextBox Width="110" Text="{Binding NewSupplierPhone, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,6,6">
+                                <TextBlock Text="Correo" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                                <TextBox Width="160" Text="{Binding NewSupplierEmail, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                            <Button Content="Agregar proveedor" Command="{Binding AddSupplierCommand}" VerticalAlignment="Bottom" Margin="0,0,0,6" />
                         </WrapPanel>
                         <ItemsControl ItemsSource="{Binding Suppliers}">
                             <ItemsControl.ItemTemplate>
@@ -54,21 +69,40 @@
                     <StackPanel>
                         <TextBlock Text="Nueva orden de compra" FontWeight="SemiBold" Margin="0,0,0,8" />
                         <WrapPanel Margin="0,0,0,10">
-                            <ComboBox Width="180" Margin="0,0,6,6" ItemsSource="{Binding Suppliers}"
-                                      DisplayMemberPath="Name" SelectedItem="{Binding OrderSupplier}" />
-                            <TextBox Width="120" Margin="0,0,6,6" Text="{Binding OrderNumber, UpdateSourceTrigger=PropertyChanged}" Tag="Folio" />
-                            <DatePicker Width="140" Margin="0,0,6,6" SelectedDate="{Binding OrderExpectedDate}" />
-                            <TextBox Width="200" Margin="0,0,6,6" Text="{Binding OrderNotes, UpdateSourceTrigger=PropertyChanged}" Tag="Notas" />
+                            <StackPanel Margin="0,0,6,6">
+                                <TextBlock Text="Proveedor" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                                <ComboBox Width="180" ItemsSource="{Binding Suppliers}"
+                                          DisplayMemberPath="Name" SelectedItem="{Binding OrderSupplier}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,6,6">
+                                <TextBlock Text="Fecha esperada" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                                <DatePicker Width="140" SelectedDate="{Binding OrderExpectedDate}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,6,6">
+                                <TextBlock Text="Notas" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                                <TextBox Width="200" Text="{Binding OrderNotes, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
                         </WrapPanel>
+                        <TextBlock Text="El folio lo asigna el sistema de forma consecutiva; no se captura a mano."
+                                   Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,-4,0,10" />
 
                         <TextBlock Text="Renglones" FontWeight="SemiBold" Margin="0,4,0,6" />
                         <WrapPanel Margin="0,0,0,8">
-                            <ComboBox Width="200" Margin="0,0,6,6" ItemsSource="{Binding Products}"
-                                      DisplayMemberPath="Name" SelectedItem="{Binding LineProduct}" />
-                            <TextBox Width="80" Margin="0,0,6,6" Text="{Binding LineQuantity, UpdateSourceTrigger=LostFocus}" Tag="Cantidad" />
-                            <TextBox Width="90" Margin="0,0,6,6" Text="{Binding LineUnitCost, UpdateSourceTrigger=LostFocus}" Tag="Costo unit." />
-                            <Button Content="Agregar renglón" Command="{Binding AddLineCommand}" />
-                            <Button Content="Quitar renglón" Command="{Binding RemoveLineCommand}" />
+                            <StackPanel Margin="0,0,6,6">
+                                <TextBlock Text="Producto" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                                <ComboBox Width="200" ItemsSource="{Binding Products}"
+                                          DisplayMemberPath="Name" SelectedItem="{Binding LineProduct}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,6,6">
+                                <TextBlock Text="Cantidad" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                                <TextBox Width="80" Text="{Binding LineQuantity, UpdateSourceTrigger=LostFocus}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,6,6">
+                                <TextBlock Text="Costo unit." Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                                <TextBox Width="90" Text="{Binding LineUnitCost, UpdateSourceTrigger=LostFocus}" />
+                            </StackPanel>
+                            <Button Content="Agregar renglón" Command="{Binding AddLineCommand}" VerticalAlignment="Bottom" Margin="0,0,6,6" />
+                            <Button Content="Quitar renglón" Command="{Binding RemoveLineCommand}" VerticalAlignment="Bottom" Margin="0,0,0,6" />
                         </WrapPanel>
 
                         <DataGrid ItemsSource="{Binding OrderLines}" SelectedItem="{Binding SelectedLine}"
@@ -118,15 +152,33 @@
                     <StackPanel>
                         <TextBlock Text="Facturas de proveedor" FontWeight="SemiBold" Margin="0,0,0,8" />
                         <WrapPanel Margin="0,0,0,10">
-                            <ComboBox Width="160" Margin="0,0,6,6" ItemsSource="{Binding Suppliers}"
-                                      DisplayMemberPath="Name" SelectedItem="{Binding InvoiceSupplier}" />
-                            <ComboBox Width="140" Margin="0,0,6,6" ItemsSource="{Binding Orders}"
-                                      DisplayMemberPath="OrderNumber" SelectedItem="{Binding InvoiceOrder}" Tag="Orden (opcional)" />
-                            <TextBox Width="120" Margin="0,0,6,6" Text="{Binding InvoiceNumber, UpdateSourceTrigger=PropertyChanged}" Tag="Folio de factura" />
-                            <TextBox Width="90" Margin="0,0,6,6" Text="{Binding InvoiceAmount, UpdateSourceTrigger=LostFocus}" Tag="Importe" />
-                            <DatePicker Width="130" Margin="0,0,6,6" SelectedDate="{Binding InvoiceIssueDate}" />
-                            <DatePicker Width="130" Margin="0,0,6,6" SelectedDate="{Binding InvoiceDueDate}" />
-                            <Button Content="Registrar factura" Command="{Binding RegisterInvoiceCommand}" />
+                            <StackPanel Margin="0,0,6,6">
+                                <TextBlock Text="Proveedor" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                                <ComboBox Width="160" ItemsSource="{Binding Suppliers}"
+                                          DisplayMemberPath="Name" SelectedItem="{Binding InvoiceSupplier}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,6,6">
+                                <TextBlock Text="Orden (opcional)" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                                <ComboBox Width="140" ItemsSource="{Binding Orders}"
+                                          DisplayMemberPath="OrderNumber" SelectedItem="{Binding InvoiceOrder}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,6,6">
+                                <TextBlock Text="Folio de factura" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                                <TextBox Width="120" Text="{Binding InvoiceNumber, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,6,6">
+                                <TextBlock Text="Importe" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                                <TextBox Width="90" Text="{Binding InvoiceAmount, UpdateSourceTrigger=LostFocus}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,6,6">
+                                <TextBlock Text="Fecha de emisión" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                                <DatePicker Width="130" SelectedDate="{Binding InvoiceIssueDate}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,6,6">
+                                <TextBlock Text="Fecha de vencimiento" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                                <DatePicker Width="130" SelectedDate="{Binding InvoiceDueDate}" />
+                            </StackPanel>
+                            <Button Content="Registrar factura" Command="{Binding RegisterInvoiceCommand}" VerticalAlignment="Bottom" Margin="0,0,0,6" />
                         </WrapPanel>
 
                         <DataGrid ItemsSource="{Binding Invoices}" SelectedItem="{Binding SelectedInvoice}"
@@ -143,8 +195,11 @@
                         </DataGrid>
 
                         <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                            <TextBox Width="100" Margin="0,0,6,0" Text="{Binding PaymentAmount, UpdateSourceTrigger=LostFocus}" Tag="Monto a pagar" />
-                            <Button Content="Registrar pago" Style="{StaticResource PrimaryButton}" Command="{Binding RegisterPaymentCommand}" />
+                            <StackPanel Margin="0,0,6,0">
+                                <TextBlock Text="Monto a pagar" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                                <TextBox Width="100" Text="{Binding PaymentAmount, UpdateSourceTrigger=LostFocus}" />
+                            </StackPanel>
+                            <Button Content="Registrar pago" Style="{StaticResource PrimaryButton}" Command="{Binding RegisterPaymentCommand}" VerticalAlignment="Bottom" />
                         </StackPanel>
                     </StackPanel>
                 </Border>

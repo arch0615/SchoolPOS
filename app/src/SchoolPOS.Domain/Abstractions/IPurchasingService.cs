@@ -16,9 +16,12 @@ public sealed record ReceiptLineRequest(
 /// </summary>
 public interface IPurchasingService
 {
-    /// <summary>Crea una orden de compra en estado Borrador y calcula su total (FR-PUR-2).</summary>
+    /// <summary>
+    /// Crea una orden de compra en estado Borrador y calcula su total (FR-PUR-2). El folio es
+    /// consecutivo por escuela y lo asigna el propio servicio — no se captura a mano.
+    /// </summary>
     Task<PurchaseOrder> CreateOrderAsync(
-        Guid schoolId, Guid supplierId, string orderNumber,
+        Guid schoolId, Guid supplierId,
         IReadOnlyList<PurchaseOrderLineRequest> lines, DateTime? expectedDate, string? notes,
         CancellationToken ct = default);
 

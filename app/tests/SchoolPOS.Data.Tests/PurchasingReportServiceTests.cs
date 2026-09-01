@@ -35,9 +35,9 @@ public class PurchasingReportServiceTests
         var purchasing = NewPurchasing(db);
 
         // Prov A: 10xP1@6 = 60 ; Prov B: 5xP1@6 (30) + 2xP2@20 (40) = 70
-        await purchasing.CreateOrderAsync(school.Id, supA.Id, "OC-1",
+        await purchasing.CreateOrderAsync(school.Id, supA.Id,
             new[] { new PurchaseOrderLineRequest(p1.Id, 10m, 6m) }, null, null);
-        await purchasing.CreateOrderAsync(school.Id, supB.Id, "OC-2",
+        await purchasing.CreateOrderAsync(school.Id, supB.Id,
             new[] { new PurchaseOrderLineRequest(p1.Id, 5m, 6m), new PurchaseOrderLineRequest(p2.Id, 2m, 20m) }, null, null);
 
         var reports = new PurchasingReportService(db.Context);
@@ -65,7 +65,7 @@ public class PurchasingReportServiceTests
         var p = db.SeedProduct(school.Id);
         var purchasing = NewPurchasing(db);
 
-        var order = await purchasing.CreateOrderAsync(school.Id, sup.Id, "OC-9",
+        var order = await purchasing.CreateOrderAsync(school.Id, sup.Id,
             new[] { new PurchaseOrderLineRequest(p.Id, 10m, 6m) }, null, null);
 
         // Cancelar directamente en la DB.
