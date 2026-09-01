@@ -590,6 +590,10 @@ namespace SchoolPOS.Data.Migrations
                     b.Property<Guid?>("AccountId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal?>("AmountTendered")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
                     b.Property<Guid?>("CashSessionId")
                         .HasColumnType("uniqueidentifier");
 

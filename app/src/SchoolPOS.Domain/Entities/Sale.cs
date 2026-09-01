@@ -31,6 +31,13 @@ public class Sale
     public decimal TaxTotal { get; set; }
     public decimal Total { get; set; }
 
+    /// <summary>
+    /// Efectivo realmente entregado por el cliente (solo <see cref="TenderType.Cash"/>; nulo en
+    /// cobro por saldo). Se exige y se guarda para que una venta no pueda quedar registrada como
+    /// pagada en su totalidad sin que haya entrado ese dinero al cajón.
+    /// </summary>
+    public decimal? AmountTendered { get; set; }
+
     public ICollection<SaleLine> Lines { get; set; } = new List<SaleLine>();
 
     public DateTime CreatedAtUtc { get; set; }

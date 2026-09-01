@@ -19,7 +19,12 @@ public sealed record SaleRequest(
     IReadOnlyList<SaleLineRequest> Lines,
     Guid? StudentId = null,
     Guid? AccountId = null,
-    Guid? CashSessionId = null);
+    Guid? CashSessionId = null,
+    /// <summary>
+    /// Efectivo entregado por el cliente. Obligatorio y validado contra el total cuando
+    /// <see cref="Tender"/> es <see cref="TenderType.Cash"/> (ignorado en cobro por saldo).
+    /// </summary>
+    decimal? AmountTendered = null);
 
 /// <summary>
 /// Servicio de ventas. Registra la venta, descuenta inventario y, si el cobro es por saldo,

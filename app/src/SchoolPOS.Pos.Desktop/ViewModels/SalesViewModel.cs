@@ -92,6 +92,7 @@ public sealed class SalesViewModel : ViewModelBase, IAsyncLoadable
             {
                 OnPropertyChanged(nameof(IsCashTender));
                 OnPropertyChanged(nameof(Change));
+                OnPropertyChanged(nameof(IsAmountInsufficient));
                 OnPropertyChanged(nameof(NeedsOpenTill));
                 ChargeCommand.RaiseCanExecuteChanged();
             }
@@ -107,10 +108,22 @@ public sealed class SalesViewModel : ViewModelBase, IAsyncLoadable
     public decimal? AmountReceived
     {
         get => _amountReceived;
-        set { if (SetProperty(ref _amountReceived, value)) OnPropertyChanged(nameof(Change)); }
+        set
+        {
+            if (SetProperty(ref _amountReceived, value))
+            {
+                OnPropertyChanged(nameof(Change));
+                OnPropertyChanged(nameof(IsAmountInsufficient));
+                ChargeCommand.RaiseCanExecuteChanged();
+            }
+        }
     }
 
     public decimal Change => IsCashTender && AmountReceived is { } received ? Math.Max(0m, received - Total) : 0m;
+
+    /// <summary>Aviso visible: el efectivo capturado no alcanza para cubrir el total (o está vacío).</summary>
+    public bool IsAmountInsufficient =>
+        IsCashTender && Total > 0m && !(AmountReceived is { } received && received >= Total);
 
     /// <summary>
     /// Caja abierta del operador. Toda venta en efectivo se amarra a ella: es lo que permite que el
@@ -260,6 +273,11 @@ public sealed class SalesViewModel : ViewModelBase, IAsyncLoadable
             return false;
         if (IsBalanceTender && CurrentStudent is null)
             return false;
+        // Sin esto, un cajero podía cobrar un total mayor al efectivo realmente recibido (o dejar el
+        // campo vacío) y la venta se registraba igual como pagada por completo — el dinero que
+        // faltaba nunca quedaba en ningún lado. El botón se deshabilita hasta que alcance.
+        if (IsCashTender && !(AmountReceived is { } received && received >= Total))
+            return false;
         return true;
     }
 
@@ -268,9 +286,19 @@ public sealed class SalesViewModel : ViewModelBase, IAsyncLoadable
         ErrorMessage = string.Empty;
         StatusMessage = string.Empty;
 
-        if (!CanCharge())
+        if (Cart.Count == 0)
         {
-            ErrorMessage = IsBalanceTender ? "Identifique al estudiante para cobrar por saldo." : "El carrito está vacío.";
+            ErrorMessage = "El carrito está vacío.";
+            return;
+        }
+        if (IsBalanceTender && CurrentStudent is null)
+        {
+            ErrorMessage = "Identifique al estudiante para cobrar por saldo.";
+            return;
+        }
+        if (IsCashTender && !(AmountReceived is { } receivedCheck && receivedCheck >= Total))
+        {
+            ErrorMessage = "El efectivo recibido debe cubrir el total de la venta.";
             return;
         }
 
@@ -294,7 +322,8 @@ public sealed class SalesViewModel : ViewModelBase, IAsyncLoadable
             StudentId: CurrentStudent?.StudentId,
             AccountId: CurrentStudent?.AccountId,
             // Solo las ventas en efectivo entran al arqueo; las de saldo no mueven el cajón.
-            CashSessionId: IsCashTender ? _cashSessionId : null);
+            CashSessionId: IsCashTender ? _cashSessionId : null,
+            AmountTendered: IsCashTender ? AmountReceived : null);
 
         try
         {
@@ -340,6 +369,7 @@ public sealed class SalesViewModel : ViewModelBase, IAsyncLoadable
         OnPropertyChanged(nameof(DiscountTotal));
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(Change));
+        OnPropertyChanged(nameof(IsAmountInsufficient));
         ChargeCommand.RaiseCanExecuteChanged();
     }
 }

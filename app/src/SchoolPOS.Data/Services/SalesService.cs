@@ -73,6 +73,15 @@ public sealed class SalesService : ISalesService
             var (subtotal, discountTotal, taxTotal, total) =
                 ComputeTotals(lines, school.TaxRate, school.TaxInclusive);
 
+            // El efectivo entregado debe cubrir el total — validado aquí, no solo en pantalla, para
+            // que una venta en efectivo nunca pueda quedar registrada como cobrada en su totalidad
+            // sin que ese dinero realmente haya entrado a la caja (se guarda en Sale.AmountTendered
+            // para que quede trazable).
+            if (request.Tender == TenderType.Cash &&
+                (request.AmountTendered is not { } tendered || tendered < total))
+                throw new InvalidOperationException(
+                    "El efectivo recibido debe cubrir el total de la venta.");
+
             var sale = new Sale
             {
                 SchoolId = request.SchoolId,
@@ -86,6 +95,7 @@ public sealed class SalesService : ISalesService
                 DiscountTotal = discountTotal,
                 TaxTotal = taxTotal,
                 Total = total,
+                AmountTendered = request.Tender == TenderType.Cash ? request.AmountTendered : null,
                 Lines = lines,
                 CreatedAtUtc = now,
             };

@@ -132,6 +132,9 @@
                         <TextBlock Text="Cambio" Foreground="{StaticResource MutedBrush}" />
                         <TextBlock Text="{Binding Change, StringFormat=C2}" FontWeight="Bold" HorizontalAlignment="Right" />
                     </DockPanel>
+                    <TextBlock Text="El efectivo recibido no cubre el total: no se puede cobrar hasta que alcance."
+                               Foreground="{StaticResource DangerBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0"
+                               Visibility="{Binding IsAmountInsufficient, Converter={StaticResource BoolToVisibility}}" />
                 </StackPanel>
 
                 <Button Content="Cobrar" Style="{StaticResource PrimaryButton}" Height="52" FontSize="18"

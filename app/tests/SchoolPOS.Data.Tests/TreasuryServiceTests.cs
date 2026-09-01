@@ -70,7 +70,7 @@ public class TreasuryServiceTests
         var sale = await sales.RegisterSaleAsync(new SaleRequest(
             school.Id, Operator, TenderType.Cash,
             new[] { new SaleLineRequest(product.Id, "Producto", Quantity: 2m, UnitPrice: 25m) },
-            CashSessionId: session.Id));
+            CashSessionId: session.Id, AmountTendered: 50m));
 
         sale.CashSessionId.Should().Be(session.Id, "la venta debe quedar ligada a la caja abierta");
 
@@ -129,7 +129,7 @@ public class TreasuryServiceTests
         var sale = await sales.RegisterSaleAsync(new SaleRequest(
             school.Id, Operator, TenderType.Cash,
             new[] { new SaleLineRequest(product.Id, "Producto", Quantity: 2m, UnitPrice: 25m) },
-            CashSessionId: session.Id));
+            CashSessionId: session.Id, AmountTendered: 50m));
 
         // Se devuelve una de las dos piezas: salen 25 del cajón.
         var line = sale.Lines.Single();
@@ -166,7 +166,7 @@ public class TreasuryServiceTests
         var sale = await sales.RegisterSaleAsync(new SaleRequest(
             school.Id, Operator, TenderType.Cash,
             new[] { new SaleLineRequest(product.Id, "Producto", 2m, 25m) },
-            CashSessionId: session.Id));
+            CashSessionId: session.Id, AmountTendered: 50m));
         var line = sale.Lines.Single();
 
         var act = () => sales.RefundSaleAsync(sale.Id, new[] { (line.Id, 1m) }, Operator, cashSessionId: null);
