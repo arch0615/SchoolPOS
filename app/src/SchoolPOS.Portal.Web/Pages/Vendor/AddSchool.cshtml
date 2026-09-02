@@ -8,10 +8,21 @@
 @if (Model.CreatedSchoolId is not null)
 {
     <div class="msg ok">
-        Escuela <strong>@Model.CreatedSchoolName</strong> creada, con administrador <strong>@Model.CreatedAdminUser</strong>.
-        SchoolId: <code>@Model.CreatedSchoolId</code> — úsalo para configurar el POS de escritorio y el
-        Sync Agent en la escuela (ver <code>app/deploy/INSTALL.md</code>).
+        Escuela <strong>@Model.CreatedSchoolName</strong> creada, con administrador <strong>@Model.CreatedAdminUser</strong>
+        (ya puede entrar en <code>/School/Login</code>).
     </div>
+    @if (!string.IsNullOrEmpty(Model.CreatedSyncApiKey))
+    {
+        <div class="msg ok" style="margin-top:8px">
+            <strong>Llave de sincronización — cópiala ahora, no se vuelve a mostrar:</strong>
+            <pre style="background:var(--bg2,#f4f4f4);padding:10px 12px;border-radius:8px;overflow-x:auto;font-size:13px;user-select:all;margin:8px 0 4px">@Model.CreatedSyncApiKey</pre>
+            <span class="muted" style="font-size:13px">
+                El instalador del POS ya incluye el Sync Agent. Todo lo que la escuela necesita hacer:
+                instalar LoncherApp y, si no la capturó en el asistente, pegar esta llave en
+                Configuración → Sincronización. No hace falta instalar ni configurar nada aparte.
+            </span>
+        </div>
+    }
 }
 
 <div class="page-head">
