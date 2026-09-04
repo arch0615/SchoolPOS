@@ -4,7 +4,11 @@ html { height:100%; }
 body { height:100%; display:flex; flex-direction:column; overflow:hidden; }
 body > footer { display:none; }   /* no page footer on auth screens */
 body main { flex:1 1 auto; min-height:0; max-width:none; margin:0; padding:0; display:flex; }
-.auth-wrap { flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; align-items:stretch;
+/* align-items:center (not stretch): con "stretch" .auth-card se forzaba a la altura exacta del
+   viewport, y su overflow:hidden recortaba en silencio cualquier campo que no cupiera — reportado
+   en Registro (más campos que Ingresar: escuela, 3 checkboxes) en pantallas de laptop y celular.
+   Con "center", la tarjeta crece a su alto natural y el scroll de este contenedor la alcanza. */
+.auth-wrap { flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; align-items:center;
     justify-content:center; padding:20px; box-sizing:border-box; }
 .auth-card { width:100%; max-width:920px; display:grid; grid-template-columns:1fr 1fr; background:#fff; border:1px solid #e6ecf5;
     border-radius:22px; overflow:hidden; box-shadow:0 24px 55px rgba(20,50,110,.16); }
