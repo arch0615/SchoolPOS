@@ -38,6 +38,15 @@
 </div>
 
 <div class="card">
+    <h3 style="margin-top:0">Reenviar recargas a las cajas</h3>
+    <p class="muted">Úsalo si una recarga pagada en línea no llegó a una caja (por ejemplo, una caja reinstalada o mal configurada en una escuela de varias cajas). Es seguro: las cajas que ya la tienen aplicada no la duplican.</p>
+    <form method="post" asp-page-handler="Resync" onsubmit="return confirm('¿Reenviar las recargas de esta escuela a todas sus cajas?');">
+        <input type="hidden" name="SchoolId" value="@Model.SchoolId" />
+        <button class="btn" type="submit">Reenviar recargas</button>
+    </form>
+</div>
+
+<div class="card">
     <h3 style="margin-top:0">Llaves de esta escuela</h3>
     @if (Model.Keys.Count == 0)
     {

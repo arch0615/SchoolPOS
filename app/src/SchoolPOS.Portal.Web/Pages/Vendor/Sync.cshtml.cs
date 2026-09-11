@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SchoolPOS.Data;
 using SchoolPOS.Domain.Abstractions;
 using SchoolPOS.Domain.Entities;
+using SchoolPOS.Domain.Enums;
 
 namespace SchoolPOS.Portal.Web.Pages.Vendor;
 
@@ -77,6 +78,42 @@ public class SyncModel : PageModel
         catch (Exception ex)
         {
             Error = $"No se pudo revocar la llave: {ex.Message}";
+        }
+        return RedirectToPage(new { SchoolId });
+    }
+
+    /// <summary>
+    /// Marca de nuevo como pendientes las recargas ya "entregadas" de esta escuela, para que el
+    /// Sync Agent las vuelva a bajar en su próxima corrida. Existe porque el acuse de recibo
+    /// (<see cref="SchoolPOS.Data.Services.SyncCloudService.AckTopUpsAsync"/>) es por escuela, no
+    /// por caja: si una caja la aplicó pero otra nunca la recibió (varias cajas mal configuradas, o
+    /// una caja reinstalada desde cero), la nube ya la daba por hecha y no la volvía a ofrecer a
+    /// nadie más. Reenviarla es seguro sin importar cuántas veces: <c>EnsureLocalTopUpAsync</c>
+    /// (dedupe por <c>GatewayRef</c>) y <c>ApplyTopUpAsync</c> (idempotente por su propia bandera
+    /// local) hacen que una caja que ya la tenía aplicada simplemente no haga nada al recibirla de nuevo.
+    /// </summary>
+    public async Task<IActionResult> OnPostResyncAsync()
+    {
+        try
+        {
+            var rows = await _db.TopUps
+                .Where(t => t.SchoolId == SchoolId && t.Status == TopUpStatus.Applied)
+                .ToListAsync();
+            foreach (var t in rows)
+            {
+                t.Status = TopUpStatus.Confirmed;
+                t.AppliedLocally = false;
+                t.AppliedAtUtc = null;
+            }
+            await _db.SaveChangesAsync();
+
+            Message = rows.Count == 0
+                ? "No había recargas para reenviar."
+                : $"{rows.Count} recarga(s) se reenviarán en la próxima sincronización de cada caja de esta escuela.";
+        }
+        catch (Exception ex)
+        {
+            Error = $"No se pudo reintentar la sincronización: {ex.Message}";
         }
         return RedirectToPage(new { SchoolId });
     }
