@@ -117,4 +117,61 @@ public class SyncModel : PageModel
         }
         return RedirectToPage(new { SchoolId });
     }
+
+    /// <summary>
+    /// Corrección directa al saldo de la nube (no al de una caja). Existe para casos como el de
+    /// "Reenviar recargas": un ajuste hecho en la caja para ponerse al día con una recarga que la
+    /// nube ya había acreditado al confirmarla se vuelve a subir como movimiento nuevo y la duplica
+    /// aquí. Queda registrado igual que cualquier otro asiento (con motivo obligatorio) para que
+    /// <c>SUM(BalanceMovements.Amount) == Account.Balance</c> siga reconciliando.
+    /// </summary>
+    public async Task<IActionResult> OnPostFixBalanceAsync(string enrollmentNo, decimal amount, string reason)
+    {
+        try
+        {
+            if (amount == 0)
+            {
+                Error = "El importe no puede ser cero.";
+                return RedirectToPage(new { SchoolId });
+            }
+            if (string.IsNullOrWhiteSpace(reason))
+            {
+                Error = "El motivo es obligatorio.";
+                return RedirectToPage(new { SchoolId });
+            }
+
+            var account = await _db.Accounts
+                .Include(a => a.Student)
+                .FirstOrDefaultAsync(a => a.Student.SchoolId == SchoolId && a.Student.EnrollmentNo == enrollmentNo.Trim());
+            if (account is null)
+            {
+                Error = $"No se encontró ningún alumno con matrícula \"{enrollmentNo}\" en esta escuela.";
+                return RedirectToPage(new { SchoolId });
+            }
+
+            var now = DateTime.UtcNow;
+            account.Balance += amount;
+            account.UpdatedAtUtc = now;
+
+            _db.BalanceMovements.Add(new BalanceMovement
+            {
+                Id = Guid.NewGuid(),
+                AccountId = account.Id,
+                Type = MovementType.Adjustment,
+                Amount = amount,
+                BalanceAfter = account.Balance,
+                Reference = reason.Trim(),
+                OperatorId = null,
+                CreatedAtUtc = now,
+            });
+            await _db.SaveChangesAsync();
+
+            Message = $"Saldo de {account.Student.FullName} corregido: {amount:+0.00;-0.00} → nuevo saldo {account.Balance:C2}.";
+        }
+        catch (Exception ex)
+        {
+            Error = $"No se pudo corregir el saldo: {ex.Message}";
+        }
+        return RedirectToPage(new { SchoolId });
+    }
 }
