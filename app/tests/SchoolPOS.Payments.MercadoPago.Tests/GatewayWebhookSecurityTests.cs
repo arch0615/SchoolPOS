@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using SchoolPOS.Domain.Abstractions;
 using SchoolPOS.Domain.Entities;
 using SchoolPOS.Payments.MercadoPago;
@@ -34,7 +35,7 @@ public class GatewayWebhookSecurityTests
     private static MercadoPagoGateway NewGateway() =>
         new(new HttpClient(new ThrowingHandler()) { BaseAddress = new Uri("https://api.mercadopago.com") },
             new MercadoPagoOptions { AccessToken = "token", WebhookSecret = "secreto" },
-            new NullStore(), new NullOAuth());
+            new NullStore(), new NullOAuth(), NullLogger<MercadoPagoGateway>.Instance);
 
     [Fact]
     public async Task Invalid_signature_returns_null_and_never_calls_the_api()

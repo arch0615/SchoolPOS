@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using SchoolPOS.Domain.Abstractions;
@@ -36,32 +37,35 @@ public sealed class MercadoPagoGateway : IPaymentGateway
 
     public async Task<PaymentPreference> CreatePreferenceAsync(PaymentIntent intent, CancellationToken ct = default)
     {
-        var body = new
-        {
-            items = new[]
-            {
-                new
-                {
-                    title = intent.Description,
-                    quantity = 1,
-                    unit_price = intent.Amount,
-                    currency_id = intent.Currency,
-                },
-            },
-            external_reference = intent.TopUpId.ToString(),
-            marketplace_fee = intent.CommissionAmount, // split: comisión → cuenta del proveedor
-            notification_url = _options.NotificationUrl,
-            back_urls = new
-            {
-                success = _options.SuccessUrl,
-                failure = _options.FailureUrl,
-                pending = _options.PendingUrl,
-            },
-            auto_return = "approved",
-        };
-
         // El pago se crea con el token del VENDEDOR (la escuela); marketplace_fee → proveedor.
-        var sellerToken = await ResolveSchoolTokenAsync(intent.SchoolId, ct);
+        var (sellerToken, isConnectedSeller) = await ResolveSchoolTokenAsync(intent.SchoolId, ct);
+
+        var body = new JsonObject
+        {
+            ["items"] = new JsonArray(new JsonObject
+            {
+                ["title"] = intent.Description,
+                ["quantity"] = 1,
+                ["unit_price"] = intent.Amount,
+                ["currency_id"] = intent.Currency,
+            }),
+            ["external_reference"] = intent.TopUpId.ToString(),
+            ["notification_url"] = _options.NotificationUrl,
+            ["back_urls"] = new JsonObject
+            {
+                ["success"] = _options.SuccessUrl,
+                ["failure"] = _options.FailureUrl,
+                ["pending"] = _options.PendingUrl,
+            },
+            ["auto_return"] = "approved",
+        };
+        // marketplace_fee (split de comisión) solo es válido cuando el pago se crea con el token
+        // OAuth de un vendedor conectado de verdad. Mandarlo contra nuestra propia cuenta de
+        // respaldo (mismo dueño de la app y del cobro, sin relación de marketplace detrás) deja el
+        // checkout de Mercado Pago en un estado inválido: el botón "Pagar" queda apagado sin
+        // importar la tarjeta — se reprodujo así en producción antes de este cambio.
+        if (isConnectedSeller)
+            body["marketplace_fee"] = intent.CommissionAmount;
 
         using var request = new HttpRequestMessage(HttpMethod.Post, "/checkout/preferences")
         {
@@ -112,11 +116,12 @@ public sealed class MercadoPagoGateway : IPaymentGateway
     }
 
     /// <summary>
-    /// Devuelve el access token del vendedor (escuela) conectado por OAuth, refrescándolo si venció.
-    /// Si la escuela no ha conectado su cuenta, usa el token de la app como respaldo (modo de una
-    /// sola cuenta) o falla si tampoco existe.
+    /// Devuelve el access token del vendedor (escuela) conectado por OAuth, refrescándolo si venció,
+    /// y si es un vendedor de verdad (para decidir si <c>marketplace_fee</c> aplica). Si la escuela
+    /// no ha conectado su cuenta, usa el token de la app como respaldo (modo de una sola cuenta) o
+    /// falla si tampoco existe.
     /// </summary>
-    private async Task<string> ResolveSchoolTokenAsync(Guid schoolId, CancellationToken ct)
+    private async Task<(string Token, bool IsConnectedSeller)> ResolveSchoolTokenAsync(Guid schoolId, CancellationToken ct)
     {
         var account = await _accounts.GetAsync(schoolId, ct);
         if (account is null)
@@ -134,7 +139,7 @@ public sealed class MercadoPagoGateway : IPaymentGateway
                     "Escuela {SchoolId} no ha conectado su cuenta de Mercado Pago: la recarga se " +
                     "procesa con la cuenta de la plataforma y Mercado Pago NO reparte la comisión " +
                     "automáticamente. Requiere conciliación manual con la escuela.", schoolId);
-                return _options.AccessToken;
+                return (_options.AccessToken, false);
             }
             throw new InvalidOperationException(
                 $"La escuela {schoolId} no ha conectado su cuenta de Mercado Pago (OAuth).");
@@ -145,10 +150,10 @@ public sealed class MercadoPagoGateway : IPaymentGateway
             var refreshed = await _oauth.RefreshAsync(account.RefreshToken!, ct);
             await _accounts.SaveAsync(schoolId, "MercadoPago", refreshed.ProviderUserId,
                 refreshed.AccessToken, refreshed.RefreshToken, refreshed.ExpiresAtUtc, ct);
-            return refreshed.AccessToken;
+            return (refreshed.AccessToken, true);
         }
 
-        return account.AccessToken;
+        return (account.AccessToken, true);
     }
 
     private static void Authorize(HttpRequestMessage request, string token) =>

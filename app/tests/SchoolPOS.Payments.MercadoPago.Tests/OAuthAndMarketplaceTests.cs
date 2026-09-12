@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using SchoolPOS.Domain.Abstractions;
 using SchoolPOS.Domain.Entities;
 using SchoolPOS.Payments.MercadoPago;
@@ -79,7 +80,7 @@ public class OAuthAndMarketplaceTests
         var gateway = new MercadoPagoGateway(
             new HttpClient(handler) { BaseAddress = new Uri("https://api.mercadopago.com") },
             new MercadoPagoOptions { AccessToken = "APP-TOKEN" },
-            new FixedStore(account), new UnusedOAuth());
+            new FixedStore(account), new UnusedOAuth(), NullLogger<MercadoPagoGateway>.Instance);
 
         var pref = await gateway.CreatePreferenceAsync(new PaymentIntent(
             Guid.NewGuid(), schoolId, 100m, 5m, "MXN", "Recarga"));
@@ -89,6 +90,12 @@ public class OAuthAndMarketplaceTests
         handler.LastBody.Should().Contain("marketplace_fee");
     }
 
+    /// <summary>
+    /// marketplace_fee solo es válido cuando el pago se crea con el token OAuth de un vendedor
+    /// conectado de verdad. Mandarlo también contra la cuenta de respaldo de la plataforma (mismo
+    /// dueño de la app y del cobro) dejaba el checkout real de Mercado Pago con el botón "Pagar"
+    /// apagado sin importar la tarjeta — se reprodujo así en producción.
+    /// </summary>
     [Fact]
     public async Task CreatePreference_falls_back_to_app_token_when_school_not_connected()
     {
@@ -96,10 +103,12 @@ public class OAuthAndMarketplaceTests
         var gateway = new MercadoPagoGateway(
             new HttpClient(handler) { BaseAddress = new Uri("https://api.mercadopago.com") },
             new MercadoPagoOptions { AccessToken = "APP-TOKEN" },
-            new FixedStore(null), new UnusedOAuth());
+            new FixedStore(null), new UnusedOAuth(), NullLogger<MercadoPagoGateway>.Instance);
 
         await gateway.CreatePreferenceAsync(new PaymentIntent(Guid.NewGuid(), Guid.NewGuid(), 100m, 5m, "MXN", "Recarga"));
 
         handler.LastAuthorization.Should().Be("Bearer APP-TOKEN");
+        handler.LastBody.Should().NotContain("marketplace_fee",
+            "sin vendedor conectado, Mercado Pago deja el botón de pago inválido si se manda marketplace_fee");
     }
 }
