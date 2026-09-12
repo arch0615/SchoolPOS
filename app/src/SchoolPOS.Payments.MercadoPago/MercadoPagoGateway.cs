@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Logging;
 using SchoolPOS.Domain.Abstractions;
 
 namespace SchoolPOS.Payments.MercadoPago;
@@ -18,15 +19,17 @@ public sealed class MercadoPagoGateway : IPaymentGateway
     private readonly MercadoPagoOptions _options;
     private readonly ISchoolPaymentAccountStore _accounts;
     private readonly IMercadoPagoOAuth _oauth;
+    private readonly ILogger<MercadoPagoGateway> _logger;
 
     public MercadoPagoGateway(
         HttpClient http, MercadoPagoOptions options,
-        ISchoolPaymentAccountStore accounts, IMercadoPagoOAuth oauth)
+        ISchoolPaymentAccountStore accounts, IMercadoPagoOAuth oauth, ILogger<MercadoPagoGateway> logger)
     {
         _http = http;
         _options = options;
         _accounts = accounts;
         _oauth = oauth;
+        _logger = logger;
         if (_http.BaseAddress is null && !string.IsNullOrEmpty(_options.BaseUrl))
             _http.BaseAddress = new Uri(_options.BaseUrl);
     }
@@ -119,7 +122,20 @@ public sealed class MercadoPagoGateway : IPaymentGateway
         if (account is null)
         {
             if (!string.IsNullOrEmpty(_options.AccessToken))
+            {
+                // Respaldo de una sola cuenta: el pago se cobra con NUESTRO token, no el de la
+                // escuela, así que Mercado Pago deposita el 100% en nuestra cuenta — marketplace_fee
+                // no separa nada sin un vendedor conectado detrás. Se detectó así en producción
+                // (redirect_uri de /oauth/mercadopago/start apuntaba a http:// detrás de Cloudflare,
+                // así que ninguna escuela lograba conectarse) y quedó sin avisar hasta que alguien
+                // notó que la comisión nunca le llegaba a la escuela. Este log es la señal para
+                // detectarlo de inmediato la próxima vez, en vez de hasta que alguien lo reporte.
+                _logger.LogWarning(
+                    "Escuela {SchoolId} no ha conectado su cuenta de Mercado Pago: la recarga se " +
+                    "procesa con la cuenta de la plataforma y Mercado Pago NO reparte la comisión " +
+                    "automáticamente. Requiere conciliación manual con la escuela.", schoolId);
                 return _options.AccessToken;
+            }
             throw new InvalidOperationException(
                 $"La escuela {schoolId} no ha conectado su cuenta de Mercado Pago (OAuth).");
         }
