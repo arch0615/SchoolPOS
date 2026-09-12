@@ -19,6 +19,9 @@ public class Student
 
     public string FullName { get; set; } = string.Empty;
 
+    /// <summary>Grado/grupo (p. ej. "3° A"). Opcional: no todas las escuelas lo usan.</summary>
+    public string? Grade { get; set; }
+
     public bool IsActive { get; set; } = true;
 
     /// <summary>Cuenta de saldo 1:1.</summary>

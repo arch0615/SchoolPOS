@@ -122,6 +122,7 @@ public class SchoolDbContext : DbContext
             e.Property(x => x.EnrollmentNo).HasMaxLength(50).IsRequired();
             e.Property(x => x.CardCode).HasMaxLength(100);
             e.Property(x => x.FullName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Grade).HasMaxLength(50);
             // Matrícula única por escuela.
             e.HasIndex(x => new { x.SchoolId, x.EnrollmentNo }).IsUnique();
             // Código de credencial único por escuela SOLO cuando existe. Sin el filtro, SQL Server

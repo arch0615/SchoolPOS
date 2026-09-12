@@ -290,7 +290,7 @@ public class SyncAgentTests
         await cloud.Context.SaveChangesAsync();
 
         var registry = new StudentRegistry(local.Context, new TestClock());
-        var student = await registry.CreateAsync(school.Id, "A-900", "Nuevo Alumno", cardCode: "CARD-900");
+        var student = await registry.CreateAsync(school.Id, "A-900", "Nuevo Alumno", cardCode: "CARD-900", grade: null);
 
         var pushed = await NewAgent(cloud, local, school.Id).PushRosterAsync();
 
@@ -327,11 +327,11 @@ public class SyncAgentTests
         await cloud.Context.SaveChangesAsync();
 
         var registry = new StudentRegistry(local.Context, new TestClock());
-        var student = await registry.CreateAsync(school.Id, "A-901", "Nombre Viejo", cardCode: null);
+        var student = await registry.CreateAsync(school.Id, "A-901", "Nombre Viejo", cardCode: null, grade: null);
         var agent = NewAgent(cloud, local, school.Id);
         await agent.PushRosterAsync();
 
-        await registry.UpdateAsync(student.Id, "A-901", "Nombre Corregido", cardCode: "CARD-901");
+        await registry.UpdateAsync(student.Id, "A-901", "Nombre Corregido", cardCode: "CARD-901", grade: null);
         await registry.SetActiveAsync(student.Id, false);
         var pushed = await agent.PushRosterAsync();
 
@@ -356,7 +356,7 @@ public class SyncAgentTests
         await cloud.Context.SaveChangesAsync();
 
         var registry = new StudentRegistry(local.Context, new TestClock());
-        await registry.CreateAsync(school.Id, "A-902", "Alumno Estable", cardCode: "CARD-902");
+        await registry.CreateAsync(school.Id, "A-902", "Alumno Estable", cardCode: "CARD-902", grade: null);
         var agent = NewAgent(cloud, local, school.Id);
         await agent.PushRosterAsync();
 
@@ -381,7 +381,7 @@ public class SyncAgentTests
         await cloud.Context.SaveChangesAsync();
 
         var registry = new StudentRegistry(local.Context, new TestClock());
-        var student = await registry.CreateAsync(school.Id, "A-903", "Alumno Sale Mismo Ciclo", null);
+        var student = await registry.CreateAsync(school.Id, "A-903", "Alumno Sale Mismo Ciclo", null, null);
         var account = (await registry.ListAsync(school.Id)).Single().AccountId;
 
         var clock = new TestClock();

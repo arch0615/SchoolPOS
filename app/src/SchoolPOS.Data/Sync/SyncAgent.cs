@@ -220,7 +220,7 @@ public sealed class SyncAgent
             from s in _local.Students.AsNoTracking()
             join a in _local.Accounts.AsNoTracking() on s.Id equals a.StudentId
             select new RosterEntryDto(
-                s.Id, s.EnrollmentNo, s.CardCode, s.FullName, s.IsActive, s.CreatedAtUtc, a.Id))
+                s.Id, s.EnrollmentNo, s.CardCode, s.FullName, s.IsActive, s.CreatedAtUtc, a.Id, s.Grade))
             .ToListAsync(ct);
         if (locals.Count == 0)
             return 0;

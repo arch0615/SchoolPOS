@@ -64,13 +64,15 @@ public sealed class SyncCloudService : ISyncCloudService
                 if (existing.TryGetValue(e.Id, out var student))
                 {
                     if (student.FullName == e.FullName && student.EnrollmentNo == e.EnrollmentNo &&
-                        student.CardCode == e.CardCode && student.IsActive == e.IsActive)
+                        student.CardCode == e.CardCode && student.IsActive == e.IsActive &&
+                        student.Grade == e.Grade)
                         continue;
 
                     student.FullName = e.FullName;
                     student.EnrollmentNo = e.EnrollmentNo;
                     student.CardCode = e.CardCode;
                     student.IsActive = e.IsActive;
+                    student.Grade = e.Grade;
                 }
                 else
                 {
@@ -82,6 +84,7 @@ public sealed class SyncCloudService : ISyncCloudService
                         CardCode = e.CardCode,
                         FullName = e.FullName,
                         IsActive = e.IsActive,
+                        Grade = e.Grade,
                         CreatedAtUtc = e.CreatedAtUtc,
                     });
                     _db.Accounts.Add(new Account

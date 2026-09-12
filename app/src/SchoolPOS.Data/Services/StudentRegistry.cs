@@ -45,18 +45,19 @@ public sealed class StudentRegistry : IStudentRegistry
             join a in _db.Accounts.AsNoTracking() on s.Id equals a.StudentId
             orderby s.FullName
             select new StudentRow(
-                s.Id, a.Id, s.EnrollmentNo, s.CardCode, s.FullName, a.Balance, s.IsActive))
+                s.Id, a.Id, s.EnrollmentNo, s.CardCode, s.FullName, s.Grade, a.Balance, s.IsActive))
             .Take(500)
             .ToListAsync(ct);
     }
 
     public Task<Student> CreateAsync(
-        Guid schoolId, string enrollmentNo, string fullName, string? cardCode,
+        Guid schoolId, string enrollmentNo, string fullName, string? cardCode, string? grade,
         CancellationToken ct = default)
     {
         var enrollment = (enrollmentNo ?? string.Empty).Trim();
         var name = (fullName ?? string.Empty).Trim();
         var card = string.IsNullOrWhiteSpace(cardCode) ? null : cardCode.Trim();
+        var gradeValue = string.IsNullOrWhiteSpace(grade) ? null : grade.Trim();
 
         if (enrollment.Length == 0)
             throw new ArgumentException("La matrícula es obligatoria.", nameof(enrollmentNo));
@@ -79,6 +80,7 @@ public sealed class StudentRegistry : IStudentRegistry
                 EnrollmentNo = enrollment,
                 FullName = name,
                 CardCode = card,
+                Grade = gradeValue,
                 IsActive = true,
                 CreatedAtUtc = _clock.UtcNow,
             };
@@ -99,12 +101,13 @@ public sealed class StudentRegistry : IStudentRegistry
     }
 
     public async Task UpdateAsync(
-        Guid studentId, string enrollmentNo, string fullName, string? cardCode,
+        Guid studentId, string enrollmentNo, string fullName, string? cardCode, string? grade,
         CancellationToken ct = default)
     {
         var enrollment = (enrollmentNo ?? string.Empty).Trim();
         var name = (fullName ?? string.Empty).Trim();
         var card = string.IsNullOrWhiteSpace(cardCode) ? null : cardCode.Trim();
+        var gradeValue = string.IsNullOrWhiteSpace(grade) ? null : grade.Trim();
 
         if (enrollment.Length == 0)
             throw new ArgumentException("La matrícula es obligatoria.", nameof(enrollmentNo));
@@ -124,6 +127,7 @@ public sealed class StudentRegistry : IStudentRegistry
         student.EnrollmentNo = enrollment;
         student.FullName = name;
         student.CardCode = card;
+        student.Grade = gradeValue;
         await _db.SaveChangesAsync(ct);
     }
 

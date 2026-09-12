@@ -26,7 +26,7 @@ public class RegistryTests
         var school = db.SeedSchool();
         var svc = NewStudents(db);
 
-        var student = await svc.CreateAsync(school.Id, "A-100", "Ana López", cardCode: "CARD-100");
+        var student = await svc.CreateAsync(school.Id, "A-100", "Ana López", cardCode: "CARD-100", grade: null);
 
         var ctx = db.NewContext();
         var account = await ctx.Accounts.SingleAsync(a => a.StudentId == student.Id);
@@ -40,9 +40,9 @@ public class RegistryTests
         using var db = new TestDatabase();
         var school = db.SeedSchool();
         var svc = NewStudents(db);
-        await svc.CreateAsync(school.Id, "A-100", "Ana López", null);
+        await svc.CreateAsync(school.Id, "A-100", "Ana López", null, null);
 
-        var act = () => svc.CreateAsync(school.Id, "A-100", "Otro Alumno", null);
+        var act = () => svc.CreateAsync(school.Id, "A-100", "Otro Alumno", null, null);
 
         (await act.Should().ThrowAsync<InvalidOperationException>())
             .WithMessage("*A-100*");
@@ -60,9 +60,9 @@ public class RegistryTests
         var school = db.SeedSchool();
         var svc = NewStudents(db);
 
-        await svc.CreateAsync(school.Id, "A-100", "Ana López", cardCode: null);
-        await svc.CreateAsync(school.Id, "A-101", "Luis Pérez", cardCode: null);
-        await svc.CreateAsync(school.Id, "A-102", "Sara Ruiz", cardCode: "   ");
+        await svc.CreateAsync(school.Id, "A-100", "Ana López", cardCode: null, grade: null);
+        await svc.CreateAsync(school.Id, "A-101", "Luis Pérez", cardCode: null, grade: null);
+        await svc.CreateAsync(school.Id, "A-102", "Sara Ruiz", cardCode: "   ", grade: null);
 
         (await db.NewContext().Students.CountAsync()).Should().Be(3);
     }
@@ -73,9 +73,9 @@ public class RegistryTests
         using var db = new TestDatabase();
         var school = db.SeedSchool();
         var svc = NewStudents(db);
-        await svc.CreateAsync(school.Id, "A-100", "Ana López", "CARD-1");
+        await svc.CreateAsync(school.Id, "A-100", "Ana López", "CARD-1", null);
 
-        var act = () => svc.CreateAsync(school.Id, "A-101", "Luis Pérez", "CARD-1");
+        var act = () => svc.CreateAsync(school.Id, "A-101", "Luis Pérez", "CARD-1", null);
         await act.Should().ThrowAsync<InvalidOperationException>();
     }
 
@@ -85,8 +85,8 @@ public class RegistryTests
         using var db = new TestDatabase();
         var school = db.SeedSchool();
         var svc = NewStudents(db);
-        await svc.CreateAsync(school.Id, "A-100", "Ana López", "CARD-1");
-        await svc.CreateAsync(school.Id, "B-200", "Luis Pérez", null);
+        await svc.CreateAsync(school.Id, "A-100", "Ana López", "CARD-1", null);
+        await svc.CreateAsync(school.Id, "B-200", "Luis Pérez", null, null);
 
         (await svc.ListAsync(school.Id, "ana")).Should().ContainSingle();
         (await svc.ListAsync(school.Id, "b-200")).Should().ContainSingle();
@@ -100,7 +100,7 @@ public class RegistryTests
         using var db = new TestDatabase();
         var school = db.SeedSchool();
         var svc = NewStudents(db);
-        var student = await svc.CreateAsync(school.Id, "A-100", "Ana López", null);
+        var student = await svc.CreateAsync(school.Id, "A-100", "Ana López", null, null);
 
         await svc.SetActiveAsync(student.Id, false);
 

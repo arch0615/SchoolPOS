@@ -27,7 +27,8 @@ public sealed record RosterEntryDto(
     string FullName,
     bool IsActive,
     DateTime CreatedAtUtc,
-    Guid AccountId);
+    Guid AccountId,
+    string? Grade = null);
 
 public sealed record RosterPushResult(int Pushed);
 

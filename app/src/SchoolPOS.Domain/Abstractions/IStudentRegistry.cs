@@ -9,6 +9,7 @@ public sealed record StudentRow(
     string EnrollmentNo,
     string? CardCode,
     string FullName,
+    string? Grade,
     decimal Balance,
     bool IsActive);
 
@@ -29,12 +30,12 @@ public interface IStudentRegistry
 
     /// <summary>Da de alta al alumno y su cuenta. La matrícula es obligatoria y única por escuela.</summary>
     Task<Student> CreateAsync(
-        Guid schoolId, string enrollmentNo, string fullName, string? cardCode,
+        Guid schoolId, string enrollmentNo, string fullName, string? cardCode, string? grade,
         CancellationToken ct = default);
 
     /// <summary>Actualiza los datos del alumno (no toca el saldo).</summary>
     Task UpdateAsync(
-        Guid studentId, string enrollmentNo, string fullName, string? cardCode,
+        Guid studentId, string enrollmentNo, string fullName, string? cardCode, string? grade,
         CancellationToken ct = default);
 
     /// <summary>

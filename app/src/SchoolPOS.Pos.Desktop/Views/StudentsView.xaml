@@ -42,6 +42,7 @@
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Matrícula" Binding="{Binding EnrollmentNo}" Width="110" />
                         <DataGridTextColumn Header="Nombre" Binding="{Binding FullName}" Width="*" />
+                        <DataGridTextColumn Header="Grado" Binding="{Binding Grade}" Width="90" />
                         <DataGridTextColumn Header="Credencial" Binding="{Binding CardCode}" Width="120" />
                         <DataGridTextColumn Header="Saldo" Binding="{Binding Balance, StringFormat=C2}" Width="100" />
                         <DataGridCheckBoxColumn Header="Activo" Binding="{Binding IsActive}" Width="60" />
@@ -66,7 +67,11 @@
                     <TextBox Text="{Binding CardCode, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,2" />
                     <TextBlock Text="Código de barras o QR de la credencial, para cobrar más rápido."
                                Foreground="{StaticResource MutedBrush}" FontSize="11" TextWrapping="Wrap"
-                               Margin="0,0,0,14" />
+                               Margin="0,0,0,10" />
+
+                    <TextBlock Text="Grado (opcional)" Foreground="{StaticResource MutedBrush}" />
+                    <TextBox Text="{Binding Grade, UpdateSourceTrigger=PropertyChanged}" Tag="p. ej. 3° A"
+                             Margin="0,2,0,14" />
 
                     <Button Content="{Binding SaveButtonText}" Style="{StaticResource PrimaryButton}"
                             Height="42" Command="{Binding SaveCommand}" />

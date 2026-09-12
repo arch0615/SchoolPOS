@@ -24,6 +24,7 @@ public sealed class StudentsViewModel : ViewModelBase, IAsyncLoadable
     private string _enrollmentNo = string.Empty;
     private string _fullName = string.Empty;
     private string _cardCode = string.Empty;
+    private string _grade = string.Empty;
     private string _statusMessage = string.Empty;
     private string _errorMessage = string.Empty;
 
@@ -64,6 +65,7 @@ public sealed class StudentsViewModel : ViewModelBase, IAsyncLoadable
                 EnrollmentNo = value.EnrollmentNo;
                 FullName = value.FullName;
                 CardCode = value.CardCode ?? string.Empty;
+                Grade = value.Grade ?? string.Empty;
             }
             OnPropertyChanged(nameof(IsEditing));
             OnPropertyChanged(nameof(SaveButtonText));
@@ -83,6 +85,7 @@ public sealed class StudentsViewModel : ViewModelBase, IAsyncLoadable
     public string EnrollmentNo { get => _enrollmentNo; set => SetProperty(ref _enrollmentNo, value); }
     public string FullName { get => _fullName; set => SetProperty(ref _fullName, value); }
     public string CardCode { get => _cardCode; set => SetProperty(ref _cardCode, value); }
+    public string Grade { get => _grade; set => SetProperty(ref _grade, value); }
 
     public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
     public string ErrorMessage { get => _errorMessage; set => SetProperty(ref _errorMessage, value); }
@@ -119,6 +122,7 @@ public sealed class StudentsViewModel : ViewModelBase, IAsyncLoadable
         EnrollmentNo = string.Empty;
         FullName = string.Empty;
         CardCode = string.Empty;
+        Grade = string.Empty;
         StatusMessage = string.Empty;
         ErrorMessage = string.Empty;
     }
@@ -134,12 +138,12 @@ public sealed class StudentsViewModel : ViewModelBase, IAsyncLoadable
 
             if (Selected is { } current)
             {
-                await registry.UpdateAsync(current.StudentId, EnrollmentNo, FullName, CardCode);
+                await registry.UpdateAsync(current.StudentId, EnrollmentNo, FullName, CardCode, Grade);
                 StatusMessage = $"Alumno '{FullName}' actualizado.";
             }
             else
             {
-                await registry.CreateAsync(_session.SchoolId, EnrollmentNo, FullName, CardCode);
+                await registry.CreateAsync(_session.SchoolId, EnrollmentNo, FullName, CardCode, Grade);
                 StatusMessage = $"Alumno '{FullName}' dado de alta con saldo $0.00.";
             }
 
