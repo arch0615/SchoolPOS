@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using SchoolPOS.Data;
@@ -190,6 +191,16 @@ builder.Services.ConfigureHttpJsonOptions(o =>
 });
 
 var app = builder.Build();
+
+// Detrás de Cloudflare (TLS termina ahí; a este proceso llega por HTTP simple), así que sin esto
+// Request.Scheme siempre da "http" — se reprodujo justo así en el onboarding OAuth de Mercado Pago:
+// el redirect_uri que se le manda queda como http://loncherapp.com/... y Mercado Pago lo rechaza (o
+// lo maneja mal) por no ser https, así que la escuela nunca completaba la conexión. Va primero en el
+// pipeline, antes que cualquier otro middleware use Scheme/Host.
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+});
 
 // Inicialización de base de datos + datos de demostración (desarrollo).
 using (var scope = app.Services.CreateScope())
