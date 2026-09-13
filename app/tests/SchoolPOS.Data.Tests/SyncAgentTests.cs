@@ -49,6 +49,39 @@ public class SyncAgentTests
             .Should().Be(TopUpStatus.Applied);
     }
 
+    /// <summary>
+    /// Reproduce el flujo real de punta a punta: el webhook de la pasarela confirma y acredita la
+    /// recarga en la nube (TopUpService.ApplyConfirmedAsync, lo que de verdad llama el endpoint de
+    /// producción) y, sin ninguna intervención manual, la caja la recibe en su próxima corrida
+    /// normal de sincronización. Antes de la corrección, ApplyConfirmedAsync dejaba
+    /// AppliedLocally=true desde la nube y esta prueba habría fallado: PullTopUpsAsync nunca
+    /// encuentra nada que bajar porque, para él, la recarga ya estaba "aplicada".
+    /// </summary>
+    [Fact]
+    public async Task Topup_confirmed_by_webhook_reaches_a_till_automatically_without_manual_resync()
+    {
+        using var cloud = new TestDatabase();
+        using var local = new TestDatabase();
+        cloud.SeedRoster(SchoolId, StudentId, AccountId, balance: 0m);
+        local.SeedRoster(SchoolId, StudentId, AccountId, balance: 0m);
+
+        var topUps = new TopUpService(cloud.Context, new FakePaymentGateway(), new BalanceService(cloud.Context, new TestClock()), new TestClock());
+        var created = await topUps.CreateAsync(SchoolId, AccountId, 100m);
+        await topUps.ConfirmAsync(created.TopUp.GatewayRef);
+        await topUps.ApplyConfirmedAsync(created.TopUp.Id); // esto es lo que hace el webhook en producción
+
+        // El tutor ya ve su saldo, sin que ninguna caja haya sincronizado todavía.
+        (await cloud.NewContext().Accounts.Where(a => a.Id == AccountId).Select(a => a.Balance).SingleAsync())
+            .Should().Be(100m);
+
+        var agent = NewAgent(cloud, local);
+        var report = await agent.RunOnceAsync(); // corrida normal, sin "Reenviar recargas"
+
+        report.TopUpsApplied.Should().Be(1, "PullTopUpsAsync debe seguir ofreciendo la recarga tras el webhook");
+        (await local.NewContext().Accounts.Where(a => a.Id == AccountId).Select(a => a.Balance).SingleAsync())
+            .Should().Be(100m);
+    }
+
     [Fact]
     public async Task Pull_is_idempotent_across_runs()
     {

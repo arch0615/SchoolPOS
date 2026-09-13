@@ -90,7 +90,12 @@ public sealed class TopUpService : ITopUpService
                 throw new InvalidOperationException(
                     $"Solo se puede aplicar una recarga confirmada (estado actual: {status}).");
 
-            // Acredita el 100% al libro mayor local; idempotente y marca Applied.
-            return await _balance.ApplyTopUpAsync(topUpId, ct);
+            // Acredita el 100% en la nube para que el tutor lo vea de inmediato; NO la marca
+            // como entregada a ninguna caja (eso lo hace únicamente el Sync Agent al bajarla y
+            // aplicarla en su propia DB local). Antes esto llamaba a IBalanceService.ApplyTopUpAsync
+            // — pensado solo para el Sync Agent sobre la DB local —, así que el webhook de pagos
+            // marcaba la recarga como aplicada en la nube al confirmarla y ninguna caja volvía a
+            // recibirla nunca por la vía normal de sincronización.
+            return await _balance.CreditConfirmedTopUpAsync(topUpId, ct);
         }, ct);
 }

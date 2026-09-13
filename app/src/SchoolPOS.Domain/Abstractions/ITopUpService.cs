@@ -25,8 +25,10 @@ public interface ITopUpService
     Task<TopUp> ConfirmAsync(string gatewayRef, CancellationToken ct = default);
 
     /// <summary>
-    /// Aplica al libro mayor local una recarga confirmada (acredita el 100% al estudiante), de
-    /// forma idempotente. Es el paso que ejecuta el agente de sincronización sobre la DB local.
+    /// Acredita en la nube una recarga confirmada (100% al estudiante), de forma idempotente, para
+    /// que el tutor vea su saldo actualizado de inmediato. Es el paso que llama el webhook de la
+    /// pasarela — <b>no</b> marca la recarga como entregada a ninguna caja; eso lo hace por su
+    /// cuenta el agente de sincronización cuando la baja y la aplica en la DB local de la escuela.
     /// </summary>
     Task<BalanceMovement> ApplyConfirmedAsync(Guid topUpId, CancellationToken ct = default);
 }

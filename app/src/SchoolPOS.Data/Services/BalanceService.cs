@@ -64,6 +64,33 @@ public sealed class BalanceService : IBalanceService
             return movement;
         }, ct);
 
+    public Task<BalanceMovement> CreditConfirmedTopUpAsync(Guid topUpId, CancellationToken ct = default) =>
+        _db.ExecuteAtomicAsync(async () =>
+        {
+            var topUp = await _db.TopUps.FirstOrDefaultAsync(t => t.Id == topUpId, ct)
+                ?? throw new InvalidOperationException($"Recarga {topUpId} no encontrada.");
+
+            // Idempotencia por gateway_ref: el webhook de la pasarela puede reintentar la entrega.
+            var existing = await _db.BalanceMovements.AsNoTracking()
+                .FirstOrDefaultAsync(m => m.Type == MovementType.TopUp && m.Reference == topUp.GatewayRef, ct);
+            if (existing is not null)
+                return existing;
+
+            var amount = Math.Round(topUp.Amount, Scale, Rounding); // 100% al estudiante (FR-COM-1)
+            var now = _clock.UtcNow;
+
+            await _db.Accounts
+                .Where(a => a.Id == topUp.AccountId)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(a => a.Balance, a => a.Balance + amount)
+                    .SetProperty(a => a.UpdatedAtUtc, now), ct);
+
+            // A propósito NO se toca AppliedLocally/Status aquí: esta recarga sigue pendiente de
+            // entrega a la caja hasta que el Sync Agent la baje y la aplique de verdad.
+            return await AppendMovementAsync(
+                topUp.AccountId, MovementType.TopUp, amount, topUp.GatewayRef, operatorId: null, now, ct);
+        }, ct);
+
     public Task<BalanceMovement> ChargeSaleAsync(
         Guid accountId, decimal amount, string reference, Guid operatorId, CancellationToken ct = default)
         => ApplyGuardedDebitAsync(accountId, amount, MovementType.Sale, reference, operatorId, ct);

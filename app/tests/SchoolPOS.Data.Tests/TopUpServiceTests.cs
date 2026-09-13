@@ -37,8 +37,16 @@ public class TopUpServiceTests
         gateway.LastIntent!.Amount.Should().Be(100m);
     }
 
+    /// <summary>
+    /// ApplyConfirmedAsync es lo que llama el webhook de la pasarela (nube): debe acreditar el
+    /// saldo de inmediato para que el tutor lo vea, pero SIN marcar la recarga como entregada a
+    /// ninguna caja. Antes de esta corrección llamaba a IBalanceService.ApplyTopUpAsync — pensado
+    /// solo para el Sync Agent sobre la DB local — y dejaba AppliedLocally=true desde la nube, por
+    /// lo que PullTopUpsAsync nunca volvía a ofrecerle esa recarga a ninguna caja (se reprodujo así
+    /// en producción: toda recarga confirmada requería "Reenviar recargas" manual para llegar).
+    /// </summary>
     [Fact]
-    public async Task Full_flow_create_confirm_apply_credits_full_amount()
+    public async Task Webhook_confirm_credits_balance_without_marking_it_delivered_to_any_till()
     {
         using var db = new TestDatabase();
         var school = db.SeedSchool(commissionRate: 0.05m);
@@ -51,10 +59,12 @@ public class TopUpServiceTests
 
         var ctx = db.NewContext();
         (await ctx.Accounts.Where(a => a.Id == account.Id).Select(a => a.Balance).SingleAsync())
-            .Should().Be(100m, "el estudiante recibe el 100%");
-        (await ctx.TopUps.Where(t => t.Id == created.TopUp.Id).Select(t => t.Status).SingleAsync())
-            .Should().Be(TopUpStatus.Applied);
+            .Should().Be(100m, "el tutor debe ver su saldo de inmediato al confirmarse el pago");
+        var topUp = await ctx.TopUps.SingleAsync(t => t.Id == created.TopUp.Id);
+        topUp.Status.Should().Be(TopUpStatus.Confirmed, "todavía no la aplicó ninguna caja");
+        topUp.AppliedLocally.Should().BeFalse("PullTopUpsAsync debe poder seguir ofreciéndosela a las cajas");
     }
+
 
     [Fact]
     public async Task Cannot_apply_before_confirmed()
