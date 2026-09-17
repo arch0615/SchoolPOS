@@ -199,11 +199,16 @@ body.has-shell .bar nav > a { color:#334155; }
 .sidebar-toggle:hover { background:#374151; }
 
 /* Sidebar: navy gradient column (slightly lighter than the original navy) with the nav on
-   top and the support card pinned bottom. */
+   top and the support card pinned bottom. Desktop only (min-width matches the mobile breakpoint
+   below): unguarded, this rule's higher specificity than the inline `.sidebar { display:none }`
+   mobile rule in _Layout.cshtml made the sidebar impossible to hide on a phone at any width,
+   covering the whole screen with no way to close it — reported live on a customer's phone. */
 /* Sticks below the topbar and keeps its own scroll, so the nav stays put while the page scrolls. */
-body.has-shell .sidebar { background:linear-gradient(180deg,#132a52,#0f1e3c); border-right:0; width:256px; flex:0 0 256px;
-  padding:16px 14px 20px; display:flex; flex-direction:column; transition:width .18s ease, padding .18s ease;
-  position:sticky; top:66px; height:calc(100vh - 66px); overflow-y:auto; align-self:flex-start; }
+@media (min-width:861px) {
+  body.has-shell .sidebar { background:linear-gradient(180deg,#132a52,#0f1e3c); border-right:0; width:256px; flex:0 0 256px;
+    padding:16px 14px 20px; display:flex; flex-direction:column; transition:width .18s ease, padding .18s ease;
+    position:sticky; top:66px; height:calc(100vh - 66px); overflow-y:auto; align-self:flex-start; }
+}
 .side-nav { display:flex; flex-direction:column; gap:4px; }
 .side-nav a { display:flex; align-items:center; gap:12px; padding:11px 14px; border:0; border-radius:12px; color:#c7d2e6; font-weight:600; font-size:15px; }
 .side-nav a svg { width:20px; height:20px; flex:0 0 20px; }
