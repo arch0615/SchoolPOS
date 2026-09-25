@@ -18,4 +18,7 @@ public interface ISyncCloudService
     Task<RosterPushResult> PushRosterAsync(Guid schoolId, IReadOnlyList<RosterEntryDto> entries, CancellationToken ct = default);
 
     Task<ConsumptionPushResult> PushConsumptionAsync(Guid schoolId, IReadOnlyList<ConsumptionEntryDto> entries, CancellationToken ct = default);
+
+    /// <summary>Presupuesto diario vigente de cada cuenta de la escuela (fijado por los tutores desde el portal).</summary>
+    Task<IReadOnlyList<AccountLimitDto>> GetAccountLimitsAsync(Guid schoolId, CancellationToken ct = default);
 }

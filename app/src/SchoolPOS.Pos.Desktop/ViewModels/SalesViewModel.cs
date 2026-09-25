@@ -340,6 +340,11 @@ public sealed class SalesViewModel : ViewModelBase, IAsyncLoadable
         {
             ErrorMessage = "Saldo insuficiente del estudiante para esta venta.";
         }
+        catch (DailyLimitExceededException ex)
+        {
+            ErrorMessage = $"Esta venta excede el presupuesto diario del alumno " +
+                            $"(gastado hoy: {ex.SpentToday:C2} de {ex.DailyLimit:C2}).";
+        }
         catch (InsufficientStockException ex)
         {
             ErrorMessage = $"Sin existencias suficientes (producto {ex.ProductId}).";

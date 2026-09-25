@@ -27,6 +27,10 @@ namespace SchoolPOS.Data.Migrations.Sqlite.Migrations
                         .HasPrecision(18, 4)
                         .HasColumnType("TEXT");
 
+                    b.Property<decimal?>("DailySpendLimit")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("TEXT");
+
                     b.Property<decimal>("OverdraftLimit")
                         .HasPrecision(18, 4)
                         .HasColumnType("TEXT");

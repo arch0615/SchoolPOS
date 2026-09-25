@@ -82,6 +82,40 @@ public class SyncAgentTests
             .Should().Be(100m);
     }
 
+    /// <summary>
+    /// A diferencia del padrón (escuela→nube) y las recargas (nube→escuela pero de una sola vez,
+    /// con acuse), el presupuesto diario nace en el portal y se reconcilia completo cada corrida,
+    /// como el padrón pero en sentido contrario: si el tutor lo cambia o lo quita, la próxima
+    /// corrida de la caja lo refleja sin que nadie tenga que hacer nada manual.
+    /// </summary>
+    [Fact]
+    public async Task Pull_account_limits_brings_the_guardians_daily_budget_down_to_the_till()
+    {
+        using var cloud = new TestDatabase();
+        using var local = new TestDatabase();
+        cloud.SeedRoster(SchoolId, StudentId, AccountId, balance: 0m);
+        local.SeedRoster(SchoolId, StudentId, AccountId, balance: 0m);
+
+        // El tutor fija el presupuesto directo en la nube (como haría el portal).
+        await cloud.Context.Accounts.Where(a => a.Id == AccountId)
+            .ExecuteUpdateAsync(s => s.SetProperty(a => a.DailySpendLimit, 80m));
+
+        var agent = NewAgent(cloud, local);
+        var report = await agent.RunOnceAsync();
+
+        report.AccountLimitsUpdated.Should().Be(1);
+        (await local.NewContext().Accounts.Where(a => a.Id == AccountId).Select(a => a.DailySpendLimit).SingleAsync())
+            .Should().Be(80m);
+
+        // El tutor lo quita: la próxima corrida debe reflejar null también, no solo cambios de valor.
+        await cloud.Context.Accounts.Where(a => a.Id == AccountId)
+            .ExecuteUpdateAsync(s => s.SetProperty(a => a.DailySpendLimit, (decimal?)null));
+        await agent.RunOnceAsync();
+
+        (await local.NewContext().Accounts.Where(a => a.Id == AccountId).Select(a => a.DailySpendLimit).SingleAsync())
+            .Should().BeNull();
+    }
+
     [Fact]
     public async Task Pull_is_idempotent_across_runs()
     {

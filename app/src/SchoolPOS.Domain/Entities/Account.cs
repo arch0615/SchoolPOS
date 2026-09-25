@@ -22,6 +22,13 @@ public class Account
     /// </summary>
     public decimal OverdraftLimit { get; set; } = 0m;
 
+    /// <summary>
+    /// Presupuesto máximo de gasto por día local (México), opcional. Lo fija el tutor desde el
+    /// portal; la caja lo hace cumplir al cobrar (suma de ventas del día vs. este límite), aparte
+    /// del saldo disponible. <c>null</c> = sin límite.
+    /// </summary>
+    public decimal? DailySpendLimit { get; set; }
+
     /// <summary>Asientos inmutables del libro mayor de esta cuenta.</summary>
     public ICollection<BalanceMovement> Movements { get; set; } = new List<BalanceMovement>();
 

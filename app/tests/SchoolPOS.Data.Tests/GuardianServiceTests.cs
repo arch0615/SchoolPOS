@@ -98,6 +98,40 @@ public class GuardianServiceTests
     }
 
     [Fact]
+    public async Task Set_and_clear_daily_spend_limit_for_a_linked_student()
+    {
+        using var db = new TestDatabase();
+        var school = db.SeedSchool();
+        db.SeedStudentAccount(school.Id, balance: 75m, enrollmentNo: "MAT-9");
+        var svc = NewService(db);
+        var guardian = await svc.RegisterAsync(school.Id, "p@c.com", "clave123", "P");
+        await svc.LinkStudentByEnrollmentAsync(guardian.Id, school.Id, "MAT-9");
+        var accountId = (await svc.GetLinkedStudentsAsync(guardian.Id))[0].AccountId;
+
+        await svc.SetDailySpendLimitAsync(guardian.Id, accountId, 50m);
+        (await svc.GetLinkedStudentsAsync(guardian.Id))[0].DailySpendLimit.Should().Be(50m);
+
+        await svc.SetDailySpendLimitAsync(guardian.Id, accountId, null); // quitar el límite
+        (await svc.GetLinkedStudentsAsync(guardian.Id))[0].DailySpendLimit.Should().BeNull();
+    }
+
+    /// <summary>Un tutor no puede limitar el gasto de un alumno que no le pertenece.</summary>
+    [Fact]
+    public async Task Cannot_set_daily_limit_for_a_student_not_owned_by_the_guardian()
+    {
+        using var db = new TestDatabase();
+        var school = db.SeedSchool();
+        var otherAccount = db.SeedStudentAccount(school.Id, balance: 0m, enrollmentNo: "MAT-OTHER");
+        var svc = NewService(db);
+        var guardian = await svc.RegisterAsync(school.Id, "p@c.com", "clave123", "P");
+        // guardian nunca vincula a "MAT-OTHER" — adivina el AccountId directamente.
+
+        var act = () => svc.SetDailySpendLimitAsync(guardian.Id, otherAccount.Id, 50m);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+    }
+
+    [Fact]
     public async Task Register_without_accepting_terms_or_privacy_is_rejected()
     {
         using var db = new TestDatabase();

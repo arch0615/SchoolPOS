@@ -42,6 +42,32 @@ public class StudentsModel : PageModel
         return Page();
     }
 
+    public async Task<IActionResult> OnPostSetDailyLimitAsync(Guid accountId, string dailyLimit)
+    {
+        try
+        {
+            // Vacío = quitar el límite (sin presupuesto). No usamos [BindProperty] decimal? directo
+            // porque un campo vacío falla el model binding en vez de llegar como null.
+            decimal? parsed = string.IsNullOrWhiteSpace(dailyLimit)
+                ? null
+                : decimal.Parse(dailyLimit, System.Globalization.CultureInfo.InvariantCulture);
+
+            await _guardians.SetDailySpendLimitAsync(User.GetGuardianId(), accountId, parsed);
+            Message = parsed is { } value
+                ? $"Presupuesto diario actualizado: {value:C2}."
+                : "Presupuesto diario eliminado: sin límite.";
+        }
+        catch (FormatException)
+        {
+            Error = "Escribe un importe válido (o déjalo vacío para quitar el límite).";
+        }
+        catch (Exception ex)
+        {
+            Error = ex.Message;
+        }
+        return RedirectToPage();
+    }
+
     public async Task<IActionResult> OnPostLinkStudentAsync(string enrollmentNo)
     {
         if (string.IsNullOrWhiteSpace(enrollmentNo))

@@ -12,7 +12,8 @@ public sealed record GuardianAuthResult(bool Succeeded, Guardian? Guardian, stri
 
 /// <summary>Estudiante vinculado a un tutor, con su saldo (para el panel del portal).</summary>
 public sealed record LinkedStudent(
-    Guid StudentId, Guid AccountId, string EnrollmentNo, string FullName, decimal Balance);
+    Guid StudentId, Guid AccountId, string EnrollmentNo, string FullName, decimal Balance,
+    decimal? DailySpendLimit = null);
 
 /// <summary>Movimiento del libro mayor para el historial del portal.</summary>
 public sealed record MovementRow(
@@ -86,4 +87,13 @@ public interface IGuardianService
 
     /// <summary>Actualiza datos del perfil (nombre).</summary>
     Task UpdateProfileAsync(Guid guardianId, string fullName, CancellationToken ct = default);
+
+    /// <summary>
+    /// Fija (o quita, con <c>null</c>) el presupuesto máximo de gasto por día para un alumno
+    /// vinculado. Verifica que el alumno pertenezca al tutor antes de tocar su cuenta — el mismo
+    /// control que <see cref="OwnsStudentAsync"/>, para que un tutor no pueda limitar el gasto de
+    /// un alumno ajeno adivinando su AccountId.
+    /// </summary>
+    Task SetDailySpendLimitAsync(
+        Guid guardianId, Guid accountId, decimal? dailyLimit, CancellationToken ct = default);
 }

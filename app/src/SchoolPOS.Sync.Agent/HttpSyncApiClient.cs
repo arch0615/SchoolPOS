@@ -70,4 +70,12 @@ public sealed class HttpSyncApiClient : ISyncApiClient
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<ConsumptionPushResult>(SyncJson.Options, ct))!;
     }
+
+    public async Task<IReadOnlyList<AccountLimitDto>> GetAccountLimitsAsync(CancellationToken ct = default)
+    {
+        ApplyCurrentConfig();
+        var result = await _http.GetFromJsonAsync<List<AccountLimitDto>>(
+            "/api/sync/accounts/limits", SyncJson.Options, ct);
+        return result ?? new List<AccountLimitDto>();
+    }
 }

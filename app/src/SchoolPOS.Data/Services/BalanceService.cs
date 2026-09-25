@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SchoolPOS.Domain.Abstractions;
+using SchoolPOS.Domain.Common;
 using SchoolPOS.Domain.Entities;
 using SchoolPOS.Domain.Enums;
 using SchoolPOS.Domain.Exceptions;
@@ -149,6 +150,14 @@ public sealed class BalanceService : IBalanceService
         {
             var now = _clock.UtcNow;
 
+            // Presupuesto diario del tutor (aparte del saldo): se revisa antes del cargo. Lee-luego-
+            // escribe, a diferencia del UPDATE condicional de abajo — aceptable porque es un tope de
+            // gasto que pone el tutor (control parental), no una garantía de integridad financiera
+            // como el sobregiro; dos ventas concurrentes en la misma cuenta son, en la práctica, un
+            // solo cajero cobrando una a la vez.
+            if (type == MovementType.Sale)
+                await GuardDailyLimitAsync(accountId, debit, now, ct);
+
             // UPDATE atómico condicional: solo descuenta si alcanza saldo + sobregiro permitido.
             var affected = await _db.Accounts
                 .Where(a => a.Id == accountId && a.Balance + a.OverdraftLimit >= debit)
@@ -166,6 +175,27 @@ public sealed class BalanceService : IBalanceService
 
             return await AppendMovementAsync(accountId, type, -debit, reference, operatorId, now, ct);
         }, ct);
+    }
+
+    private async Task GuardDailyLimitAsync(Guid accountId, decimal debit, DateTime now, CancellationToken ct)
+    {
+        var limit = await _db.Accounts.AsNoTracking()
+            .Where(a => a.Id == accountId).Select(a => a.DailySpendLimit).FirstOrDefaultAsync(ct);
+        if (limit is not { } dailyLimit)
+            return;
+
+        var startOfDayUtc = MxTime.StartOfDayUtc(MxTime.TodayLocal(now))!.Value;
+        // Suma en memoria, no SumAsync: SQLite guarda decimal como TEXT y no traduce SUM(decimal)
+        // (mismo motivo documentado en BalanceServiceTests) — un día de ventas de una sola cuenta
+        // es un conjunto acotado, así que traer las filas es barato.
+        var todaysSales = await _db.BalanceMovements.AsNoTracking()
+            .Where(m => m.AccountId == accountId && m.Type == MovementType.Sale && m.CreatedAtUtc >= startOfDayUtc)
+            .Select(m => m.Amount)
+            .ToListAsync(ct);
+        var spentToday = -todaysSales.Sum(); // las ventas se guardan en negativo
+
+        if (spentToday + debit > dailyLimit)
+            throw new DailyLimitExceededException(accountId, debit, spentToday, dailyLimit);
     }
 
     private Task<BalanceMovement> ApplyCreditAsync(

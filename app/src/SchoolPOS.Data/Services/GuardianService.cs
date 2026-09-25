@@ -147,13 +147,38 @@ public sealed class GuardianService : IGuardianService
             join s in _db.Students on gs.StudentId equals s.Id
             join a in _db.Accounts on s.Id equals a.StudentId
             orderby s.FullName
-            select new LinkedStudent(s.Id, a.Id, s.EnrollmentNo, s.FullName, a.Balance);
+            select new LinkedStudent(s.Id, a.Id, s.EnrollmentNo, s.FullName, a.Balance, a.DailySpendLimit);
 
         return await query.ToListAsync(ct);
     }
 
     public Task<bool> OwnsStudentAsync(Guid guardianId, Guid studentId, CancellationToken ct = default) =>
         _db.GuardianStudents.AnyAsync(gs => gs.GuardianId == guardianId && gs.StudentId == studentId, ct);
+
+    public async Task SetDailySpendLimitAsync(
+        Guid guardianId, Guid accountId, decimal? dailyLimit, CancellationToken ct = default)
+    {
+        if (dailyLimit is < 0m)
+            throw new ArgumentException("El presupuesto diario no puede ser negativo.", nameof(dailyLimit));
+
+        // Mismo control que OwnsStudentAsync, pero desde la cuenta: un tutor no puede limitar el
+        // gasto de un alumno ajeno mandando un AccountId que no le pertenece.
+        var owns = await (
+            from gs in _db.GuardianStudents.AsNoTracking()
+            join a in _db.Accounts.AsNoTracking() on gs.StudentId equals a.StudentId
+            where gs.GuardianId == guardianId && a.Id == accountId
+            select 1).AnyAsync(ct);
+        if (!owns)
+            throw new InvalidOperationException("Ese alumno no está vinculado a tu cuenta.");
+
+        var affected = await _db.Accounts
+            .Where(a => a.Id == accountId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(a => a.DailySpendLimit, dailyLimit)
+                .SetProperty(a => a.UpdatedAtUtc, _clock.UtcNow), ct);
+        if (affected == 0)
+            throw new InvalidOperationException($"Cuenta {accountId} no encontrada.");
+    }
 
     public async Task<IReadOnlyList<MovementRow>> GetMovementsAsync(
         Guid accountId, DateTime? fromUtc, DateTime? toUtc, CancellationToken ct = default)

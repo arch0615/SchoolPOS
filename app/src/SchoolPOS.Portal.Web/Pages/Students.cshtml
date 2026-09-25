@@ -59,6 +59,13 @@ else
                     <a class="btn accent" href="/Wallet?studentId=@s.StudentId">Recargar</a>
                     <a class="btn ghost" href="/Transactions?StudentId=@s.StudentId">Movimientos</a>
                 </div>
+                <form method="post" asp-page-handler="SetDailyLimit" style="margin-top:10px;display:flex;gap:6px;align-items:center">
+                    <input type="hidden" name="accountId" value="@s.AccountId" />
+                    <label style="font-size:12px;color:var(--muted);white-space:nowrap">Presupuesto/día</label>
+                    <input type="number" step="0.01" min="0" name="dailyLimit" value="@s.DailySpendLimit?.ToString("0.00")"
+                           placeholder="Sin límite" style="flex:1;min-width:0;padding:6px 8px;font-size:13px" />
+                    <button class="btn ghost" type="submit" style="padding:6px 10px;font-size:13px">Guardar</button>
+                </form>
             </article>
         }
     </div>

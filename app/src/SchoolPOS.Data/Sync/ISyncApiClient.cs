@@ -17,4 +17,7 @@ public interface ISyncApiClient
     Task<RosterPushResult> PushRosterAsync(IReadOnlyList<RosterEntryDto> entries, CancellationToken ct = default);
 
     Task<ConsumptionPushResult> PushConsumptionAsync(IReadOnlyList<ConsumptionEntryDto> entries, CancellationToken ct = default);
+
+    /// <summary>Presupuesto diario vigente de cada cuenta de esta escuela (fijado por los tutores desde el portal).</summary>
+    Task<IReadOnlyList<AccountLimitDto>> GetAccountLimitsAsync(CancellationToken ct = default);
 }

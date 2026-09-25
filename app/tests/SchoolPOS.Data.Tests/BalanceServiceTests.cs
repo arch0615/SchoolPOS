@@ -176,4 +176,86 @@ public class BalanceServiceTests
         movement.Amount.Should().Be(-15m);
         movement.BalanceAfter.Should().Be(85m);
     }
+
+    private static async Task SetDailyLimitAsync(TestDatabase db, Guid accountId, decimal? limit)
+    {
+        await db.Context.Accounts.Where(a => a.Id == accountId)
+            .ExecuteUpdateAsync(s => s.SetProperty(a => a.DailySpendLimit, limit));
+        db.Context.ChangeTracker.Clear();
+    }
+
+    [Fact]
+    public async Task Sale_within_daily_limit_is_allowed()
+    {
+        using var db = new TestDatabase();
+        var account = db.SeedAccount(initialBalance: 500m);
+        await SetDailyLimitAsync(db, account.Id, 100m);
+        var svc = NewService(db);
+
+        await svc.ChargeSaleAsync(account.Id, 60m, "VENTA-1", Operator);
+
+        var balance = await db.NewContext().Accounts
+            .Where(a => a.Id == account.Id).Select(a => a.Balance).SingleAsync();
+        balance.Should().Be(440m, "hay saldo y sigue dentro del presupuesto del día");
+    }
+
+    [Fact]
+    public async Task Sale_exceeding_daily_limit_is_rejected_even_with_enough_balance()
+    {
+        using var db = new TestDatabase();
+        var account = db.SeedAccount(initialBalance: 500m); // saldo de sobra
+        await SetDailyLimitAsync(db, account.Id, 100m);
+        var svc = NewService(db);
+
+        var act = () => svc.ChargeSaleAsync(account.Id, 150m, "VENTA-1", Operator);
+
+        await act.Should().ThrowAsync<DailyLimitExceededException>();
+        var balance = await db.NewContext().Accounts
+            .Where(a => a.Id == account.Id).Select(a => a.Balance).SingleAsync();
+        balance.Should().Be(500m, "una venta rechazada no debe tocar el saldo");
+    }
+
+    [Fact]
+    public async Task Daily_limit_accumulates_across_several_sales_the_same_day()
+    {
+        using var db = new TestDatabase();
+        var account = db.SeedAccount(initialBalance: 500m);
+        await SetDailyLimitAsync(db, account.Id, 100m);
+        var svc = NewService(db);
+
+        await svc.ChargeSaleAsync(account.Id, 70m, "VENTA-1", Operator); // 70 de 100
+        var act = () => svc.ChargeSaleAsync(account.Id, 40m, "VENTA-2", Operator); // 70+40=110 > 100
+
+        await act.Should().ThrowAsync<DailyLimitExceededException>();
+    }
+
+    [Fact]
+    public async Task Daily_limit_resets_the_next_local_day()
+    {
+        using var db = new TestDatabase();
+        var account = db.SeedAccount(initialBalance: 500m);
+        await SetDailyLimitAsync(db, account.Id, 100m);
+        var clock = new TestClock(); // 2026-01-01T12:00:00Z
+        var svc = new BalanceService(db.Context, clock);
+
+        await svc.ChargeSaleAsync(account.Id, 90m, "VENTA-DIA-1", Operator); // agota casi todo el día 1
+        clock.UtcNow = clock.UtcNow.AddDays(1); // mismo horario, día siguiente en México
+
+        // Si el corte de día no aplicara, 90 (ayer) + 90 (hoy) > 100 y esto fallaría.
+        var movement = await svc.ChargeSaleAsync(account.Id, 90m, "VENTA-DIA-2", Operator);
+
+        movement.Amount.Should().Be(-90m);
+    }
+
+    [Fact]
+    public async Task No_daily_limit_set_never_blocks_a_sale()
+    {
+        using var db = new TestDatabase();
+        var account = db.SeedAccount(initialBalance: 500m); // DailySpendLimit queda en null por defecto
+        var svc = NewService(db);
+
+        var movement = await svc.ChargeSaleAsync(account.Id, 300m, "VENTA-1", Operator);
+
+        movement.Amount.Should().Be(-300m);
+    }
 }

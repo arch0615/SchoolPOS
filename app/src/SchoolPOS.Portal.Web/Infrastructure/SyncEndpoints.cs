@@ -46,5 +46,12 @@ public static class SyncEndpoints
             var result = await sync.PushConsumptionAsync(user.GetSchoolId(), body, ct);
             return Results.Ok(result);
         });
+
+        // Presupuesto diario por cuenta: nace en el portal (lo fija el tutor), la caja lo baja y lo hace cumplir.
+        group.MapGet("/accounts/limits", async (ClaimsPrincipal user, ISyncCloudService sync, CancellationToken ct) =>
+        {
+            var items = await sync.GetAccountLimitsAsync(user.GetSchoolId(), ct);
+            return Results.Ok(items);
+        });
     }
 }

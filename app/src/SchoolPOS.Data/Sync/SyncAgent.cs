@@ -56,7 +56,8 @@ public sealed class SyncAgent
         var (pulled, applied, failed) = await PullTopUpsAsync(ct);
         var rosterPushed = await PushRosterAsync(ct);
         var (pushed, skipped) = await PushConsumptionAsync(ct);
-        return new SyncReport(pulled, applied, failed, pushed, skipped, rosterPushed, _clock.UtcNow);
+        var limitsUpdated = await PullAccountLimitsAsync(ct);
+        return new SyncReport(pulled, applied, failed, pushed, skipped, rosterPushed, _clock.UtcNow, limitsUpdated);
     }
 
     /// <summary>Baja recargas confirmadas y las aplica al libro mayor local (idempotente).</summary>
@@ -227,5 +228,30 @@ public sealed class SyncAgent
 
         var result = await _cloud.PushRosterAsync(locals, ct);
         return result.Pushed;
+    }
+
+    /// <summary>
+    /// Baja el presupuesto diario que cada tutor fijó desde el portal — a diferencia del padrón y
+    /// el consumo, este dato nace en la nube, no en la escuela, así que el sentido es el opuesto:
+    /// nube→escuela. Reconciliación completa cada corrida, igual que <see cref="PushRosterAsync"/>
+    /// y por el mismo motivo (número de cuentas acotado): también recoge que un tutor quite el
+    /// límite (vuelva a <c>null</c>), no solo que lo ponga o lo cambie.
+    /// </summary>
+    /// <returns>Cuántas cuentas locales cambiaron de valor.</returns>
+    public async Task<int> PullAccountLimitsAsync(CancellationToken ct = default)
+    {
+        var limits = await _cloud.GetAccountLimitsAsync(ct);
+        if (limits.Count == 0)
+            return 0;
+
+        var updated = 0;
+        foreach (var l in limits)
+        {
+            var affected = await _local.Accounts
+                .Where(a => a.Id == l.AccountId && a.DailySpendLimit != l.DailySpendLimit)
+                .ExecuteUpdateAsync(s => s.SetProperty(a => a.DailySpendLimit, l.DailySpendLimit), ct);
+            updated += affected;
+        }
+        return updated;
     }
 }

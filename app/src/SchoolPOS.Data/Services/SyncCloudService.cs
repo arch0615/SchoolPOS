@@ -181,4 +181,12 @@ public sealed class SyncCloudService : ISyncCloudService
 
         return new ConsumptionPushResult(applied, skipped);
     }
+
+    public async Task<IReadOnlyList<AccountLimitDto>> GetAccountLimitsAsync(Guid schoolId, CancellationToken ct = default) =>
+        await (
+            from a in _db.Accounts.AsNoTracking()
+            join s in _db.Students.AsNoTracking() on a.StudentId equals s.Id
+            where s.SchoolId == schoolId
+            select new AccountLimitDto(a.Id, a.DailySpendLimit))
+            .ToListAsync(ct);
 }

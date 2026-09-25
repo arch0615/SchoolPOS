@@ -44,3 +44,11 @@ public sealed record ConsumptionEntryDto(
 
 /// <summary>Applied: se guardó (o ya estaba) en la nube — el cliente puede marcarlo sincronizado. Skipped: la cuenta aún no existe en la nube (padrón desfasado) — se reintenta en la próxima corrida.</summary>
 public sealed record ConsumptionPushResult(List<Guid> Applied, List<Guid> Skipped);
+
+/// <summary>
+/// Presupuesto diario que el tutor fijó desde el portal para una cuenta. A diferencia del padrón
+/// y el consumo (que nacen en la escuela), este dato nace en la nube y viaja nube→escuela: la caja
+/// lo hace cumplir al cobrar. Reconciliación completa cada corrida (igual que el padrón, por lo
+/// acotado del número de cuentas), no solo lo "nuevo".
+/// </summary>
+public sealed record AccountLimitDto(Guid AccountId, decimal? DailySpendLimit);
