@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using SchoolPOS.Data.Security;
 using SchoolPOS.Data.Services;
 using SchoolPOS.Data.Tests.TestSupport;
+using SchoolPOS.Domain.Entities;
+using SchoolPOS.Domain.Enums;
 
 namespace SchoolPOS.Data.Tests;
 
@@ -129,6 +131,41 @@ public class GuardianServiceTests
         var act = () => svc.SetDailySpendLimitAsync(guardian.Id, otherAccount.Id, 50m);
 
         await act.Should().ThrowAsync<InvalidOperationException>();
+    }
+
+    [Fact]
+    public async Task Get_sale_items_returns_line_detail_only_for_the_guardians_own_account()
+    {
+        using var db = new TestDatabase();
+        var school = db.SeedSchool();
+        var myAccount = db.SeedStudentAccount(school.Id, enrollmentNo: "MAT-MINE");
+        var otherAccount = db.SeedStudentAccount(school.Id, enrollmentNo: "MAT-OTHER");
+        var svc = NewService(db);
+        var guardian = await svc.RegisterAsync(school.Id, "p@c.com", "clave123", "P");
+        await svc.LinkStudentByEnrollmentAsync(guardian.Id, school.Id, "MAT-MINE");
+
+        var mySale = new Sale
+        {
+            SchoolId = school.Id, AccountId = myAccount.Id, Tender = TenderType.Balance,
+            Status = SaleStatus.Completed, Total = 45m, CreatedAtUtc = DateTime.UtcNow,
+            Lines = new List<SaleLine> { new() { Description = "Torta", Quantity = 1, UnitPrice = 45m, LineTotal = 45m } },
+        };
+        var otherSale = new Sale
+        {
+            SchoolId = school.Id, AccountId = otherAccount.Id, Tender = TenderType.Balance,
+            Status = SaleStatus.Completed, Total = 20m, CreatedAtUtc = DateTime.UtcNow,
+            Lines = new List<SaleLine> { new() { Description = "Jugo", Quantity = 1, UnitPrice = 20m, LineTotal = 20m } },
+        };
+        db.Context.Sales.AddRange(mySale, otherSale);
+        await db.Context.SaveChangesAsync();
+        db.Context.ChangeTracker.Clear();
+
+        // Pide ambas ventas, pero acotado a myAccount: no debe revelar nada de otherSale.
+        var result = await svc.GetSaleItemsAsync(myAccount.Id, new[] { mySale.Id, otherSale.Id });
+
+        result.Should().ContainKey(mySale.Id);
+        result[mySale.Id].Should().ContainSingle(i => i.Description == "Torta");
+        result.Should().NotContainKey(otherSale.Id, "esa venta es de una cuenta que no le pertenece a este tutor");
     }
 
     [Fact]

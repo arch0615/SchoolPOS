@@ -52,3 +52,34 @@ public sealed record ConsumptionPushResult(List<Guid> Applied, List<Guid> Skippe
 /// acotado del número de cuentas), no solo lo "nuevo".
 /// </summary>
 public sealed record AccountLimitDto(Guid AccountId, decimal? DailySpendLimit);
+
+public sealed record SaleLineEntryDto(
+    Guid Id,
+    Guid ProductId,
+    string Description,
+    decimal Quantity,
+    decimal UnitPrice,
+    decimal Discount,
+    decimal LineTotal);
+
+/// <summary>
+/// Venta con sus renglones, para que el tutor pueda ver qué compró el alumno (no solo el importe
+/// del BalanceMovement) y el reporte de ventas de la escuela en el portal tenga con qué mostrarse.
+/// Sin SchoolId: el servidor siempre usa el de la llave autenticada, nunca el que mande el cliente.
+/// </summary>
+public sealed record SaleEntryDto(
+    Guid Id,
+    Guid? StudentId,
+    Guid? AccountId,
+    TenderType Tender,
+    SaleStatus Status,
+    decimal Subtotal,
+    decimal DiscountTotal,
+    decimal TaxTotal,
+    decimal Total,
+    decimal? AmountTendered,
+    DateTime CreatedAtUtc,
+    List<SaleLineEntryDto> Lines);
+
+/// <summary>Applied: se guardó (o ya estaba) en la nube. Skipped: la cuenta aún no existe en la nube (padrón desfasado) — se reintenta en la próxima corrida, igual que PushConsumptionAsync.</summary>
+public sealed record SalesPushResult(List<Guid> Applied, List<Guid> Skipped);

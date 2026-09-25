@@ -35,4 +35,7 @@ public sealed class SingleSchoolSyncApiClient : ISyncApiClient
 
     public Task<IReadOnlyList<AccountLimitDto>> GetAccountLimitsAsync(CancellationToken ct = default) =>
         _cloud.GetAccountLimitsAsync(_schoolId, ct);
+
+    public Task<SalesPushResult> PushSalesAsync(IReadOnlyList<SaleEntryDto> entries, CancellationToken ct = default) =>
+        _cloud.PushSalesAsync(_schoolId, entries, ct);
 }

@@ -20,4 +20,6 @@ public interface ISyncApiClient
 
     /// <summary>Presupuesto diario vigente de cada cuenta de esta escuela (fijado por los tutores desde el portal).</summary>
     Task<IReadOnlyList<AccountLimitDto>> GetAccountLimitsAsync(CancellationToken ct = default);
+
+    Task<SalesPushResult> PushSalesAsync(IReadOnlyList<SaleEntryDto> entries, CancellationToken ct = default);
 }

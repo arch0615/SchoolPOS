@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SchoolPOS.Data.Services;
 using SchoolPOS.Data.Sync;
 using SchoolPOS.Data.Tests.TestSupport;
+using SchoolPOS.Domain.Entities;
 using SchoolPOS.Domain.Enums;
 using SchoolPOS.Data.Security;
 
@@ -114,6 +115,55 @@ public class SyncAgentTests
 
         (await local.NewContext().Accounts.Where(a => a.Id == AccountId).Select(a => a.DailySpendLimit).SingleAsync())
             .Should().BeNull();
+    }
+
+    /// <summary>
+    /// Antes de esto, el consumo solo subía el importe agregado (BalanceMovement) — el tutor nunca
+    /// veía qué compró el alumno, y el reporte de ventas de la escuela en el portal se quedaba
+    /// siempre vacío porque nada escribía en Sales/SaleLines del lado de la nube.
+    /// </summary>
+    [Fact]
+    public async Task Push_sales_brings_the_sale_and_its_line_items_to_the_cloud()
+    {
+        using var cloud = new TestDatabase();
+        using var local = new TestDatabase();
+        cloud.SeedRoster(SchoolId, StudentId, AccountId);
+        local.SeedRoster(SchoolId, StudentId, AccountId);
+
+        var saleId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        local.Context.Sales.Add(new Sale
+        {
+            Id = saleId,
+            SchoolId = SchoolId,
+            StudentId = StudentId,
+            AccountId = AccountId,
+            Tender = TenderType.Balance,
+            Status = SaleStatus.Completed,
+            Subtotal = 45m,
+            Total = 45m,
+            CreatedAtUtc = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc),
+            Lines = new List<SaleLine>
+            {
+                new() { ProductId = productId, Description = "Torta de jamón", Quantity = 1, UnitPrice = 45m, LineTotal = 45m },
+            },
+        });
+        await local.Context.SaveChangesAsync();
+        local.Context.ChangeTracker.Clear();
+
+        var agent = NewAgent(cloud, local);
+        var pushed = await agent.PushSalesAsync();
+
+        pushed.Should().Be(1);
+        var cloudSale = await cloud.NewContext().Sales.Include(s => s.Lines).SingleAsync(s => s.Id == saleId);
+        cloudSale.Total.Should().Be(45m);
+        cloudSale.Lines.Should().ContainSingle();
+        cloudSale.Lines.Single().Description.Should().Be("Torta de jamón");
+
+        // Idempotente: no se debe volver a subir (ni duplicar) en la siguiente corrida.
+        var second = await agent.PushSalesAsync();
+        second.Should().Be(0);
+        (await cloud.NewContext().Sales.CountAsync(s => s.Id == saleId)).Should().Be(1);
     }
 
     [Fact]

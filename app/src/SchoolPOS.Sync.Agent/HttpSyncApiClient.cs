@@ -78,4 +78,12 @@ public sealed class HttpSyncApiClient : ISyncApiClient
             "/api/sync/accounts/limits", SyncJson.Options, ct);
         return result ?? new List<AccountLimitDto>();
     }
+
+    public async Task<SalesPushResult> PushSalesAsync(IReadOnlyList<SaleEntryDto> entries, CancellationToken ct = default)
+    {
+        ApplyCurrentConfig();
+        var response = await _http.PostAsJsonAsync("/api/sync/sales", entries, SyncJson.Options, ct);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<SalesPushResult>(SyncJson.Options, ct))!;
+    }
 }

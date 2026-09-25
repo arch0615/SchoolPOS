@@ -41,4 +41,11 @@ public class Sale
     public ICollection<SaleLine> Lines { get; set; } = new List<SaleLine>();
 
     public DateTime CreatedAtUtc { get; set; }
+
+    /// <summary>
+    /// Cuándo se subió esta venta (con sus renglones) a la nube. Nula = pendiente de subir. Sin
+    /// esto el tutor solo vería el importe de su consumo (vía BalanceMovement), nunca qué compró
+    /// el alumno, y el reporte de ventas de la escuela en el portal se quedaría siempre vacío.
+    /// </summary>
+    public DateTime? SyncedToCloudAtUtc { get; set; }
 }

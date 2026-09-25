@@ -53,5 +53,14 @@ public static class SyncEndpoints
             var items = await sync.GetAccountLimitsAsync(user.GetSchoolId(), ct);
             return Results.Ok(items);
         });
+
+        // Ventas (con renglones) que nacieron en la escuela: para que el tutor vea qué compró el
+        // alumno (no solo el importe) y para el reporte de ventas de la escuela en el portal.
+        group.MapPost("/sales", async (
+            ClaimsPrincipal user, List<SaleEntryDto> body, ISyncCloudService sync, CancellationToken ct) =>
+        {
+            var result = await sync.PushSalesAsync(user.GetSchoolId(), body, ct);
+            return Results.Ok(result);
+        });
     }
 }

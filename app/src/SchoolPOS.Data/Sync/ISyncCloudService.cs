@@ -21,4 +21,6 @@ public interface ISyncCloudService
 
     /// <summary>Presupuesto diario vigente de cada cuenta de la escuela (fijado por los tutores desde el portal).</summary>
     Task<IReadOnlyList<AccountLimitDto>> GetAccountLimitsAsync(Guid schoolId, CancellationToken ct = default);
+
+    Task<SalesPushResult> PushSalesAsync(Guid schoolId, IReadOnlyList<SaleEntryDto> entries, CancellationToken ct = default);
 }

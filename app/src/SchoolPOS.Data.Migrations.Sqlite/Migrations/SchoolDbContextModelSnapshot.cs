@@ -624,6 +624,9 @@ namespace SchoolPOS.Data.Migrations.Sqlite.Migrations
                         .HasPrecision(18, 4)
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("SyncedToCloudAtUtc")
+                        .HasColumnType("TEXT");
+
                     b.Property<decimal>("TaxTotal")
                         .HasPrecision(18, 4)
                         .HasColumnType("TEXT");
@@ -640,6 +643,8 @@ namespace SchoolPOS.Data.Migrations.Sqlite.Migrations
                     b.HasIndex("AccountId");
 
                     b.HasIndex("SchoolId", "CreatedAtUtc");
+
+                    b.HasIndex("SyncedToCloudAtUtc", "CreatedAtUtc");
 
                     b.ToTable("Sales");
                 });

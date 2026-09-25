@@ -189,4 +189,79 @@ public sealed class SyncCloudService : ISyncCloudService
             where s.SchoolId == schoolId
             select new AccountLimitDto(a.Id, a.DailySpendLimit))
             .ToListAsync(ct);
+
+    public async Task<SalesPushResult> PushSalesAsync(
+        Guid schoolId, IReadOnlyList<SaleEntryDto> entries, CancellationToken ct = default)
+    {
+        if (entries.Count == 0)
+            return new SalesPushResult(new List<Guid>(), new List<Guid>());
+
+        var ids = entries.Select(e => e.Id).ToList();
+        var alreadyInCloud = (await _db.Sales.AsNoTracking()
+            .Where(s => ids.Contains(s.Id)).Select(s => s.Id).ToListAsync(ct)).ToHashSet();
+
+        // Solo cuentas de ESTA escuela: aunque el cliente mande un AccountId ajeno, nunca se le
+        // atribuye una venta a otra escuela. Nula (venta de mostrador en efectivo) siempre vale.
+        var accountIds = entries.Where(e => e.AccountId is not null).Select(e => e.AccountId!.Value).Distinct().ToList();
+        var validAccounts = accountIds.Count == 0
+            ? new HashSet<Guid>()
+            : (await _db.Accounts.AsNoTracking()
+                .Where(a => accountIds.Contains(a.Id) && a.Student.SchoolId == schoolId)
+                .Select(a => a.Id).ToListAsync(ct)).ToHashSet();
+
+        var applied = new List<Guid>();
+        var skipped = new List<Guid>();
+
+        foreach (var e in entries)
+        {
+            if (e.AccountId is { } accId && !validAccounts.Contains(accId))
+            {
+                skipped.Add(e.Id); // padrón aún desfasado: se reintenta en la próxima corrida.
+                continue;
+            }
+
+            if (!alreadyInCloud.Contains(e.Id))
+            {
+                _db.Sales.Add(new Sale
+                {
+                    Id = e.Id,
+                    SchoolId = schoolId,
+                    StudentId = e.StudentId,
+                    AccountId = e.AccountId,
+                    Tender = e.Tender,
+                    Status = e.Status,
+                    Subtotal = e.Subtotal,
+                    DiscountTotal = e.DiscountTotal,
+                    TaxTotal = e.TaxTotal,
+                    Total = e.Total,
+                    AmountTendered = e.AmountTendered,
+                    CreatedAtUtc = e.CreatedAtUtc,
+                    Lines = e.Lines.Select(l => new SaleLine
+                    {
+                        Id = l.Id,
+                        ProductId = l.ProductId,
+                        Description = l.Description,
+                        Quantity = l.Quantity,
+                        UnitPrice = l.UnitPrice,
+                        Discount = l.Discount,
+                        LineTotal = l.LineTotal,
+                    }).ToList(),
+                });
+
+                try
+                {
+                    await _db.SaveChangesAsync(ct);
+                }
+                catch (DbUpdateException)
+                {
+                    // Una venta en conflicto no debe tumbar el resto del lote (mismo patrón que
+                    // PushRosterAsync); se reintenta tal cual en la próxima corrida.
+                    continue;
+                }
+            }
+            applied.Add(e.Id);
+        }
+
+        return new SalesPushResult(applied, skipped);
+    }
 }

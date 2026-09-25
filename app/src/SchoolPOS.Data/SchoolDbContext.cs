@@ -259,6 +259,9 @@ public class SchoolDbContext : DbContext
             e.HasKey(x => x.Id);
             e.HasIndex(x => new { x.SchoolId, x.CreatedAtUtc });
             e.HasIndex(x => x.AccountId);
+            // El agente de sincronización busca exactamente esto: lo pendiente de subir, por
+            // fecha (mismo patrón que BalanceMovements.SyncedToCloudAtUtc).
+            e.HasIndex(x => new { x.SyncedToCloudAtUtc, x.CreatedAtUtc });
         });
 
         b.Entity<SaleLine>(e =>

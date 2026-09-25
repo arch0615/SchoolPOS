@@ -56,8 +56,10 @@ public sealed class SyncAgent
         var (pulled, applied, failed) = await PullTopUpsAsync(ct);
         var rosterPushed = await PushRosterAsync(ct);
         var (pushed, skipped) = await PushConsumptionAsync(ct);
+        var salesPushed = await PushSalesAsync(ct);
         var limitsUpdated = await PullAccountLimitsAsync(ct);
-        return new SyncReport(pulled, applied, failed, pushed, skipped, rosterPushed, _clock.UtcNow, limitsUpdated);
+        return new SyncReport(
+            pulled, applied, failed, pushed, skipped, rosterPushed, _clock.UtcNow, limitsUpdated, salesPushed);
     }
 
     /// <summary>Baja recargas confirmadas y las aplica al libro mayor local (idempotente).</summary>
@@ -253,5 +255,45 @@ public sealed class SyncAgent
             updated += affected;
         }
         return updated;
+    }
+
+    /// <summary>
+    /// Sube las ventas (con renglones) que nacieron en esta escuela: para que el tutor vea qué
+    /// compró el alumno, no solo el importe del BalanceMovement, y para el reporte de ventas de la
+    /// escuela en el portal. Igual patrón que <see cref="PushConsumptionAsync"/> (marca de
+    /// pendiente + lote acotado), porque el historial de ventas también crece sin límite.
+    /// </summary>
+    public async Task<int> PushSalesAsync(CancellationToken ct = default)
+    {
+        var pending = await _local.Sales
+            .Include(s => s.Lines)
+            .Where(s => s.SyncedToCloudAtUtc == null)
+            .OrderBy(s => s.CreatedAtUtc)
+            .Take(PushBatchSize)
+            .ToListAsync(ct);
+        if (pending.Count == 0)
+            return 0;
+
+        var toSend = pending.Select(s => new SaleEntryDto(
+            s.Id, s.StudentId, s.AccountId, s.Tender, s.Status,
+            s.Subtotal, s.DiscountTotal, s.TaxTotal, s.Total, s.AmountTendered, s.CreatedAtUtc,
+            s.Lines.Select(l => new SaleLineEntryDto(
+                l.Id, l.ProductId, l.Description, l.Quantity, l.UnitPrice, l.Discount, l.LineTotal)).ToList()))
+            .ToList();
+
+        var result = await _cloud.PushSalesAsync(toSend, ct);
+        var applied = result.Applied.ToHashSet();
+        var now = _clock.UtcNow;
+
+        foreach (var s in pending)
+        {
+            if (applied.Contains(s.Id))
+                s.SyncedToCloudAtUtc = now;
+            // Lo "skipped" queda sin marcar a propósito, igual que en PushConsumptionAsync: el
+            // padrón de la nube aún no tiene la cuenta, se reintenta tal cual en la próxima corrida.
+        }
+
+        await _local.SaveChangesAsync(ct);
+        return applied.Count;
     }
 }

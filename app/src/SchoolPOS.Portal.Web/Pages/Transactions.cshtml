@@ -176,11 +176,29 @@ else
                     @foreach (var x in g)
                     {
                         var v = TypeVisual(x.m.Type);
+                        var items = x.m.Type == nameof(SchoolPOS.Domain.Enums.MovementType.Sale)
+                                    && Guid.TryParse(x.m.Reference, out var saleId) && Model.SaleItems.TryGetValue(saleId, out var found)
+                            ? found : null;
                         <div class="stmt-row">
                             <div class="stmt-ico @v.tone" aria-hidden="true">@v.ico</div>
                             <div class="stmt-main">
                                 <div class="ttl">@TransactionsModel.TypeLabel(x.m.Type)</div>
-                                <div class="sub2">@x.L.ToString("HH:mm")@(string.IsNullOrEmpty(x.m.Reference) ? "" : $" · Ref. {x.m.Reference}")</div>
+                                @if (items is { Count: > 0 })
+                                {
+                                    <details>
+                                        <summary class="sub2" style="cursor:pointer">@x.L.ToString("HH:mm") · Ver productos (@items.Count)</summary>
+                                        <ul style="margin:6px 0 0;padding-left:18px;font-size:13px;color:var(--muted)">
+                                            @foreach (var it in items)
+                                            {
+                                                <li>@it.Quantity.ToString("0.##") × @it.Description — @it.LineTotal.ToString("C2")</li>
+                                            }
+                                        </ul>
+                                    </details>
+                                }
+                                else
+                                {
+                                    <div class="sub2">@x.L.ToString("HH:mm")@(string.IsNullOrEmpty(x.m.Reference) ? "" : $" · Ref. {x.m.Reference}")</div>
+                                }
                             </div>
                             <div class="stmt-amt">
                                 <div class="a @(x.m.Amount >= 0 ? "amt-in" : "amt-out")">@Signed(x.m.Amount)</div>

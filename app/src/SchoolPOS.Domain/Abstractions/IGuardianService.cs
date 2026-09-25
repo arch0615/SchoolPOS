@@ -19,6 +19,9 @@ public sealed record LinkedStudent(
 public sealed record MovementRow(
     DateTime CreatedAtUtc, string Type, decimal Amount, decimal BalanceAfter, string? Reference);
 
+/// <summary>Un renglón de una venta, para mostrar qué compró el alumno (no solo el importe).</summary>
+public sealed record SaleItemRow(string Description, decimal Quantity, decimal UnitPrice, decimal LineTotal);
+
 /// <summary>
 /// Servicio del portal para tutores/padres (FR-WP): registro, inicio de sesión con bloqueo por
 /// intentos fallidos, vinculación de estudiantes por matrícula y consultas de saldo/movimientos.
@@ -55,6 +58,14 @@ public interface IGuardianService
     /// <summary>Movimientos de una cuenta, opcionalmente filtrados por rango de fechas (FR-WP-8).</summary>
     Task<IReadOnlyList<MovementRow>> GetMovementsAsync(
         Guid accountId, DateTime? fromUtc, DateTime? toUtc, CancellationToken ct = default);
+
+    /// <summary>
+    /// Renglones de las ventas indicadas, agrupados por Id de venta — para que el tutor vea qué
+    /// productos incluyó un consumo, no solo su importe. Acotado a <paramref name="accountId"/>:
+    /// aunque alguien mande un SaleId ajeno, nunca se revelan renglones de otra cuenta.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, IReadOnlyList<SaleItemRow>>> GetSaleItemsAsync(
+        Guid accountId, IReadOnlyList<Guid> saleIds, CancellationToken ct = default);
 
     /// <summary>Datos del tutor (para el perfil).</summary>
     Task<Guardian?> GetAsync(Guid guardianId, CancellationToken ct = default);

@@ -12,7 +12,8 @@ public sealed record SyncReport(
     int MovementsSkipped,
     int RosterPushed,
     DateTime RanAtUtc,
-    int AccountLimitsUpdated = 0)
+    int AccountLimitsUpdated = 0,
+    int SalesPushed = 0)
 {
     public bool HasFailures => TopUpsFailed > 0;
 

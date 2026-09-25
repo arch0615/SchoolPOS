@@ -32,6 +32,14 @@ public class TransactionsModel : PageModel
     /// <summary>Sólo la página actual — lo que se dibuja en la lista.</summary>
     public IReadOnlyList<MovementRow> Movements { get; private set; } = Array.Empty<MovementRow>();
 
+    /// <summary>
+    /// Renglones de las compras de <see cref="Movements"/> (solo la página actual — pedir esto
+    /// para los cientos de movimientos sin paginar sería carísimo), por SaleId (Reference de un
+    /// movimiento tipo Sale). Vacío si ninguna de las filas visibles es una compra.
+    /// </summary>
+    public IReadOnlyDictionary<Guid, IReadOnlyList<SaleItemRow>> SaleItems { get; private set; } =
+        new Dictionary<Guid, IReadOnlyList<SaleItemRow>>();
+
     /// <summary>Todo lo que coincide con el filtro, sin paginar — para el CSV completo.</summary>
     public IReadOnlyList<MovementRow> AllFilteredMovements { get; private set; } = Array.Empty<MovementRow>();
 
@@ -101,6 +109,15 @@ public class TransactionsModel : PageModel
                 PageNumber = TotalPages;
 
             Movements = filtered.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
+
+            var saleIds = Movements
+                .Where(m => m.Type == nameof(MovementType.Sale) && m.Reference is not null)
+                .Select(m => Guid.TryParse(m.Reference, out var id) ? id : (Guid?)null)
+                .Where(id => id is not null)
+                .Select(id => id!.Value)
+                .ToList();
+            if (saleIds.Count > 0)
+                SaleItems = await _guardians.GetSaleItemsAsync(Selected.AccountId, saleIds);
         }
         catch (Exception ex)
         {

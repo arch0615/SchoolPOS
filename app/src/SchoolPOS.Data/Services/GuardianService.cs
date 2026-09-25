@@ -197,6 +197,26 @@ public sealed class GuardianService : IGuardianService
             .ToListAsync(ct);
     }
 
+    public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<SaleItemRow>>> GetSaleItemsAsync(
+        Guid accountId, IReadOnlyList<Guid> saleIds, CancellationToken ct = default)
+    {
+        if (saleIds.Count == 0)
+            return new Dictionary<Guid, IReadOnlyList<SaleItemRow>>();
+
+        // Filtrado por AccountId, no solo por SaleId: un SaleId ajeno (adivinado o manipulado) no
+        // revela nada — misma disciplina que OwnsStudentAsync para el resto del portal.
+        var lines = await (
+            from l in _db.SaleLines.AsNoTracking()
+            join s in _db.Sales.AsNoTracking() on l.SaleId equals s.Id
+            where s.AccountId == accountId && saleIds.Contains(s.Id)
+            select new { s.Id, Item = new SaleItemRow(l.Description, l.Quantity, l.UnitPrice, l.LineTotal) })
+            .ToListAsync(ct);
+
+        return lines
+            .GroupBy(x => x.Id)
+            .ToDictionary(g => g.Key, g => (IReadOnlyList<SaleItemRow>)g.Select(x => x.Item).ToList());
+    }
+
     public Task<Guardian?> GetAsync(Guid guardianId, CancellationToken ct = default) =>
         _db.Guardians.AsNoTracking().FirstOrDefaultAsync(g => g.Id == guardianId, ct);
 
