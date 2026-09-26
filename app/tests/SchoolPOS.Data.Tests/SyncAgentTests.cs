@@ -563,6 +563,45 @@ public class SyncAgentTests
         cloudOrder.AppliedLocally.Should().BeTrue("la nube debe quedar marcada como acusada por la caja");
     }
 
+    /// <summary>
+    /// Un pedido cancelado antes de que la caja lo bajara ya fue reintegrado en la nube
+    /// (PortalOrderService.CancelOrderAsync); si la caja igual lo cobrara al llegarle, el alumno
+    /// pagaría un pedido que el tutor canceló y el saldo de la caja se desincronizaría del de la
+    /// nube — justo el tipo de divergencia que este diseño busca evitar.
+    /// </summary>
+    [Fact]
+    public async Task Pull_orders_never_charges_a_cancelled_order()
+    {
+        using var cloud = new TestDatabase();
+        using var local = new TestDatabase();
+        cloud.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m);
+        local.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m);
+
+        cloud.Context.PortalOrders.Add(new PortalOrder
+        {
+            SchoolId = SchoolId,
+            StudentId = StudentId,
+            AccountId = AccountId,
+            Total = 45m,
+            Status = PortalOrderStatus.Cancelled,
+            CreatedAtUtc = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc),
+            Lines = new List<PortalOrderLine>
+            {
+                new() { ProductId = Guid.NewGuid(), Description = "Torta de jamón", Quantity = 1, UnitPrice = 45m, LineTotal = 45m },
+            },
+        });
+        await cloud.Context.SaveChangesAsync();
+        cloud.Context.ChangeTracker.Clear();
+
+        var report = await NewAgent(cloud, local).RunOnceAsync();
+
+        report.OrdersApplied.Should().Be(0, "un pedido cancelado nunca debe cobrarse en la caja");
+        (await local.NewContext().Accounts.Where(a => a.Id == AccountId).Select(a => a.Balance).SingleAsync())
+            .Should().Be(100m);
+        (await local.NewContext().BalanceMovements.CountAsync(m => m.Type == MovementType.Sale))
+            .Should().Be(0);
+    }
+
     [Fact]
     public async Task Pull_orders_is_idempotent_across_runs()
     {

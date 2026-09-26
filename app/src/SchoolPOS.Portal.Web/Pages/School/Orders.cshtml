@@ -1,0 +1,47 @@
+@page
+@model SchoolPOS.Portal.Web.Pages.School.OrdersModel
+@{
+    ViewData["Title"] = "Pedidos anticipados";
+}
+
+@if (!string.IsNullOrEmpty(Model.Message)) { <div class="msg ok">@Model.Message</div> }
+@if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow2">Tienda escolar</div>
+        <h1 style="margin:8px 0 0">Pedidos anticipados</h1>
+        <p class="sub">Pedidos ya pagados desde el portal, pendientes de entregar.</p>
+    </div>
+</div>
+
+<div class="card">
+    @if (Model.Pending.Count == 0)
+    {
+        <div class="empty"><div class="em" aria-hidden="true">🍱</div><p>No hay pedidos pendientes de entregar.</p></div>
+    }
+    else
+    {
+        <table>
+            <thead><tr><th>Fecha</th><th>Alumno</th><th>Para el día</th><th style="text-align:right">Total</th><th>Artículos</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var o in Model.Pending)
+            {
+                <tr>
+                    <td>@o.CreatedAtUtc.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@o.StudentName</td>
+                    <td class="muted">@(o.RequestedForDate?.ToString("dd/MM/yyyy") ?? "Lo antes posible")</td>
+                    <td style="text-align:right">@o.Total.ToString("C2")</td>
+                    <td class="muted">@string.Join(", ", o.Lines.Select(l => $"{l.Quantity:0.##}× {l.Description}"))</td>
+                    <td>
+                        <form method="post" asp-page-handler="MarkFulfilled">
+                            <input type="hidden" name="orderId" value="@o.Id" />
+                            <button class="btn ghost" type="submit">Marcar entregado</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</div>

@@ -67,6 +67,12 @@ public class InventoryModel : PageModel
 
         [Range(0, 999999, ErrorMessage = "La existencia inicial no puede ser negativa.")]
         public decimal InitialStock { get; set; }
+
+        /// <summary>Visible en el catálogo del portal para pedidos anticipados (FR-WP).</summary>
+        public bool ShowInPortal { get; set; }
+
+        /// <summary>Menú del día: si se fija, el artículo también aparece en el portal ese día.</summary>
+        public DayOfWeek? MenuDayOfWeek { get; set; }
     }
 
     public async Task OnGetAsync()
@@ -88,6 +94,8 @@ public class InventoryModel : PageModel
                     Price = product.Price,
                     Cost = product.Cost,
                     MinStock = product.MinStock,
+                    ShowInPortal = product.ShowInPortal,
+                    MenuDayOfWeek = product.MenuDayOfWeek,
                 };
             }
         }
@@ -147,6 +155,8 @@ public class InventoryModel : PageModel
                 product.Price = Input.Price;
                 product.Cost = Input.Cost;
                 product.MinStock = Input.MinStock;
+                product.ShowInPortal = Input.ShowInPortal;
+                product.MenuDayOfWeek = Input.MenuDayOfWeek;
 
                 // Bitácora: un precio equivocado corregido en silencio no deja rastro de qué era
                 // antes ni quién lo cambió (FR-ADM-4).
@@ -179,6 +189,8 @@ public class InventoryModel : PageModel
                     Price = Input.Price,
                     Cost = Input.Cost,
                     MinStock = Input.MinStock,
+                    ShowInPortal = Input.ShowInPortal,
+                    MenuDayOfWeek = Input.MenuDayOfWeek,
                     CreatedAtUtc = DateTime.UtcNow,
                 };
                 _db.Products.Add(product);
@@ -264,10 +276,11 @@ public class InventoryModel : PageModel
             .OrderBy(p => CatOf(p.CategoryId))
             .ThenBy(p => p.Name)
             .Select(p => new Row(p.Id, p.Name, CatOf(p.CategoryId), p.Price, p.StockOnHand, p.MinStock,
-                p.IsActive, p.IsActive && p.StockOnHand <= p.MinStock))
+                p.IsActive, p.IsActive && p.StockOnHand <= p.MinStock, p.ShowInPortal, p.MenuDayOfWeek))
             .ToList();
     }
 
     public sealed record Row(
-        Guid Id, string Name, string Category, decimal Price, decimal Stock, decimal Min, bool Active, bool Low);
+        Guid Id, string Name, string Category, decimal Price, decimal Stock, decimal Min, bool Active, bool Low,
+        bool ShowInPortal, DayOfWeek? MenuDayOfWeek);
 }

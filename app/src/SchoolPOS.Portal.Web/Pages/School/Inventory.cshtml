@@ -64,6 +64,22 @@
             <div><label asp-for="Input.InitialStock">Existencia inicial</label><input asp-for="Input.InitialStock" type="number" step="0.01" min="0" /></div>
         }
         <div>
+            <label asp-for="Input.MenuDayOfWeek">Día del menú (opcional)</label>
+            <select asp-for="Input.MenuDayOfWeek">
+                <option value="">No es menú del día</option>
+                @foreach (DayOfWeek d in Enum.GetValues<DayOfWeek>())
+                {
+                    <option value="@d">@d.ToSpanish()</option>
+                }
+            </select>
+        </div>
+        <div style="display:flex;align-items:flex-end;padding-bottom:11px">
+            <label style="display:flex;align-items:center;gap:8px;margin:0;font-weight:600">
+                <input asp-for="Input.ShowInPortal" type="checkbox" style="width:auto" />
+                Mostrar en el portal (pedidos anticipados)
+            </label>
+        </div>
+        <div>
             <label>&nbsp;</label>
             <button class="btn accent" type="submit">@(editing ? "Guardar cambios" : "Crear producto")</button>
         </div>
@@ -84,7 +100,7 @@
     {
         <table>
             <thead>
-                <tr><th>Producto</th><th>Categoría</th><th style="text-align:right">Precio</th><th style="text-align:right">Existencia</th><th style="text-align:right">Mínimo</th><th>Estado</th><th></th></tr>
+                <tr><th>Producto</th><th>Categoría</th><th style="text-align:right">Precio</th><th style="text-align:right">Existencia</th><th style="text-align:right">Mínimo</th><th>Estado</th><th>Portal</th><th></th></tr>
             </thead>
             <tbody>
             @foreach (var p in Model.Rows)
@@ -102,6 +118,11 @@
                         @if (!p.Active) { <span class="status no">Inactivo</span> }
                         else if (p.Low) { <span class="status warn">Stock bajo</span> }
                         else { <span class="status ok">Activo</span> }
+                    </td>
+                    <td class="muted">
+                        @if (p.MenuDayOfWeek is { } d) { <span class="pill">Menú @d.ToSpanish()</span> }
+                        else if (p.ShowInPortal) { <span class="pill">Catálogo</span> }
+                        else { <text>—</text> }
                     </td>
                     <td>
                         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">

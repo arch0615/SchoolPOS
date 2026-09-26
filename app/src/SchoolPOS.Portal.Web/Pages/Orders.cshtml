@@ -1,0 +1,149 @@
+@page
+@using SchoolPOS.Domain.Enums
+@model SchoolPOS.Portal.Web.Pages.OrdersModel
+@{
+    ViewData["Title"] = "Pedidos";
+}
+
+@if (!string.IsNullOrEmpty(Model.Message)) { <div class="msg ok">@Model.Message</div> }
+@if (!string.IsNullOrEmpty(Model.Error)) { <div class="msg error">@Model.Error</div> }
+
+<div class="page-head with-illus">
+    <div>
+        <div class="eyebrow2">Portal</div>
+        <h1 style="margin:8px 0 0">Pedidos anticipados</h1>
+        <p class="sub">Menú semanal y catálogo de la tienda escolar, para pedir con anticipación.</p>
+    </div>
+    <img class="head-illus" src="/img/il/il-backpack.svg" alt="" aria-hidden="true" />
+</div>
+
+@if (Model.Selected is null)
+{
+    <div class="card">
+        <div class="empty">
+            <img src="/img/il/il-profile.svg" alt="" style="width:96px;height:96px" />
+            <b style="display:block;margin-top:8px;font-size:17px">Aún no has vinculado a ningún alumno</b>
+            <p>Vincula a tu hijo para poder hacer pedidos.</p>
+            <div style="margin-top:14px"><a class="btn" href="/Students">Vincular un alumno</a></div>
+        </div>
+    </div>
+}
+else
+{
+    @if (Model.Students.Count > 1)
+    {
+        <div class="card" style="margin-bottom:18px">
+            <div class="muted" style="font-weight:600;margin-bottom:8px">Cambiar estudiante</div>
+            <form method="get">
+                <select name="studentId" onchange="this.form.submit()" aria-label="Estudiante">
+                    @foreach (var s in Model.Students)
+                    {
+                        <option value="@s.StudentId" selected="@(Model.Selected.StudentId == s.StudentId)">@s.FullName · @s.EnrollmentNo</option>
+                    }
+                </select>
+            </form>
+        </div>
+    }
+
+    <div class="card">
+        <h2>Catálogo de @Model.Selected.FullName</h2>
+        @if (Model.Catalog.Count == 0)
+        {
+            <p class="muted">Tu escuela todavía no publicó artículos ni menú para pedidos anticipados.</p>
+        }
+        else
+        {
+            <form method="post" asp-page-handler="PlaceOrder">
+                <input type="hidden" name="studentId" value="@Model.Selected.StudentId" />
+                <input type="hidden" name="accountId" value="@Model.Selected.AccountId" />
+
+                <table>
+                    <thead><tr><th>Artículo</th><th>Día del menú</th><th style="text-align:right">Precio</th><th style="text-align:right;width:110px">Cantidad</th></tr></thead>
+                    <tbody>
+                    @foreach (var item in Model.Catalog)
+                    {
+                        <tr>
+                            <td>@item.Name</td>
+                            <td class="muted">@(item.MenuDayOfWeek is { } d ? d.ToSpanish() : "—")</td>
+                            <td style="text-align:right">@item.Price.ToString("C2")</td>
+                            <td style="text-align:right">
+                                <input type="number" name="qty_@item.ProductId" min="0" step="1" value="0" style="text-align:right" />
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+
+                <label for="requestedForDate">Para el día (opcional)</label>
+                <input id="requestedForDate" name="requestedForDate" type="date" style="max-width:220px" />
+
+                <div style="margin-top:14px"><button class="btn accent" type="submit">Hacer pedido</button></div>
+            </form>
+        }
+    </div>
+
+    <div class="card">
+        <h2>Mis pedidos</h2>
+        @if (Model.MyOrders.Count == 0)
+        {
+            <p class="muted">Todavía no has hecho ningún pedido.</p>
+        }
+        else
+        {
+            <table>
+                <thead><tr><th>Fecha</th><th>Alumno</th><th>Para el día</th><th style="text-align:right">Total</th><th>Estado</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var o in Model.MyOrders)
+                {
+                    <tr>
+                        <td>@o.CreatedAtUtc.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@o.StudentName</td>
+                        <td class="muted">@(o.RequestedForDate?.ToString("dd/MM/yyyy") ?? "Lo antes posible")</td>
+                        <td style="text-align:right">@o.Total.ToString("C2")</td>
+                        <td>
+                            @switch (o.Status)
+                            {
+                                case PortalOrderStatus.Placed:
+                                    <span class="status warn">Pendiente</span>
+                                    break;
+                                case PortalOrderStatus.Fulfilled:
+                                    <span class="status ok">Entregado</span>
+                                    break;
+                                default:
+                                    <span class="status no">Cancelado</span>
+                                    break;
+                            }
+                        </td>
+                        <td>
+                            @if (o.Status == PortalOrderStatus.Placed)
+                            {
+                                <form method="post" asp-page-handler="CancelOrder">
+                                    <input type="hidden" name="orderId" value="@o.Id" />
+                                    <input type="hidden" name="studentId" value="@Model.Selected.StudentId" />
+                                    <button class="btn ghost" type="submit">Cancelar</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                    @if (o.Lines.Count > 0)
+                    {
+                        <tr>
+                            <td colspan="6" style="padding-top:0">
+                                <details>
+                                    <summary class="muted">Ver artículos (@o.Lines.Count)</summary>
+                                    <ul style="margin:6px 0 0 18px">
+                                        @foreach (var l in o.Lines)
+                                        {
+                                            <li>@l.Quantity.ToString("0.##") × @l.Description — @l.LineTotal.ToString("C2")</li>
+                                        }
+                                    </ul>
+                                </details>
+                            </td>
+                        </tr>
+                    }
+                }
+                </tbody>
+            </table>
+        }
+    </div>
+}

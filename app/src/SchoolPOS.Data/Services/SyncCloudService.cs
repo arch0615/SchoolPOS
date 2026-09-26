@@ -267,8 +267,11 @@ public sealed class SyncCloudService : ISyncCloudService
 
     public async Task<IReadOnlyList<PendingOrderDto>> GetPendingOrdersAsync(Guid schoolId, CancellationToken ct = default)
     {
+        // Cancelado y sin AppliedLocally (se canceló antes de que la caja lo bajara): el tutor ya
+        // fue reintegrado en la nube, así que la caja no debe cobrarlo — solo Placed/Fulfilled
+        // representan un cargo que todavía necesita llegar al libro mayor local.
         var orders = await _db.PortalOrders.AsNoTracking()
-            .Where(o => o.SchoolId == schoolId && !o.AppliedLocally)
+            .Where(o => o.SchoolId == schoolId && !o.AppliedLocally && o.Status != PortalOrderStatus.Cancelled)
             .ToListAsync(ct);
         if (orders.Count == 0)
             return Array.Empty<PendingOrderDto>();
