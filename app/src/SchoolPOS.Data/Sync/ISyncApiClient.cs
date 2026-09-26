@@ -22,4 +22,10 @@ public interface ISyncApiClient
     Task<IReadOnlyList<AccountLimitDto>> GetAccountLimitsAsync(CancellationToken ct = default);
 
     Task<SalesPushResult> PushSalesAsync(IReadOnlyList<SaleEntryDto> entries, CancellationToken ct = default);
+
+    /// <summary>Pedidos anticipados ya cobrados en la nube que esta escuela aún no bajó a su libro mayor local.</summary>
+    Task<IReadOnlyList<PendingOrderDto>> GetPendingOrdersAsync(CancellationToken ct = default);
+
+    /// <summary>Acuse de los pedidos que la escuela ya aplicó localmente: evita que se vuelvan a bajar.</summary>
+    Task AckOrdersAsync(IReadOnlyList<Guid> orderIds, CancellationToken ct = default);
 }

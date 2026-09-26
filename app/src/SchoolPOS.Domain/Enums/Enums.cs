@@ -43,6 +43,17 @@ public enum TopUpStatus
     Failed = 4,
 }
 
+/// <summary>Estado de un pedido anticipado (FR-WP: menú semanal / pedidos desde el portal).</summary>
+public enum PortalOrderStatus
+{
+    /// <summary>El tutor lo hizo y ya se le cobró en la nube; pendiente de bajar a la caja.</summary>
+    Placed = 1,
+    /// <summary>La escuela lo entregó al alumno.</summary>
+    Fulfilled = 2,
+    /// <summary>Cancelado antes de entregarse; su cargo se reintegra.</summary>
+    Cancelled = 3,
+}
+
 /// <summary>De dónde vino el dinero de una recarga.</summary>
 public enum TopUpOrigin
 {

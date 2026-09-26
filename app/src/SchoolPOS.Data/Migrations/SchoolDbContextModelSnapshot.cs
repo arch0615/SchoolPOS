@@ -454,6 +454,88 @@ namespace SchoolPOS.Data.Migrations
                     b.ToTable("GuardianStudents");
                 });
 
+            modelBuilder.Entity("SchoolPOS.Domain.Entities.PortalOrder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("AppliedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("AppliedLocally")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("FulfilledAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("RequestedForDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("SchoolId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Total")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SchoolId", "AppliedLocally");
+
+                    b.HasIndex("SchoolId", "CreatedAtUtc");
+
+                    b.ToTable("PortalOrders");
+                });
+
+            modelBuilder.Entity("SchoolPOS.Domain.Entities.PortalOrderLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<decimal>("LineTotal")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.ToTable("PortalOrderLines");
+                });
+
             modelBuilder.Entity("SchoolPOS.Domain.Entities.Product", b =>
                 {
                     b.Property<Guid>("Id")
@@ -477,6 +559,9 @@ namespace SchoolPOS.Data.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("MenuDayOfWeek")
+                        .HasColumnType("int");
+
                     b.Property<decimal>("MinStock")
                         .HasPrecision(18, 4)
                         .HasColumnType("decimal(18,4)");
@@ -492,6 +577,9 @@ namespace SchoolPOS.Data.Migrations
 
                     b.Property<Guid>("SchoolId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("ShowInPortal")
+                        .HasColumnType("bit");
 
                     b.Property<decimal>("StockOnHand")
                         .HasPrecision(18, 4)
@@ -1204,6 +1292,17 @@ namespace SchoolPOS.Data.Migrations
                     b.Navigation("Student");
                 });
 
+            modelBuilder.Entity("SchoolPOS.Domain.Entities.PortalOrderLine", b =>
+                {
+                    b.HasOne("SchoolPOS.Domain.Entities.PortalOrder", "Order")
+                        .WithMany("Lines")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("SchoolPOS.Domain.Entities.Product", b =>
                 {
                     b.HasOne("SchoolPOS.Domain.Entities.Category", "Category")
@@ -1309,6 +1408,11 @@ namespace SchoolPOS.Data.Migrations
             modelBuilder.Entity("SchoolPOS.Domain.Entities.Guardian", b =>
                 {
                     b.Navigation("Students");
+                });
+
+            modelBuilder.Entity("SchoolPOS.Domain.Entities.PortalOrder", b =>
+                {
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("SchoolPOS.Domain.Entities.Product", b =>

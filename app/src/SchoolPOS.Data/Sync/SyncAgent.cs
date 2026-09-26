@@ -58,8 +58,10 @@ public sealed class SyncAgent
         var (pushed, skipped) = await PushConsumptionAsync(ct);
         var salesPushed = await PushSalesAsync(ct);
         var limitsUpdated = await PullAccountLimitsAsync(ct);
+        var ordersApplied = await PullOrdersAsync(ct);
         return new SyncReport(
-            pulled, applied, failed, pushed, skipped, rosterPushed, _clock.UtcNow, limitsUpdated, salesPushed);
+            pulled, applied, failed, pushed, skipped, rosterPushed, _clock.UtcNow, limitsUpdated, salesPushed,
+            ordersApplied);
     }
 
     /// <summary>Baja recargas confirmadas y las aplica al libro mayor local (idempotente).</summary>
@@ -295,5 +297,48 @@ public sealed class SyncAgent
 
         await _local.SaveChangesAsync(ct);
         return applied.Count;
+    }
+
+    // Sin operador físico: el pedido nace en el portal, no en la caja — mismo centinela que usa
+    // PortalOrderService del lado de la nube.
+    private static readonly Guid PortalOperator = Guid.Empty;
+
+    /// <summary>
+    /// Baja los pedidos anticipados ya cobrados en la nube y los aplica al libro mayor local —
+    /// mismo camino que una recarga confirmada (<see cref="PullTopUpsAsync"/>), solo que resta en
+    /// vez de sumar. A diferencia de una recarga, no hay una entidad local que dar de alta primero
+    /// (el pedido no crea una Sale local en esta versión — ver nota de alcance); la idempotencia se
+    /// verifica buscando si ya existe un asiento local con esta referencia, porque
+    /// <see cref="IBalanceService.ChargeSaleAsync"/>, a diferencia de ApplyTopUpAsync, no es
+    /// idempotente por sí solo.
+    /// </summary>
+    public async Task<int> PullOrdersAsync(CancellationToken ct = default)
+    {
+        var pending = await _cloud.GetPendingOrdersAsync(ct);
+
+        var acked = new List<Guid>();
+        foreach (var order in pending)
+        {
+            try
+            {
+                var reference = order.Id.ToString();
+                var already = await _local.BalanceMovements.AsNoTracking()
+                    .AnyAsync(m => m.Type == MovementType.Sale && m.Reference == reference, ct);
+                if (!already)
+                    await _localBalance.ChargeSaleAsync(order.AccountId, order.Total, reference, PortalOperator, ct);
+
+                acked.Add(order.Id);
+            }
+            catch (Exception)
+            {
+                // Cuenta aún no sincronizada, saldo insuficiente, etc.: se reintenta en la próxima
+                // corrida (no se acusa, así que sigue apareciendo como pendiente).
+            }
+        }
+
+        if (acked.Count > 0)
+            await _cloud.AckOrdersAsync(acked, ct);
+
+        return acked.Count;
     }
 }

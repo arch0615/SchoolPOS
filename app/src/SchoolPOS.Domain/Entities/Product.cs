@@ -33,6 +33,17 @@ public class Product
 
     public bool IsActive { get; set; } = true;
 
+    /// <summary>Visible en el catálogo del portal de papás (pedidos anticipados). Por omisión,
+    /// oculto: un producto nuevo no aparece a los tutores hasta que la escuela lo habilite.</summary>
+    public bool ShowInPortal { get; set; }
+
+    /// <summary>
+    /// Día de la semana en que este producto es "el menú" (comida corrida que cambia cada
+    /// semana). La escuela reutiliza el mismo producto y solo edita nombre/precio cuando cambia
+    /// el menú — no crea uno nuevo cada semana. <c>null</c> = no es un producto de menú.
+    /// </summary>
+    public DayOfWeek? MenuDayOfWeek { get; set; }
+
     public ICollection<StockMovement> StockMovements { get; set; } = new List<StockMovement>();
 
     public DateTime CreatedAtUtc { get; set; }

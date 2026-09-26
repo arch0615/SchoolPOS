@@ -62,5 +62,20 @@ public static class SyncEndpoints
             var result = await sync.PushSalesAsync(user.GetSchoolId(), body, ct);
             return Results.Ok(result);
         });
+
+        // Pedidos anticipados ya cobrados en la nube (portal), pendientes de bajar a la caja.
+        group.MapGet("/orders/pending", async (ClaimsPrincipal user, ISyncCloudService sync, CancellationToken ct) =>
+        {
+            var items = await sync.GetPendingOrdersAsync(user.GetSchoolId(), ct);
+            return Results.Ok(items);
+        });
+
+        // Acuse de los pedidos que la caja ya aplicó localmente: evita que se vuelvan a bajar.
+        group.MapPost("/orders/ack", async (
+            ClaimsPrincipal user, AckOrdersRequest body, ISyncCloudService sync, CancellationToken ct) =>
+        {
+            await sync.AckOrdersAsync(user.GetSchoolId(), body.OrderIds, ct);
+            return Results.Ok();
+        });
     }
 }

@@ -83,3 +83,15 @@ public sealed record SaleEntryDto(
 
 /// <summary>Applied: se guardó (o ya estaba) en la nube. Skipped: la cuenta aún no existe en la nube (padrón desfasado) — se reintenta en la próxima corrida, igual que PushConsumptionAsync.</summary>
 public sealed record SalesPushResult(List<Guid> Applied, List<Guid> Skipped);
+
+public sealed record PendingOrderLineDto(Guid ProductId, string Description, decimal Quantity, decimal UnitPrice, decimal LineTotal);
+
+/// <summary>
+/// Pedido anticipado ya cobrado en la nube, pendiente de bajar a la caja — mismo papel que
+/// <see cref="PendingTopUpDto"/>, con renglones. La caja lo aplica a su libro mayor local
+/// exactamente como una recarga confirmada (mismo IBalanceService, mismo importe).
+/// </summary>
+public sealed record PendingOrderDto(
+    Guid Id, Guid AccountId, decimal Total, DateTime CreatedAtUtc, List<PendingOrderLineDto> Lines);
+
+public sealed record AckOrdersRequest(List<Guid> OrderIds);

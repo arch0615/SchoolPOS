@@ -21,6 +21,8 @@ public class SchoolDbContext : DbContext
         Set<GuardianNotificationPreference>();
     public DbSet<BalanceMovement> BalanceMovements => Set<BalanceMovement>();
     public DbSet<TopUp> TopUps => Set<TopUp>();
+    public DbSet<PortalOrder> PortalOrders => Set<PortalOrder>();
+    public DbSet<PortalOrderLine> PortalOrderLines => Set<PortalOrderLine>();
     public DbSet<User> Users => Set<User>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
@@ -166,6 +168,23 @@ public class SchoolDbContext : DbContext
             e.HasOne(x => x.Account).WithMany()
                 .HasForeignKey(x => x.AccountId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<PortalOrder>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.SchoolId, x.CreatedAtUtc });
+            // El agente de sincronización busca exactamente esto: lo pendiente de bajar a la caja
+            // (mismo patrón que TopUps.AppliedLocally).
+            e.HasIndex(x => new { x.SchoolId, x.AppliedLocally });
+        });
+
+        b.Entity<PortalOrderLine>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Description).HasMaxLength(200).IsRequired();
+            e.HasOne(x => x.Order).WithMany(o => o.Lines)
+                .HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<Guardian>(e =>

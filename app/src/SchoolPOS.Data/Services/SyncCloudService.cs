@@ -264,4 +264,44 @@ public sealed class SyncCloudService : ISyncCloudService
 
         return new SalesPushResult(applied, skipped);
     }
+
+    public async Task<IReadOnlyList<PendingOrderDto>> GetPendingOrdersAsync(Guid schoolId, CancellationToken ct = default)
+    {
+        var orders = await _db.PortalOrders.AsNoTracking()
+            .Where(o => o.SchoolId == schoolId && !o.AppliedLocally)
+            .ToListAsync(ct);
+        if (orders.Count == 0)
+            return Array.Empty<PendingOrderDto>();
+
+        var orderIds = orders.Select(o => o.Id).ToList();
+        var lines = await _db.PortalOrderLines.AsNoTracking()
+            .Where(l => orderIds.Contains(l.OrderId))
+            .ToListAsync(ct);
+        var byOrder = lines.GroupBy(l => l.OrderId).ToDictionary(g => g.Key, g => g.ToList());
+
+        return orders.Select(o => new PendingOrderDto(
+            o.Id, o.AccountId, o.Total, o.CreatedAtUtc,
+            byOrder.GetValueOrDefault(o.Id, new List<PortalOrderLine>())
+                .Select(l => new PendingOrderLineDto(l.ProductId, l.Description, l.Quantity, l.UnitPrice, l.LineTotal))
+                .ToList()))
+            .ToList();
+    }
+
+    public async Task AckOrdersAsync(Guid schoolId, IReadOnlyList<Guid> orderIds, CancellationToken ct = default)
+    {
+        if (orderIds.Count == 0)
+            return;
+
+        var now = _clock.UtcNow;
+        // Filtrado por schoolId: un id ajeno (manipulado o de otra corrida) no toca nada aquí.
+        var rows = await _db.PortalOrders
+            .Where(o => o.SchoolId == schoolId && orderIds.Contains(o.Id))
+            .ToListAsync(ct);
+        foreach (var o in rows)
+        {
+            o.AppliedLocally = true;
+            o.AppliedAtUtc = now;
+        }
+        await _db.SaveChangesAsync(ct);
+    }
 }

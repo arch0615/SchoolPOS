@@ -66,6 +66,7 @@ public static class DependencyInjection
         // Recarga en efectivo del mostrador: no depende de la pasarela, así que sirve también en
         // la instalación de una sola caja, donde no hay portal.
         services.AddScoped<ICashTopUpService, CashTopUpService>();
+        services.AddScoped<IPortalOrderService, PortalOrderService>();
         return services;
     }
 }

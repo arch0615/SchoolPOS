@@ -38,4 +38,10 @@ public sealed class SingleSchoolSyncApiClient : ISyncApiClient
 
     public Task<SalesPushResult> PushSalesAsync(IReadOnlyList<SaleEntryDto> entries, CancellationToken ct = default) =>
         _cloud.PushSalesAsync(_schoolId, entries, ct);
+
+    public Task<IReadOnlyList<PendingOrderDto>> GetPendingOrdersAsync(CancellationToken ct = default) =>
+        _cloud.GetPendingOrdersAsync(_schoolId, ct);
+
+    public Task AckOrdersAsync(IReadOnlyList<Guid> orderIds, CancellationToken ct = default) =>
+        _cloud.AckOrdersAsync(_schoolId, orderIds, ct);
 }

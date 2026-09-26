@@ -86,4 +86,20 @@ public sealed class HttpSyncApiClient : ISyncApiClient
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<SalesPushResult>(SyncJson.Options, ct))!;
     }
+
+    public async Task<IReadOnlyList<PendingOrderDto>> GetPendingOrdersAsync(CancellationToken ct = default)
+    {
+        ApplyCurrentConfig();
+        var result = await _http.GetFromJsonAsync<List<PendingOrderDto>>(
+            "/api/sync/orders/pending", SyncJson.Options, ct);
+        return result ?? new List<PendingOrderDto>();
+    }
+
+    public async Task AckOrdersAsync(IReadOnlyList<Guid> orderIds, CancellationToken ct = default)
+    {
+        ApplyCurrentConfig();
+        var response = await _http.PostAsJsonAsync(
+            "/api/sync/orders/ack", new AckOrdersRequest(orderIds.ToList()), SyncJson.Options, ct);
+        response.EnsureSuccessStatusCode();
+    }
 }

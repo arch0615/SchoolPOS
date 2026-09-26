@@ -516,4 +516,84 @@ public class SyncAgentTests
         (await cloud.NewContext().Accounts.Where(a => a.Id == account).Select(a => a.Balance).SingleAsync())
             .Should().Be(60m);
     }
+
+    // ---- Pedidos anticipados del portal (nube→caja, mismo camino que una recarga confirmada) ----
+
+    /// <summary>
+    /// El pedido nace y se cobra en la nube (PortalOrderService); esta prueba cubre lo que falta
+    /// para que el dinero llegue a la caja, fuente única de verdad: la caja lo baja, lo aplica a su
+    /// propio libro mayor local (mismas reglas de saldo/sobregiro que una venta normal) y lo acusa.
+    /// </summary>
+    [Fact]
+    public async Task Pull_orders_applies_a_pending_order_to_the_local_ledger_and_acks_cloud()
+    {
+        using var cloud = new TestDatabase();
+        using var local = new TestDatabase();
+        cloud.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m);
+        local.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m); // fuente de verdad
+
+        var orderId = Guid.NewGuid();
+        cloud.Context.PortalOrders.Add(new PortalOrder
+        {
+            Id = orderId,
+            SchoolId = SchoolId,
+            StudentId = StudentId,
+            AccountId = AccountId,
+            Total = 45m,
+            CreatedAtUtc = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc),
+            Lines = new List<PortalOrderLine>
+            {
+                new() { ProductId = Guid.NewGuid(), Description = "Torta de jamón", Quantity = 1, UnitPrice = 45m, LineTotal = 45m },
+            },
+        });
+        await cloud.Context.SaveChangesAsync();
+        cloud.Context.ChangeTracker.Clear();
+
+        var agent = NewAgent(cloud, local);
+        var report = await agent.RunOnceAsync();
+
+        report.OrdersApplied.Should().Be(1);
+        (await local.NewContext().Accounts.Where(a => a.Id == AccountId).Select(a => a.Balance).SingleAsync())
+            .Should().Be(55m, "la caja debe descontar el pedido de su propio libro mayor");
+        (await local.NewContext().BalanceMovements
+            .CountAsync(m => m.Type == MovementType.Sale && m.Reference == orderId.ToString()))
+            .Should().Be(1);
+
+        var cloudOrder = await cloud.NewContext().PortalOrders.SingleAsync(o => o.Id == orderId);
+        cloudOrder.AppliedLocally.Should().BeTrue("la nube debe quedar marcada como acusada por la caja");
+    }
+
+    [Fact]
+    public async Task Pull_orders_is_idempotent_across_runs()
+    {
+        using var cloud = new TestDatabase();
+        using var local = new TestDatabase();
+        cloud.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m);
+        local.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m);
+
+        cloud.Context.PortalOrders.Add(new PortalOrder
+        {
+            SchoolId = SchoolId,
+            StudentId = StudentId,
+            AccountId = AccountId,
+            Total = 45m,
+            CreatedAtUtc = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc),
+            Lines = new List<PortalOrderLine>
+            {
+                new() { ProductId = Guid.NewGuid(), Description = "Torta de jamón", Quantity = 1, UnitPrice = 45m, LineTotal = 45m },
+            },
+        });
+        await cloud.Context.SaveChangesAsync();
+        cloud.Context.ChangeTracker.Clear();
+
+        var agent = NewAgent(cloud, local);
+        await agent.RunOnceAsync();
+        var second = await agent.RunOnceAsync(); // ya acusado: nada nuevo que aplicar
+
+        second.OrdersApplied.Should().Be(0);
+        (await local.NewContext().Accounts.Where(a => a.Id == AccountId).Select(a => a.Balance).SingleAsync())
+            .Should().Be(55m, "el cargo no debe duplicarse en la segunda corrida");
+        (await local.NewContext().BalanceMovements.CountAsync(m => m.Type == MovementType.Sale))
+            .Should().Be(1);
+    }
 }
