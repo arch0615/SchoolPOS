@@ -20,6 +20,10 @@ public enum TenderType
     Balance = 1,
     /// <summary>Efectivo en caja.</summary>
     Cash = 2,
+    /// <summary>Tarjeta de crédito/débito cobrada en una terminal aparte (no integrada al POS).</summary>
+    CreditCard = 3,
+    /// <summary>Cualquier otra forma de cobro (transferencia, vale, etc.).</summary>
+    Other = 4,
 }
 
 /// <summary>Rol del operador interno del POS (control de acceso).</summary>

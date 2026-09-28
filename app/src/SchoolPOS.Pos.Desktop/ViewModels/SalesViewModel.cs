@@ -23,7 +23,7 @@ public sealed class SalesViewModel : ViewModelBase, IAsyncLoadable
     private string _productCode = string.Empty;
     private string _studentCode = string.Empty;
     private StudentBalance? _currentStudent;
-    private bool _isBalanceTender = true;
+    private TenderType _tender = TenderType.Balance;
     private decimal? _amountReceived;
     private string _statusMessage = string.Empty;
     private string _errorMessage = string.Empty;
@@ -83,26 +83,27 @@ public sealed class SalesViewModel : ViewModelBase, IAsyncLoadable
     public string StudentBalanceText => CurrentStudent is null ? "—" : CurrentStudent.Balance.ToString("C2");
 
     // ---- Cobro ----
-    public bool IsBalanceTender
-    {
-        get => _isBalanceTender;
-        set
-        {
-            if (SetProperty(ref _isBalanceTender, value))
-            {
-                OnPropertyChanged(nameof(IsCashTender));
-                OnPropertyChanged(nameof(Change));
-                OnPropertyChanged(nameof(IsAmountInsufficient));
-                OnPropertyChanged(nameof(NeedsOpenTill));
-                ChargeCommand.RaiseCanExecuteChanged();
-            }
-        }
-    }
+    // Cuatro RadioButton independientes (uno por forma de cobro) en vez de un enum con
+    // convertidor: cada propiedad expone/recibe su propio bool, y SetTender() notifica a las
+    // cuatro para que el radio recién apagado también refresque su estado visual.
+    public bool IsBalanceTender { get => _tender == TenderType.Balance; set { if (value) SetTender(TenderType.Balance); } }
+    public bool IsCashTender { get => _tender == TenderType.Cash; set { if (value) SetTender(TenderType.Cash); } }
+    public bool IsCreditCardTender { get => _tender == TenderType.CreditCard; set { if (value) SetTender(TenderType.CreditCard); } }
+    public bool IsOtherTender { get => _tender == TenderType.Other; set { if (value) SetTender(TenderType.Other); } }
 
-    public bool IsCashTender
+    private void SetTender(TenderType tender)
     {
-        get => !_isBalanceTender;
-        set => IsBalanceTender = !value;
+        if (_tender == tender)
+            return;
+        _tender = tender;
+        OnPropertyChanged(nameof(IsBalanceTender));
+        OnPropertyChanged(nameof(IsCashTender));
+        OnPropertyChanged(nameof(IsCreditCardTender));
+        OnPropertyChanged(nameof(IsOtherTender));
+        OnPropertyChanged(nameof(Change));
+        OnPropertyChanged(nameof(IsAmountInsufficient));
+        OnPropertyChanged(nameof(NeedsOpenTill));
+        ChargeCommand.RaiseCanExecuteChanged();
     }
 
     public decimal? AmountReceived
@@ -317,11 +318,11 @@ public sealed class SalesViewModel : ViewModelBase, IAsyncLoadable
         var request = new SaleRequest(
             _session.SchoolId,
             _session.Operator!.Id,
-            IsBalanceTender ? TenderType.Balance : TenderType.Cash,
+            _tender,
             lines,
             StudentId: CurrentStudent?.StudentId,
             AccountId: CurrentStudent?.AccountId,
-            // Solo las ventas en efectivo entran al arqueo; las de saldo no mueven el cajón.
+            // Solo las ventas en efectivo entran al arqueo; las demás no mueven el cajón.
             CashSessionId: IsCashTender ? _cashSessionId : null,
             AmountTendered: IsCashTender ? AmountReceived : null);
 
@@ -331,9 +332,12 @@ public sealed class SalesViewModel : ViewModelBase, IAsyncLoadable
             var sales = scope.ServiceProvider.GetRequiredService<ISalesService>();
             var sale = await sales.RegisterSaleAsync(request);
 
-            StatusMessage = IsCashTender
-                ? $"Venta registrada: {sale.Total:C2}. Cambio: {Change:C2}"
-                : $"Venta registrada: {sale.Total:C2} cargada al saldo de {StudentName}.";
+            StatusMessage = _tender switch
+            {
+                TenderType.Cash => $"Venta registrada: {sale.Total:C2}. Cambio: {Change:C2}",
+                TenderType.Balance => $"Venta registrada: {sale.Total:C2} cargada al saldo de {StudentName}.",
+                _ => $"Venta registrada: {sale.Total:C2} ({_tender.ToSpanish()}).",
+            };
             ResetSale();
         }
         catch (InsufficientBalanceException)
@@ -364,7 +368,7 @@ public sealed class SalesViewModel : ViewModelBase, IAsyncLoadable
         StudentCode = string.Empty;
         ProductCode = string.Empty;
         AmountReceived = null;
-        IsBalanceTender = true;
+        SetTender(TenderType.Balance);
         RecalculateTotals();
     }
 

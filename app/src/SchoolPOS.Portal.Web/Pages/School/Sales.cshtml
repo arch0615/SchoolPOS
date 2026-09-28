@@ -14,7 +14,7 @@
         if (l.Date == today.AddDays(-1)) return $"Ayer · {l:HH:mm}";
         return l.ToString("dd MMM · HH:mm", MxTime.EsMx);
     }
-    static string Tender(TenderType t) => t == TenderType.Cash ? "Efectivo" : "Saldo";
+    static string Tender(TenderType t) => t.ToSpanish();
     static (string l, string c) State(SaleStatus s) => s switch
     {
         SaleStatus.Completed => ("Completada", "ok"),
@@ -46,6 +46,8 @@
     <div class="kpi"><div class="n">@Model.Avg.ToString("C2")</div><div class="l">Ticket promedio</div></div>
     <div class="kpi"><div class="n">@Model.CashTotal.ToString("C2")</div><div class="l">En efectivo</div></div>
     <div class="kpi accent"><div class="n">@Model.BalanceTotal.ToString("C2")</div><div class="l">Con saldo</div></div>
+    <div class="kpi"><div class="n">@Model.CreditCardTotal.ToString("C2")</div><div class="l">Con tarjeta</div></div>
+    <div class="kpi"><div class="n">@Model.OtherTotal.ToString("C2")</div><div class="l">Otro</div></div>
 </div>
 
 <div class="card">

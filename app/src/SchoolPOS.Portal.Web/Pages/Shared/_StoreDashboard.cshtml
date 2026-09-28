@@ -20,7 +20,7 @@
         if (l.Date == today.AddDays(-1)) return $"Ayer · {l:HH:mm}";
         return l.ToString("dd MMM · HH:mm", EsMx);
     }
-    static string Tender(TenderType t) => t == TenderType.Cash ? "Efectivo" : "Saldo";
+    static string Tender(TenderType t) => t.ToSpanish();
     static (string label, string cls) SaleState(SaleStatus s) => s switch
     {
         SaleStatus.Completed => ("Completada", "ok"),

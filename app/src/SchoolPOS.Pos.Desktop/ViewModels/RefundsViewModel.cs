@@ -68,9 +68,15 @@ public sealed class RefundsViewModel : ViewModelBase, IAsyncLoadable
 
     public bool HasSelection => SelectedSale is not null;
 
-    public string SelectedTenderText => SelectedSale is null
-        ? "—"
-        : SelectedSale.Tender == TenderType.Cash ? "Efectivo (sale de la caja)" : "Saldo del alumno";
+    public string SelectedTenderText => SelectedSale?.Tender switch
+    {
+        null => "—",
+        TenderType.Cash => "Efectivo (sale de la caja)",
+        TenderType.Balance => "Saldo del alumno",
+        // Tarjeta/Otro no mueven nada automáticamente (no hay terminal integrada ni cajón que
+        // tocar): el sistema solo registra la devolución, el cajero reintegra por su cuenta.
+        var t => $"{t.Value.ToSpanish()} (reintegre por su cuenta; el sistema no mueve dinero)",
+    };
 
     /// <summary>Aviso cuando la venta fue en efectivo y el operador no tiene caja abierta.</summary>
     public bool NeedsOpenTill =>
@@ -259,7 +265,7 @@ public sealed class RefundsViewModel : ViewModelBase, IAsyncLoadable
 public sealed record SaleRow(
     Guid Id, DateTime CreatedAtLocal, decimal Total, TenderType Tender, SaleStatus Status, string StudentName)
 {
-    public string TenderText => Tender == TenderType.Cash ? "Efectivo" : "Saldo";
+    public string TenderText => Tender.ToSpanish();
     public string StatusText => Status == SaleStatus.PartiallyRefunded ? "Devuelta en parte" : "Completada";
 }
 

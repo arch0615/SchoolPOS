@@ -114,10 +114,12 @@
 
                 <!-- Forma de cobro -->
                 <TextBlock Text="Forma de cobro" FontWeight="SemiBold" />
-                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                    <RadioButton Content="Saldo" IsChecked="{Binding IsBalanceTender}" Margin="0,0,16,0" />
-                    <RadioButton Content="Efectivo" IsChecked="{Binding IsCashTender}" />
-                </StackPanel>
+                <WrapPanel Orientation="Horizontal" Margin="0,6,0,0">
+                    <RadioButton Content="Saldo" IsChecked="{Binding IsBalanceTender}" Margin="0,0,16,6" />
+                    <RadioButton Content="Efectivo" IsChecked="{Binding IsCashTender}" Margin="0,0,16,6" />
+                    <RadioButton Content="Tarjeta de crédito" IsChecked="{Binding IsCreditCardTender}" Margin="0,0,16,6" />
+                    <RadioButton Content="Otro" IsChecked="{Binding IsOtherTender}" Margin="0,0,0,6" />
+                </WrapPanel>
 
                 <Border Background="#FFF4E5" CornerRadius="6" Padding="10" Margin="0,10,0,0"
                         Visibility="{Binding NeedsOpenTill, Converter={StaticResource BoolToVisibility}}">

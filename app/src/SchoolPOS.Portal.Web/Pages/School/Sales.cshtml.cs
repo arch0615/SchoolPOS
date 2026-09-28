@@ -24,6 +24,8 @@ public class SalesModel : PageModel
     public decimal Avg => Count == 0 ? 0m : Total / Count;
     public decimal CashTotal { get; private set; }
     public decimal BalanceTotal { get; private set; }
+    public decimal CreditCardTotal { get; private set; }
+    public decimal OtherTotal { get; private set; }
     public IReadOnlyList<Row> Rows { get; private set; } = Array.Empty<Row>();
 
     public async Task OnGetAsync()
@@ -47,6 +49,8 @@ public class SalesModel : PageModel
         Count = valid.Count;
         CashTotal = valid.Where(s => s.Tender == TenderType.Cash).Sum(s => s.Total);
         BalanceTotal = valid.Where(s => s.Tender == TenderType.Balance).Sum(s => s.Total);
+        CreditCardTotal = valid.Where(s => s.Tender == TenderType.CreditCard).Sum(s => s.Total);
+        OtherTotal = valid.Where(s => s.Tender == TenderType.Other).Sum(s => s.Total);
 
         Rows = sales.Select(s => new Row(
             s.CreatedAtUtc, s.Tender, s.Status, items.GetValueOrDefault(s.Id, 0), s.Total)).ToList();

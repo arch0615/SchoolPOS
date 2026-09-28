@@ -7,7 +7,9 @@ public sealed record SalesSummary(
     int SaleCount,
     decimal Total,
     decimal TotalByBalance,
-    decimal TotalByCash);
+    decimal TotalByCash,
+    decimal TotalByCreditCard = 0m,
+    decimal TotalByOther = 0m);
 
 /// <summary>Ventas agregadas por producto.</summary>
 public sealed record ProductSalesRow(Guid ProductId, string Description, decimal Quantity, decimal Revenue);

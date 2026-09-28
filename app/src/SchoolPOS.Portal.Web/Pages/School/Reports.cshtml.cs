@@ -26,6 +26,8 @@ public class ReportsModel : PageModel
     public decimal Avg => Tickets == 0 ? 0m : Total / Tickets;
     public decimal CashTotal { get; private set; }
     public decimal BalanceTotal { get; private set; }
+    public decimal CreditCardTotal { get; private set; }
+    public decimal OtherTotal { get; private set; }
 
     public IReadOnlyList<DayRow> ByDay { get; private set; } = Array.Empty<DayRow>();
     public IReadOnlyList<TopRow> TopProducts { get; private set; } = Array.Empty<TopRow>();
@@ -57,6 +59,8 @@ public class ReportsModel : PageModel
         Tickets = valid.Count;
         CashTotal = valid.Where(s => s.Tender == TenderType.Cash).Sum(s => s.Total);
         BalanceTotal = valid.Where(s => s.Tender == TenderType.Balance).Sum(s => s.Total);
+        CreditCardTotal = valid.Where(s => s.Tender == TenderType.CreditCard).Sum(s => s.Total);
+        OtherTotal = valid.Where(s => s.Tender == TenderType.Other).Sum(s => s.Total);
 
         // Ventas por día local.
         var perDay = valid.GroupBy(s => MxTime.Local(s.CreatedAtUtc).Date)

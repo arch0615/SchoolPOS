@@ -204,4 +204,46 @@ public class SalesServiceTests
         sale.Total.Should().Be(7m);
         sale.DiscountTotal.Should().Be(3m);
     }
+
+    /// <summary>
+    /// Tarjeta/Otro no son ni saldo ni efectivo: no requieren identificar alumno, no tocan el
+    /// libro mayor de saldo, y no exigen caja abierta ni AmountTendered (el dinero ya se cobró en
+    /// una terminal aparte, fuera del sistema).
+    /// </summary>
+    [Fact]
+    public async Task Credit_card_sale_needs_no_student_and_does_not_touch_balance_or_till()
+    {
+        using var db = new TestDatabase();
+        var school = db.SeedSchool(taxRate: 0m);
+        var product = db.SeedProduct(school.Id, price: 10m, stock: 10m);
+        var svc = NewServices(db).Sales;
+
+        var sale = await svc.RegisterSaleAsync(new SaleRequest(
+            school.Id, Guid.NewGuid(), TenderType.CreditCard,
+            new[] { new SaleLineRequest(product.Id, "Producto", 2m, 10m) }));
+
+        sale.Total.Should().Be(20m);
+        sale.AccountId.Should().BeNull();
+        sale.CashSessionId.Should().BeNull();
+        var ctx = db.NewContext();
+        (await ctx.Products.Where(p => p.Id == product.Id).Select(p => p.StockOnHand).SingleAsync())
+            .Should().Be(8m, "el inventario sí se descuenta igual que cualquier otra venta");
+        (await ctx.BalanceMovements.CountAsync()).Should().Be(0, "tarjeta no mueve saldo de ningún alumno");
+    }
+
+    [Fact]
+    public async Task Other_tender_sale_registers_without_amount_tendered()
+    {
+        using var db = new TestDatabase();
+        var school = db.SeedSchool(taxRate: 0m);
+        var product = db.SeedProduct(school.Id, price: 15m, stock: 5m);
+        var svc = NewServices(db).Sales;
+
+        var sale = await svc.RegisterSaleAsync(new SaleRequest(
+            school.Id, Guid.NewGuid(), TenderType.Other,
+            new[] { new SaleLineRequest(product.Id, "Producto", 1m, 15m) }));
+
+        sale.Tender.Should().Be(TenderType.Other);
+        sale.AmountTendered.Should().BeNull();
+    }
 }

@@ -48,6 +48,8 @@
                     <TextBlock Text="{Binding Sales.SaleCount, StringFormat='{}{0} ventas'}" Foreground="{StaticResource MutedBrush}" />
                     <TextBlock Text="{Binding Sales.TotalByBalance, StringFormat='Saldo: {0:C2}'}" Foreground="{StaticResource MutedBrush}" FontSize="12" />
                     <TextBlock Text="{Binding Sales.TotalByCash, StringFormat='Efectivo: {0:C2}'}" Foreground="{StaticResource MutedBrush}" FontSize="12" />
+                    <TextBlock Text="{Binding Sales.TotalByCreditCard, StringFormat='Tarjeta: {0:C2}'}" Foreground="{StaticResource MutedBrush}" FontSize="12" />
+                    <TextBlock Text="{Binding Sales.TotalByOther, StringFormat='Otro: {0:C2}'}" Foreground="{StaticResource MutedBrush}" FontSize="12" />
                 </StackPanel>
             </Border>
             <Border Background="White" CornerRadius="8" Padding="18" Margin="0,0,12,0" Width="200">

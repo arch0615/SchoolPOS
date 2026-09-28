@@ -26,7 +26,9 @@ public sealed class SalesReportService : ISalesReportService
             rows.Count,
             Round(rows.Sum(r => r.Total)),
             Round(rows.Where(r => r.Tender == TenderType.Balance).Sum(r => r.Total)),
-            Round(rows.Where(r => r.Tender == TenderType.Cash).Sum(r => r.Total)));
+            Round(rows.Where(r => r.Tender == TenderType.Cash).Sum(r => r.Total)),
+            Round(rows.Where(r => r.Tender == TenderType.CreditCard).Sum(r => r.Total)),
+            Round(rows.Where(r => r.Tender == TenderType.Other).Sum(r => r.Total)));
     }
 
     public async Task<IReadOnlyList<ProductSalesRow>> GetByProductAsync(
