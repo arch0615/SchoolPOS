@@ -223,6 +223,17 @@ body.has-shell .sidebar a:hover { background:rgba(255,255,255,.06); color:#fff; 
 body.has-shell .sidebar a.active { background:linear-gradient(135deg,#2456cc,#3d36b0); color:#fff; border-radius:12px; box-shadow:0 10px 24px rgba(20,40,90,.55); }
 body.has-shell .sidebar a.active svg { stroke:var(--danger); }
 
+/* Support card pinned to the bottom of the sidebar (see the flex-column comment above): the
+   BulldogTI attribution the customer asked to have visible in every app's footer. margin-top:auto
+   pins it regardless of how many nav links precede it. Hidden while collapsed — no room for a
+   readable lockup at 76px, and the icon-only nav already crowds that width. */
+.sidebar-footer { margin-top:auto; padding-top:14px; border-top:1px solid rgba(255,255,255,.12);
+  display:flex; align-items:center; gap:8px; color:#8fa0c2; font-size:11px; }
+.sidebar-footer img { width:22px; height:22px; border-radius:5px; flex:0 0 22px; }
+.sidebar-footer a { color:#8fa0c2 !important; font-weight:500 !important; padding:0 !important; }
+.sidebar-footer a:hover { color:#c7d2e6 !important; text-decoration:underline !important; background:none !important; }
+body.sidebar-collapsed .sidebar-footer { display:none; }
+
 /* --- Collapsed sidebar: icons only --- */
 body.sidebar-collapsed.has-shell .sidebar { width:76px; flex:0 0 76px; padding:16px 10px; }
 body.sidebar-collapsed .side-nav a,
