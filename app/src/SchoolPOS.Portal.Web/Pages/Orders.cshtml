@@ -57,16 +57,39 @@ else
         }
         else
         {
+            @if (Model.Catalog.Count > 8)
+            {
+                <div class="filter-bar" style="margin-bottom:10px">
+                    <div style="flex:1 1 220px">
+                        <label for="catalogSearch">Buscar artículo</label>
+                        <input id="catalogSearch" type="search" placeholder="Escribe el nombre…" oninput="filterCatalog()" />
+                    </div>
+                    @if (Model.MenuDays.Count > 0)
+                    {
+                        <div>
+                            <label for="catalogDay">Día del menú</label>
+                            <select id="catalogDay" onchange="filterCatalog()">
+                                <option value="">Todos</option>
+                                @foreach (var d in Model.MenuDays)
+                                {
+                                    <option value="@d">@d.ToSpanish()</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                </div>
+            }
+
             <form method="post" asp-page-handler="PlaceOrder">
                 <input type="hidden" name="studentId" value="@Model.Selected.StudentId" />
                 <input type="hidden" name="accountId" value="@Model.Selected.AccountId" />
 
-                <table>
+                <table id="catalogTable">
                     <thead><tr><th>Artículo</th><th>Día del menú</th><th style="text-align:right">Precio</th><th style="text-align:right;width:110px">Cantidad</th></tr></thead>
                     <tbody>
                     @foreach (var item in Model.Catalog)
                     {
-                        <tr>
+                        <tr data-name="@item.Name.ToLowerInvariant()" data-day="@item.MenuDayOfWeek">
                             <td>@item.Name</td>
                             <td class="muted">@(item.MenuDayOfWeek is { } d ? d.ToSpanish() : "—")</td>
                             <td style="text-align:right">@item.Price.ToString("C2")</td>
@@ -77,12 +100,31 @@ else
                     }
                     </tbody>
                 </table>
+                <p id="catalogEmptyMsg" class="muted" style="display:none">Ningún artículo coincide con la búsqueda.</p>
 
                 <label for="requestedForDate">Para el día (opcional)</label>
                 <input id="requestedForDate" name="requestedForDate" type="date" style="max-width:220px" />
 
                 <div style="margin-top:14px"><button class="btn accent" type="submit">Hacer pedido</button></div>
             </form>
+
+            <script>
+                function filterCatalog() {
+                    var search = (document.getElementById('catalogSearch')?.value || '').trim().toLowerCase();
+                    var daySelect = document.getElementById('catalogDay');
+                    var day = daySelect ? daySelect.value : '';
+                    var rows = document.querySelectorAll('#catalogTable tbody tr');
+                    var visible = 0;
+                    rows.forEach(function (row) {
+                        var matchesName = !search || row.dataset.name.indexOf(search) !== -1;
+                        var matchesDay = !day || row.dataset.day === day;
+                        var show = matchesName && matchesDay;
+                        row.style.display = show ? '' : 'none';
+                        if (show) visible++;
+                    });
+                    document.getElementById('catalogEmptyMsg').style.display = visible === 0 ? '' : 'none';
+                }
+            </script>
         }
     </div>
 

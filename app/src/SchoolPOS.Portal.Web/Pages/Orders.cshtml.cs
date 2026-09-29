@@ -27,6 +27,9 @@ public class OrdersModel : PageModel
     public IReadOnlyList<LinkedStudent> Students { get; private set; } = Array.Empty<LinkedStudent>();
     public LinkedStudent? Selected { get; private set; }
     public IReadOnlyList<CatalogItem> Catalog { get; private set; } = Array.Empty<CatalogItem>();
+
+    /// <summary>Días con al menos un artículo, para el filtro del catálogo (escuelas con muchos artículos).</summary>
+    public IReadOnlyList<DayOfWeek> MenuDays { get; private set; } = Array.Empty<DayOfWeek>();
     public IReadOnlyList<PortalOrderRow> MyOrders { get; private set; } = Array.Empty<PortalOrderRow>();
 
     [TempData] public string? Message { get; set; }
@@ -120,5 +123,7 @@ public class OrdersModel : PageModel
         if (Selected is null)
             return;
         Catalog = await _orders.GetCatalogAsync(User.GetSchoolId());
+        MenuDays = Catalog.Where(c => c.MenuDayOfWeek.HasValue).Select(c => c.MenuDayOfWeek!.Value)
+            .Distinct().OrderBy(d => (int)d).ToList();
     }
 }
