@@ -809,6 +809,9 @@ namespace SchoolPOS.Data.Migrations.Sqlite.Migrations
                         .HasMaxLength(3)
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("LegalName")
                         .HasMaxLength(250)
                         .HasColumnType("TEXT");

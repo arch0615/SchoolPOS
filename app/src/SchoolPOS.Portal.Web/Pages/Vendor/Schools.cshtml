@@ -42,6 +42,7 @@
             <thead>
                 <tr>
                     <th>Escuela</th>
+                    <th>Estado</th>
                     <th style="text-align:right">Comisión</th>
                     <th>Cobro</th>
                     <th>Datos fiscales</th>
@@ -58,6 +59,22 @@
                     <td>
                         @r.Name
                         <div class="muted" style="font-size:12px">@r.Currency</div>
+                    </td>
+                    <td>
+                        @if (r.IsActive)
+                        {
+                            <span class="tag ok">Activa</span>
+                        }
+                        else
+                        {
+                            <span class="tag no">De baja</span>
+                        }
+                        <form method="post" asp-page-handler="ToggleActive" style="margin-top:4px">
+                            <input type="hidden" name="schoolId" value="@r.SchoolId" />
+                            <button class="btn ghost" type="submit" style="padding:4px 10px;font-size:12px">
+                                @(r.IsActive ? "Dar de baja" : "Reactivar")
+                            </button>
+                        </form>
                     </td>
                     <td style="text-align:right">
                         <form method="post" asp-page-handler="Rate" style="display:flex;gap:6px;justify-content:flex-end;align-items:center">

@@ -10,6 +10,13 @@ public class School
 
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Dada de baja por el proveedor: bloquea nuevos inicios de sesión y registros (portal del
+    /// tutor y de la escuela) sin borrar nada — todo su historial de ventas/recargas queda intacto
+    /// por requisitos fiscales y de auditoría. Reversible.
+    /// </summary>
+    public bool IsActive { get; set; } = true;
+
     /// <summary>Tasa de comisión sobre recargas en línea. Default 0.05, puede ser 0 (FR-COM-6).</summary>
     public decimal CommissionRate { get; set; } = 0.05m;
 

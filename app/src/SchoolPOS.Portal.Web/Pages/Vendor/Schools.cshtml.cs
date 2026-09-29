@@ -86,6 +86,35 @@ public class SchoolsModel : PageModel
         return RedirectToPage(new { From, To });
     }
 
+    /// <summary>
+    /// Dar de baja/reactivar una escuela (bloquea o permite de nuevo el inicio de sesión y el
+    /// registro de tutores; no borra nada de su historial). Reversible.
+    /// </summary>
+    public async Task<IActionResult> OnPostToggleActiveAsync(Guid schoolId)
+    {
+        try
+        {
+            var school = await _db.Schools.FirstOrDefaultAsync(s => s.Id == schoolId);
+            if (school is null)
+            {
+                RateError = "No se encontró la escuela.";
+                return RedirectToPage(new { From, To });
+            }
+
+            school.IsActive = !school.IsActive;
+            await _db.SaveChangesAsync();
+            Message = school.IsActive
+                ? $"'{school.Name}' reactivada."
+                : $"'{school.Name}' dada de baja: ya no se puede iniciar sesión ni registrar tutores nuevos ahí. Su historial sigue intacto.";
+        }
+        catch (Exception ex)
+        {
+            RateError = $"No se pudo cambiar el estado de la escuela: {ex.Message}";
+        }
+
+        return RedirectToPage(new { From, To });
+    }
+
     private async Task LoadAsync()
     {
         // Las fechas del filtro son días locales; la consulta va en UTC.
@@ -102,6 +131,7 @@ public class SchoolsModel : PageModel
             {
                 s.Id,
                 s.Name,
+                s.IsActive,
                 s.CommissionRate,
                 s.Currency,
                 s.Rfc,
@@ -128,7 +158,7 @@ public class SchoolsModel : PageModel
                 !string.IsNullOrWhiteSpace(s.CfdiUse);
 
             return new Row(
-                s.Id, s.Name, s.CommissionRate, s.Currency,
+                s.Id, s.Name, s.IsActive, s.CommissionRate, s.Currency,
                 s.Connected, s.ConnectedAtUtc,
                 fiscalComplete,
                 act?.TopUpCount ?? 0,
@@ -138,7 +168,7 @@ public class SchoolsModel : PageModel
     }
 
     public sealed record Row(
-        Guid SchoolId, string Name, decimal CommissionRate, string Currency,
+        Guid SchoolId, string Name, bool IsActive, decimal CommissionRate, string Currency,
         bool Connected, DateTime? ConnectedAtUtc, bool FiscalComplete,
         int TopUpCount, decimal TotalRecharged, decimal TotalCommission);
 }

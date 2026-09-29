@@ -92,8 +92,10 @@ public class LoginModel : PageModel
         }
     }
 
+    // Solo escuelas activas: una dada de baja no debe dejar entrar a ningún operador nuevo.
     private async Task LoadSchoolsAsync() =>
         Schools = await _db.Schools
+            .Where(s => s.IsActive)
             .OrderBy(s => s.Name)
             .Select(s => new SchoolOption(s.Id, s.Name))
             .ToListAsync();
