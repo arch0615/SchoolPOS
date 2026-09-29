@@ -307,4 +307,66 @@ public sealed class SyncCloudService : ISyncCloudService
         }
         await _db.SaveChangesAsync(ct);
     }
+
+    /// <summary>Misma lógica que el lado nube de <c>SyncAgent.PushRosterAsync</c> (reconciliación completa: el catálogo de la caja puede editarse después de creado), corriendo ahora del lado del portal.</summary>
+    public async Task<ProductsPushResult> PushProductsAsync(
+        Guid schoolId, IReadOnlyList<ProductEntryDto> entries, CancellationToken ct = default)
+    {
+        if (entries.Count == 0)
+            return new ProductsPushResult(0);
+
+        var ids = entries.Select(e => e.Id).ToList();
+        var existing = await _db.Products
+            .Where(p => p.SchoolId == schoolId && ids.Contains(p.Id))
+            .ToDictionaryAsync(p => p.Id, ct);
+
+        var pushed = 0;
+        foreach (var e in entries)
+        {
+            try
+            {
+                if (existing.TryGetValue(e.Id, out var product))
+                {
+                    if (product.Name == e.Name && product.Barcode == e.Barcode && product.Price == e.Price &&
+                        product.Cost == e.Cost && product.IsActive == e.IsActive &&
+                        product.ShowInPortal == e.ShowInPortal && product.MenuDayOfWeek == e.MenuDayOfWeek)
+                        continue;
+
+                    product.Name = e.Name;
+                    product.Barcode = e.Barcode;
+                    product.Price = e.Price;
+                    product.Cost = e.Cost;
+                    product.IsActive = e.IsActive;
+                    product.ShowInPortal = e.ShowInPortal;
+                    product.MenuDayOfWeek = e.MenuDayOfWeek;
+                }
+                else
+                {
+                    _db.Products.Add(new Product
+                    {
+                        Id = e.Id,
+                        SchoolId = schoolId,
+                        Name = e.Name,
+                        Barcode = e.Barcode,
+                        Price = e.Price,
+                        Cost = e.Cost,
+                        IsActive = e.IsActive,
+                        ShowInPortal = e.ShowInPortal,
+                        MenuDayOfWeek = e.MenuDayOfWeek,
+                        CreatedAtUtc = e.CreatedAtUtc,
+                    });
+                }
+
+                // Cada producto en su propio SaveChanges: uno en conflicto no debe tumbar el resto
+                // del lote (mismo patrón que PushRosterAsync).
+                await _db.SaveChangesAsync(ct);
+                pushed++;
+            }
+            catch (DbUpdateException)
+            {
+            }
+        }
+
+        return new ProductsPushResult(pushed);
+    }
 }

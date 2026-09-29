@@ -77,5 +77,13 @@ public static class SyncEndpoints
             await sync.AckOrdersAsync(user.GetSchoolId(), body.OrderIds, ct);
             return Results.Ok();
         });
+
+        // Catálogo de la caja: para que el portal pueda mostrarlo en pedidos anticipados (FR-WP).
+        group.MapPost("/products", async (
+            ClaimsPrincipal user, List<ProductEntryDto> body, ISyncCloudService sync, CancellationToken ct) =>
+        {
+            var result = await sync.PushProductsAsync(user.GetSchoolId(), body, ct);
+            return Results.Ok(result);
+        });
     }
 }

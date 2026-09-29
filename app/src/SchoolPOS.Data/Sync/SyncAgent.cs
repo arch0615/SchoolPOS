@@ -55,13 +55,14 @@ public sealed class SyncAgent
     {
         var (pulled, applied, failed) = await PullTopUpsAsync(ct);
         var rosterPushed = await PushRosterAsync(ct);
+        var productsPushed = await PushProductsAsync(ct);
         var (pushed, skipped) = await PushConsumptionAsync(ct);
         var salesPushed = await PushSalesAsync(ct);
         var limitsUpdated = await PullAccountLimitsAsync(ct);
         var ordersApplied = await PullOrdersAsync(ct);
         return new SyncReport(
             pulled, applied, failed, pushed, skipped, rosterPushed, _clock.UtcNow, limitsUpdated, salesPushed,
-            ordersApplied);
+            ordersApplied, productsPushed);
     }
 
     /// <summary>Baja recargas confirmadas y las aplica al libro mayor local (idempotente).</summary>
@@ -231,6 +232,27 @@ public sealed class SyncAgent
             return 0;
 
         var result = await _cloud.PushRosterAsync(locals, ct);
+        return result.Pushed;
+    }
+
+    /// <summary>
+    /// Sube el catálogo local a la nube (FR-WP): sin esto, marcar "Mostrar en portal" o un día de
+    /// menú en el POS de escritorio no llega a ningún lado — el portal de pedidos anticipados nunca
+    /// se entera de que el producto existe. Reconciliación completa cada corrida, igual que
+    /// <see cref="PushRosterAsync"/>: un producto puede editarse (precio, si se muestra, su día)
+    /// después de creado, así que no basta con subir solo lo nuevo.
+    /// </summary>
+    /// <returns>Cuántos productos se crearon o actualizaron en la nube.</returns>
+    public async Task<int> PushProductsAsync(CancellationToken ct = default)
+    {
+        var locals = await _local.Products.AsNoTracking()
+            .Select(p => new ProductEntryDto(
+                p.Id, p.Name, p.Barcode, p.Price, p.Cost, p.IsActive, p.ShowInPortal, p.MenuDayOfWeek, p.CreatedAtUtc))
+            .ToListAsync(ct);
+        if (locals.Count == 0)
+            return 0;
+
+        var result = await _cloud.PushProductsAsync(locals, ct);
         return result.Pushed;
     }
 

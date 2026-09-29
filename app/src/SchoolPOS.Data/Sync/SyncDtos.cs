@@ -95,3 +95,24 @@ public sealed record PendingOrderDto(
     Guid Id, Guid AccountId, decimal Total, DateTime CreatedAtUtc, List<PendingOrderLineDto> Lines);
 
 public sealed record AckOrdersRequest(List<Guid> OrderIds);
+
+/// <summary>
+/// Un producto de la caja, para que el portal pueda mostrarlo en el catálogo de pedidos
+/// anticipados (FR-WP) — sin esto, marcar "Mostrar en portal"/día de menú en el POS de escritorio
+/// no llegaba a ningún lado: la nube nunca se enteraba de que el producto existía. Sin SchoolId
+/// (igual que el padrón): el servidor siempre usa el de la llave autenticada. Sin CategoryId: las
+/// categorías no se sincronizan (viven aparte en cada base), así que el producto llega sin
+/// categoría del lado de la nube.
+/// </summary>
+public sealed record ProductEntryDto(
+    Guid Id,
+    string Name,
+    string? Barcode,
+    decimal Price,
+    decimal Cost,
+    bool IsActive,
+    bool ShowInPortal,
+    DayOfWeek? MenuDayOfWeek,
+    DateTime CreatedAtUtc);
+
+public sealed record ProductsPushResult(int Pushed);

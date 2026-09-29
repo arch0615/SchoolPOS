@@ -517,6 +517,79 @@ public class SyncAgentTests
             .Should().Be(60m);
     }
 
+    // ---- Catálogo (caja→nube, para el portal de pedidos anticipados) ----
+
+    /// <summary>
+    /// Sin esto, marcar "Mostrar en portal" o un día de menú en el POS de escritorio no llegaba a
+    /// ningún lado: la nube nunca se enteraba de que el producto existía y el catálogo de pedidos
+    /// anticipados del portal se quedaba vacío aunque la escuela sí hubiera marcado artículos.
+    /// </summary>
+    [Fact]
+    public async Task Push_products_brings_the_till_catalog_to_the_cloud()
+    {
+        using var cloud = new TestDatabase();
+        using var local = new TestDatabase();
+        var school = local.SeedSchool();
+        cloud.Context.Schools.Add(new SchoolPOS.Domain.Entities.School
+        {
+            Id = school.Id, Name = school.Name, Currency = "MXN", CommissionRate = 0.05m,
+        });
+        await cloud.Context.SaveChangesAsync();
+
+        var seeded = local.SeedProduct(school.Id, price: 45m, name: "Torta de jamón");
+        // SeedProduct ya limpió el change tracker: hay que releer para que las mutaciones de abajo
+        // se detecten (mutar el objeto detached no marca nada para guardar).
+        var product = await local.Context.Products.FirstAsync(p => p.Id == seeded.Id);
+        product.ShowInPortal = true;
+        product.MenuDayOfWeek = DayOfWeek.Thursday;
+        await local.Context.SaveChangesAsync();
+        local.Context.ChangeTracker.Clear();
+
+        var agent = NewAgent(cloud, local, school.Id);
+        var pushed = await agent.PushProductsAsync();
+
+        pushed.Should().Be(1);
+        var cloudProduct = await cloud.NewContext().Products.SingleAsync(p => p.Id == product.Id);
+        cloudProduct.SchoolId.Should().Be(school.Id);
+        cloudProduct.Name.Should().Be("Torta de jamón");
+        cloudProduct.Price.Should().Be(45m);
+        cloudProduct.ShowInPortal.Should().BeTrue();
+        cloudProduct.MenuDayOfWeek.Should().Be(DayOfWeek.Thursday);
+
+        // Idempotente: sin cambios, la siguiente corrida no debe volver a escribir nada.
+        var second = await agent.PushProductsAsync();
+        second.Should().Be(0);
+    }
+
+    /// <summary>Un producto editado después de subido (precio, si se muestra) debe reflejarse en la nube.</summary>
+    [Fact]
+    public async Task Push_products_reconciles_edits_made_after_the_first_sync()
+    {
+        using var cloud = new TestDatabase();
+        using var local = new TestDatabase();
+        var school = local.SeedSchool();
+        cloud.Context.Schools.Add(new SchoolPOS.Domain.Entities.School
+        {
+            Id = school.Id, Name = school.Name, Currency = "MXN", CommissionRate = 0.05m,
+        });
+        await cloud.Context.SaveChangesAsync();
+
+        var seeded = local.SeedProduct(school.Id, price: 45m, name: "Torta de jamón");
+        var agent = NewAgent(cloud, local, school.Id);
+        await agent.PushProductsAsync();
+
+        var product = await local.Context.Products.FirstAsync(p => p.Id == seeded.Id);
+        product.Price = 50m;
+        product.ShowInPortal = true;
+        await local.Context.SaveChangesAsync();
+        var pushed = await agent.PushProductsAsync();
+
+        pushed.Should().Be(1);
+        var cloudProduct = await cloud.NewContext().Products.SingleAsync(p => p.Id == seeded.Id);
+        cloudProduct.Price.Should().Be(50m);
+        cloudProduct.ShowInPortal.Should().BeTrue();
+    }
+
     // ---- Pedidos anticipados del portal (nube→caja, mismo camino que una recarga confirmada) ----
 
     /// <summary>

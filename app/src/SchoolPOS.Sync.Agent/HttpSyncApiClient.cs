@@ -102,4 +102,13 @@ public sealed class HttpSyncApiClient : ISyncApiClient
             "/api/sync/orders/ack", new AckOrdersRequest(orderIds.ToList()), SyncJson.Options, ct);
         response.EnsureSuccessStatusCode();
     }
+
+    public async Task<ProductsPushResult> PushProductsAsync(
+        IReadOnlyList<ProductEntryDto> entries, CancellationToken ct = default)
+    {
+        ApplyCurrentConfig();
+        var response = await _http.PostAsJsonAsync("/api/sync/products", entries, SyncJson.Options, ct);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<ProductsPushResult>(SyncJson.Options, ct))!;
+    }
 }

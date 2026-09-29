@@ -29,4 +29,7 @@ public interface ISyncCloudService
 
     /// <summary>Acuse de los pedidos que la escuela ya aplicó localmente: evita que se vuelvan a bajar.</summary>
     Task AckOrdersAsync(Guid schoolId, IReadOnlyList<Guid> orderIds, CancellationToken ct = default);
+
+    /// <summary>Sube el catálogo de la caja a la nube, para que el portal pueda mostrarlo (FR-WP).</summary>
+    Task<ProductsPushResult> PushProductsAsync(Guid schoolId, IReadOnlyList<ProductEntryDto> entries, CancellationToken ct = default);
 }

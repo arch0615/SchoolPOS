@@ -14,7 +14,8 @@ public sealed record SyncReport(
     DateTime RanAtUtc,
     int AccountLimitsUpdated = 0,
     int SalesPushed = 0,
-    int OrdersApplied = 0)
+    int OrdersApplied = 0,
+    int ProductsPushed = 0)
 {
     public bool HasFailures => TopUpsFailed > 0;
 
