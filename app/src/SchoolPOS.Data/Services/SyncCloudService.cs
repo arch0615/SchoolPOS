@@ -283,7 +283,7 @@ public sealed class SyncCloudService : ISyncCloudService
         var byOrder = lines.GroupBy(l => l.OrderId).ToDictionary(g => g.Key, g => g.ToList());
 
         return orders.Select(o => new PendingOrderDto(
-            o.Id, o.AccountId, o.Total, o.CreatedAtUtc,
+            o.Id, o.StudentId, o.AccountId, o.Total, o.CreatedAtUtc,
             byOrder.GetValueOrDefault(o.Id, new List<PortalOrderLine>())
                 .Select(l => new PendingOrderLineDto(l.ProductId, l.Description, l.Quantity, l.UnitPrice, l.LineTotal))
                 .ToList()))

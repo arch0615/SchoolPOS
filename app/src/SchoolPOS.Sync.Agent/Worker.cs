@@ -50,7 +50,8 @@ public sealed class Worker : BackgroundService
                 }
 
                 await using var local = CreateLocalContext();
-                var agent = new SyncAgent(_cloud, local, new BalanceService(local, _clock), _clock);
+                var agent = new SyncAgent(
+                    _cloud, local, new BalanceService(local, _clock), new InventoryService(local, _clock), _clock);
 
                 var report = await agent.RunOnceAsync(stoppingToken);
                 if (report.TopUpsPulled > 0 || report.MovementsPushed > 0 || report.RosterPushed > 0

@@ -29,17 +29,21 @@ public sealed class SyncAgent
     private readonly ISyncApiClient _cloud;
     private readonly SchoolDbContext _local;
     private readonly IBalanceService _localBalance;
+    private readonly IInventoryService _localInventory;
     private readonly IClock _clock;
 
     // Consumo: nace siempre en la escuela y viaja hacia la nube.
     private static readonly MovementType[] Consumption =
         { MovementType.Sale, MovementType.Refund, MovementType.Adjustment };
 
-    public SyncAgent(ISyncApiClient cloud, SchoolDbContext local, IBalanceService localBalance, IClock clock)
+    public SyncAgent(
+        ISyncApiClient cloud, SchoolDbContext local, IBalanceService localBalance,
+        IInventoryService localInventory, IClock clock)
     {
         _cloud = cloud;
         _local = local;
         _localBalance = localBalance;
+        _localInventory = localInventory;
         _clock = clock;
     }
 
@@ -328,11 +332,13 @@ public sealed class SyncAgent
     /// <summary>
     /// Baja los pedidos anticipados ya cobrados en la nube y los aplica al libro mayor local —
     /// mismo camino que una recarga confirmada (<see cref="PullTopUpsAsync"/>), solo que resta en
-    /// vez de sumar. A diferencia de una recarga, no hay una entidad local que dar de alta primero
-    /// (el pedido no crea una Sale local en esta versión — ver nota de alcance); la idempotencia se
-    /// verifica buscando si ya existe un asiento local con esta referencia, porque
-    /// <see cref="IBalanceService.ChargeSaleAsync"/>, a diferencia de ApplyTopUpAsync, no es
-    /// idempotente por sí solo.
+    /// vez de sumar. La idempotencia del cargo se verifica buscando si ya existe un asiento local
+    /// con esta referencia, porque <see cref="IBalanceService.ChargeSaleAsync"/>, a diferencia de
+    /// ApplyTopUpAsync, no es idempotente por sí solo. Además deja una <see cref="Sale"/> local con
+    /// el mismo Id que el pedido (para que aparezca en Ventas/Reportes del POS igual que una venta
+    /// cobrada ahí, y para que el detalle por producto del portal del tutor — que busca la venta
+    /// por esa referencia — también funcione para pedidos anticipados) e intenta descontar
+    /// inventario por cada renglón.
     /// </summary>
     public async Task<int> PullOrdersAsync(CancellationToken ct = default)
     {
@@ -344,10 +350,17 @@ public sealed class SyncAgent
             try
             {
                 var reference = order.Id.ToString();
-                var already = await _local.BalanceMovements.AsNoTracking()
+                var alreadyCharged = await _local.BalanceMovements.AsNoTracking()
                     .AnyAsync(m => m.Type == MovementType.Sale && m.Reference == reference, ct);
-                if (!already)
+                if (!alreadyCharged)
                     await _localBalance.ChargeSaleAsync(order.AccountId, order.Total, reference, PortalOperator, ct);
+
+                // Aparte del cargo (que puede venir ya aplicado de una corrida anterior que se
+                // interrumpió antes de llegar aquí): sin esto un reintento nunca dejaría la venta
+                // local, aunque el saldo ya estuviera cobrado.
+                var saleExists = await _local.Sales.AsNoTracking().AnyAsync(s => s.Id == order.Id, ct);
+                if (!saleExists)
+                    await RegisterLocalSaleForOrderAsync(order, ct);
 
                 acked.Add(order.Id);
             }
@@ -362,5 +375,52 @@ public sealed class SyncAgent
             await _cloud.AckOrdersAsync(acked, ct);
 
         return acked.Count;
+    }
+
+    /// <summary>
+    /// Deja la venta local de un pedido ya cobrado. El descuento de inventario es "mejor esfuerzo"
+    /// por renglón (sin bloquear el resto): un producto puede no existir en esta caja (dado de alta
+    /// solo desde el portal web, que no depende del POS) o no alcanzar el stock, y el pedido ya
+    /// está pagado — la escuela ya entregó o va a entregar el artículo sin importar lo que diga el
+    /// contador; no tiene sentido dejar el pedido sin aplicar por eso.
+    /// </summary>
+    private async Task RegisterLocalSaleForOrderAsync(PendingOrderDto order, CancellationToken ct)
+    {
+        var schoolId = await _local.Schools.Select(s => s.Id).FirstAsync(ct);
+
+        _local.Sales.Add(new Sale
+        {
+            Id = order.Id,
+            SchoolId = schoolId,
+            CashierId = PortalOperator,
+            StudentId = order.StudentId,
+            AccountId = order.AccountId,
+            Tender = TenderType.Balance,
+            Status = SaleStatus.Completed,
+            Subtotal = order.Total, // el portal no calcula impuesto por separado (v1)
+            Total = order.Total,
+            CreatedAtUtc = order.CreatedAtUtc,
+            Lines = order.Lines.Select(l => new SaleLine
+            {
+                ProductId = l.ProductId,
+                Description = l.Description,
+                Quantity = l.Quantity,
+                UnitPrice = l.UnitPrice,
+                LineTotal = l.LineTotal,
+            }).ToList(),
+        });
+        await _local.SaveChangesAsync(ct);
+
+        foreach (var line in order.Lines)
+        {
+            try
+            {
+                await _localInventory.RegisterExitAsync(
+                    line.ProductId, line.Quantity, "Pedido anticipado (portal)", order.Id.ToString(), PortalOperator, ct);
+            }
+            catch (Exception)
+            {
+            }
+        }
     }
 }

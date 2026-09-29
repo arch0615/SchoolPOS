@@ -21,8 +21,9 @@ public class SyncAgentTests
     {
         var clock = new TestClock();
         var localBalance = new BalanceService(local.Context, clock);
+        var localInventory = new InventoryService(local.Context, clock);
         var cloudClient = new SingleSchoolSyncApiClient(cloud.Context, clock, schoolId ?? SchoolId);
-        return new SyncAgent(cloudClient, local.Context, localBalance, clock);
+        return new SyncAgent(cloudClient, local.Context, localBalance, localInventory, clock);
     }
 
     [Fact]
@@ -507,7 +508,7 @@ public class SyncAgentTests
         await localBalance.ChargeSaleAsync(account, 40m, "VENTA-903", Guid.NewGuid());
 
         var cloudClient = new SingleSchoolSyncApiClient(cloud.Context, clock, school.Id);
-        var agent = new SyncAgent(cloudClient, local.Context, localBalance, clock);
+        var agent = new SyncAgent(cloudClient, local.Context, localBalance, new InventoryService(local.Context, clock), clock);
         var report = await agent.RunOnceAsync();
 
         report.RosterPushed.Should().Be(1);
@@ -634,6 +635,94 @@ public class SyncAgentTests
 
         var cloudOrder = await cloud.NewContext().PortalOrders.SingleAsync(o => o.Id == orderId);
         cloudOrder.AppliedLocally.Should().BeTrue("la nube debe quedar marcada como acusada por la caja");
+    }
+
+    /// <summary>
+    /// Sin esto, un pedido anticipado solo tocaba el saldo: no aparecía en Ventas/Reportes de la
+    /// caja como una venta normal, y el inventario nunca se enteraba de que salieron artículos.
+    /// </summary>
+    [Fact]
+    public async Task Pull_orders_registers_a_local_sale_and_decrements_stock()
+    {
+        using var cloud = new TestDatabase();
+        using var local = new TestDatabase();
+        cloud.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m);
+        local.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m);
+        var product = local.SeedProduct(SchoolId, price: 45m, stock: 10m, name: "Torta de jamón");
+
+        var orderId = Guid.NewGuid();
+        cloud.Context.PortalOrders.Add(new PortalOrder
+        {
+            Id = orderId,
+            SchoolId = SchoolId,
+            StudentId = StudentId,
+            AccountId = AccountId,
+            Total = 90m,
+            CreatedAtUtc = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc),
+            Lines = new List<PortalOrderLine>
+            {
+                new() { ProductId = product.Id, Description = "Torta de jamón", Quantity = 2, UnitPrice = 45m, LineTotal = 90m },
+            },
+        });
+        await cloud.Context.SaveChangesAsync();
+        cloud.Context.ChangeTracker.Clear();
+
+        var agent = NewAgent(cloud, local);
+        await agent.RunOnceAsync();
+
+        var localSale = await local.NewContext().Sales.Include(s => s.Lines).SingleAsync(s => s.Id == orderId);
+        localSale.Tender.Should().Be(TenderType.Balance);
+        localSale.StudentId.Should().Be(StudentId);
+        localSale.Total.Should().Be(90m);
+        localSale.Lines.Should().ContainSingle(l => l.ProductId == product.Id && l.Quantity == 2);
+
+        (await local.NewContext().Products.Where(p => p.Id == product.Id).Select(p => p.StockOnHand).SingleAsync())
+            .Should().Be(8m, "el inventario debe descontarse igual que una venta cobrada en caja");
+
+        // Idempotente: una segunda corrida no debe duplicar la venta ni volver a descontar stock.
+        await agent.RunOnceAsync();
+        (await local.NewContext().Sales.CountAsync(s => s.Id == orderId)).Should().Be(1);
+        (await local.NewContext().Products.Where(p => p.Id == product.Id).Select(p => p.StockOnHand).SingleAsync())
+            .Should().Be(8m);
+    }
+
+    /// <summary>
+    /// Un producto dado de alta solo desde el portal web (sin pasar por el POS de escritorio) no
+    /// existe en la caja todavía — el pedido ya está pagado, así que debe aplicarse igual; el
+    /// descuento de inventario de ese renglón simplemente no ocurre, sin tumbar el resto.
+    /// </summary>
+    [Fact]
+    public async Task Pull_orders_still_applies_when_a_line_products_does_not_exist_locally()
+    {
+        using var cloud = new TestDatabase();
+        using var local = new TestDatabase();
+        cloud.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m);
+        local.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m); // sin productos locales
+
+        var orderId = Guid.NewGuid();
+        cloud.Context.PortalOrders.Add(new PortalOrder
+        {
+            Id = orderId,
+            SchoolId = SchoolId,
+            StudentId = StudentId,
+            AccountId = AccountId,
+            Total = 45m,
+            CreatedAtUtc = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc),
+            Lines = new List<PortalOrderLine>
+            {
+                new() { ProductId = Guid.NewGuid(), Description = "Producto solo del portal web", Quantity = 1, UnitPrice = 45m, LineTotal = 45m },
+            },
+        });
+        await cloud.Context.SaveChangesAsync();
+        cloud.Context.ChangeTracker.Clear();
+
+        var agent = NewAgent(cloud, local);
+        var report = await agent.RunOnceAsync();
+
+        report.OrdersApplied.Should().Be(1, "el pedido ya se pagó; no descontar inventario no debe bloquearlo");
+        (await local.NewContext().Sales.CountAsync(s => s.Id == orderId)).Should().Be(1);
+        (await local.NewContext().Accounts.Where(a => a.Id == AccountId).Select(a => a.Balance).SingleAsync())
+            .Should().Be(55m);
     }
 
     /// <summary>

@@ -92,7 +92,7 @@ public sealed record PendingOrderLineDto(Guid ProductId, string Description, dec
 /// exactamente como una recarga confirmada (mismo IBalanceService, mismo importe).
 /// </summary>
 public sealed record PendingOrderDto(
-    Guid Id, Guid AccountId, decimal Total, DateTime CreatedAtUtc, List<PendingOrderLineDto> Lines);
+    Guid Id, Guid StudentId, Guid AccountId, decimal Total, DateTime CreatedAtUtc, List<PendingOrderLineDto> Lines);
 
 public sealed record AckOrdersRequest(List<Guid> OrderIds);
 
