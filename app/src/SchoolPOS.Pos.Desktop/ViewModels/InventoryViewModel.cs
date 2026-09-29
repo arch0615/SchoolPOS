@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SchoolPOS.Data;
 using SchoolPOS.Domain.Abstractions;
 using SchoolPOS.Domain.Entities;
+using SchoolPOS.Domain.Enums;
 using SchoolPOS.Pos.Desktop.Infrastructure;
 
 namespace SchoolPOS.Pos.Desktop.ViewModels;
@@ -31,11 +32,14 @@ public sealed class InventoryViewModel : ViewModelBase, IAsyncLoadable
     private decimal _newProductPrice;
     private decimal _newProductCost;
     private decimal _newProductMinStock;
+    private bool _newProductShowInPortal;
+    private DayOption _newProductMenuDay;
 
     public InventoryViewModel(IServiceScopeFactory scopeFactory, PosSession session)
     {
         _scopeFactory = scopeFactory;
         _session = session;
+        _newProductMenuDay = MenuDayOptions[0];
         RefreshCommand = new AsyncRelayCommand(LoadAsync);
         RegisterEntryCommand = new AsyncRelayCommand(RegisterEntryAsync, () => Selected is not null && EntryQuantity > 0m);
         AddCategoryCommand = new AsyncRelayCommand(AddCategoryAsync, () => NewCategoryName.Trim().Length > 0);
@@ -72,6 +76,24 @@ public sealed class InventoryViewModel : ViewModelBase, IAsyncLoadable
     public decimal NewProductCost { get => _newProductCost; set => SetProperty(ref _newProductCost, value); }
     public decimal NewProductMinStock { get => _newProductMinStock; set => SetProperty(ref _newProductMinStock, value); }
 
+    /// <summary>Visible en el catálogo del portal para pedidos anticipados (FR-WP).</summary>
+    public bool NewProductShowInPortal { get => _newProductShowInPortal; set => SetProperty(ref _newProductShowInPortal, value); }
+
+    /// <summary>Opciones fijas del selector de día de menú; la primera ("Ninguno") limpia el tag.</summary>
+    public IReadOnlyList<DayOption> MenuDayOptions { get; } = new List<DayOption>
+    {
+        new(null, "No es menú del día"),
+        new(DayOfWeek.Monday, "Lunes"),
+        new(DayOfWeek.Tuesday, "Martes"),
+        new(DayOfWeek.Wednesday, "Miércoles"),
+        new(DayOfWeek.Thursday, "Jueves"),
+        new(DayOfWeek.Friday, "Viernes"),
+        new(DayOfWeek.Saturday, "Sábado"),
+        new(DayOfWeek.Sunday, "Domingo"),
+    };
+
+    public DayOption NewProductMenuDay { get => _newProductMenuDay; set => SetProperty(ref _newProductMenuDay, value); }
+
     /// <summary>Crea si no hay producto seleccionado; guarda cambios sobre el seleccionado si lo hay.</summary>
     public AsyncRelayCommand SaveProductCommand { get; }
 
@@ -99,6 +121,8 @@ public sealed class InventoryViewModel : ViewModelBase, IAsyncLoadable
                 NewProductPrice = value.Price;
                 NewProductCost = value.Cost;
                 NewProductMinStock = value.MinStock;
+                NewProductShowInPortal = value.ShowInPortal;
+                NewProductMenuDay = MenuDayOptions.FirstOrDefault(d => d.Value == value.MenuDayOfWeek) ?? MenuDayOptions[0];
             }
 
             RegisterEntryCommand.RaiseCanExecuteChanged();
@@ -149,7 +173,9 @@ public sealed class InventoryViewModel : ViewModelBase, IAsyncLoadable
             }
 
             var rows = await query.OrderBy(p => p.Name)
-                .Select(p => new ProductRow(p.Id, p.Name, p.Barcode, p.Price, p.Cost, p.StockOnHand, p.MinStock, p.CategoryId))
+                .Select(p => new ProductRow(
+                    p.Id, p.Name, p.Barcode, p.Price, p.Cost, p.StockOnHand, p.MinStock, p.CategoryId,
+                    p.ShowInPortal, p.MenuDayOfWeek))
                 .Take(200)
                 .ToListAsync();
 
@@ -220,6 +246,8 @@ public sealed class InventoryViewModel : ViewModelBase, IAsyncLoadable
                 product.Price = NewProductPrice;
                 product.Cost = NewProductCost;
                 product.MinStock = NewProductMinStock;
+                product.ShowInPortal = NewProductShowInPortal;
+                product.MenuDayOfWeek = NewProductMenuDay.Value;
 
                 // Bitácora: un precio equivocado corregido en silencio no deja rastro de qué era
                 // antes ni quién lo cambió (FR-ADM-4).
@@ -253,6 +281,8 @@ public sealed class InventoryViewModel : ViewModelBase, IAsyncLoadable
                     Price = NewProductPrice,
                     Cost = NewProductCost,
                     MinStock = NewProductMinStock,
+                    ShowInPortal = NewProductShowInPortal,
+                    MenuDayOfWeek = NewProductMenuDay.Value,
                     CreatedAtUtc = DateTime.UtcNow,
                 };
                 db.Products.Add(product);
@@ -279,6 +309,8 @@ public sealed class InventoryViewModel : ViewModelBase, IAsyncLoadable
         NewProductPrice = 0m;
         NewProductCost = 0m;
         NewProductMinStock = 0m;
+        NewProductShowInPortal = false;
+        NewProductMenuDay = MenuDayOptions[0];
     }
 
     private async Task RegisterEntryAsync()
@@ -308,10 +340,20 @@ public sealed class InventoryViewModel : ViewModelBase, IAsyncLoadable
 /// <summary>Fila del catálogo de inventario.</summary>
 public sealed record ProductRow(
     Guid Id, string Name, string? Barcode, decimal Price, decimal Cost, decimal StockOnHand,
-    decimal MinStock, Guid? CategoryId)
+    decimal MinStock, Guid? CategoryId, bool ShowInPortal, DayOfWeek? MenuDayOfWeek)
 {
     public bool IsLow => StockOnHand <= MinStock;
+
+    public string PortalText => MenuDayOfWeek switch
+    {
+        { } d => $"Menú {d.ToSpanish()}",
+        null when ShowInPortal => "Catálogo",
+        null => "—",
+    };
 }
 
 /// <summary>Categoría para el selector de "Nuevo producto".</summary>
 public sealed record CategoryRow(Guid Id, string Name);
+
+/// <summary>Opción del selector de día de menú (incluye "ninguno" = sin día asignado).</summary>
+public sealed record DayOption(DayOfWeek? Value, string Label);

@@ -79,6 +79,14 @@
                         <TextBlock Text="Mínimo" Foreground="{StaticResource MutedBrush}" FontSize="11" />
                         <TextBox Width="80" Text="{Binding NewProductMinStock, UpdateSourceTrigger=LostFocus}" />
                     </StackPanel>
+                    <StackPanel Margin="0,0,6,6">
+                        <TextBlock Text="Día del menú" Foreground="{StaticResource MutedBrush}" FontSize="11" />
+                        <ComboBox Width="150" ItemsSource="{Binding MenuDayOptions}"
+                                  DisplayMemberPath="Label" SelectedItem="{Binding NewProductMenuDay}" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,6,6" VerticalAlignment="Bottom">
+                        <CheckBox Content="Mostrar en portal" IsChecked="{Binding NewProductShowInPortal}" Margin="0,0,0,6" />
+                    </StackPanel>
                     <Button Content="{Binding SaveProductButtonText}" Style="{StaticResource PrimaryButton}" Command="{Binding SaveProductCommand}" VerticalAlignment="Bottom" Margin="0,0,6,6" />
                     <Button Content="Nuevo producto" Command="{Binding NewProductCommand}" VerticalAlignment="Bottom" Margin="0,0,0,6"
                             Visibility="{Binding IsEditingProduct, Converter={StaticResource BoolToVisibility}}" />
@@ -109,6 +117,7 @@
                 <DataGridTextColumn Header="Precio" Binding="{Binding Price, StringFormat=C2}" Width="100" />
                 <DataGridTextColumn Header="Existencias" Binding="{Binding StockOnHand}" Width="120" />
                 <DataGridTextColumn Header="Mínimo" Binding="{Binding MinStock}" Width="100" />
+                <DataGridTextColumn Header="Portal" Binding="{Binding PortalText}" Width="110" />
             </DataGrid.Columns>
         </DataGrid>
     </DockPanel>

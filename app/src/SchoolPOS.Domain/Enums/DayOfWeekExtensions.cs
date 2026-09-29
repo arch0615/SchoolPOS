@@ -1,8 +1,11 @@
 using System.Globalization;
 
-namespace SchoolPOS.Portal.Web.Infrastructure;
+namespace SchoolPOS.Domain.Enums;
 
-/// <summary>Nombre del día en español, para el menú semanal (catálogo del portal y su edición).</summary>
+/// <summary>
+/// Nombre del día en español, para el menú semanal (catálogo del portal, su edición desde el
+/// portal y desde el POS de escritorio).
+/// </summary>
 public static class DayOfWeekExtensions
 {
     private static readonly CultureInfo Es = CultureInfo.GetCultureInfo("es-MX");
