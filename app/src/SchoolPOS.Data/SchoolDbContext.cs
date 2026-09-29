@@ -23,6 +23,7 @@ public class SchoolDbContext : DbContext
     public DbSet<TopUp> TopUps => Set<TopUp>();
     public DbSet<PortalOrder> PortalOrders => Set<PortalOrder>();
     public DbSet<PortalOrderLine> PortalOrderLines => Set<PortalOrderLine>();
+    public DbSet<SchoolMenuImage> SchoolMenuImages => Set<SchoolMenuImage>();
     public DbSet<User> Users => Set<User>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
@@ -185,6 +186,14 @@ public class SchoolDbContext : DbContext
             e.Property(x => x.Description).HasMaxLength(200).IsRequired();
             e.HasOne(x => x.Order).WithMany(o => o.Lines)
                 .HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<SchoolMenuImage>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.ContentType).HasMaxLength(100).IsRequired();
+            // Una imagen por escuela: subir una nueva reemplaza (upsert), no acumula historial.
+            e.HasIndex(x => x.SchoolId).IsUnique();
         });
 
         b.Entity<Guardian>(e =>

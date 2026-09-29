@@ -24,6 +24,34 @@
 </div>
 
 <div class="card">
+    <h2>Imagen del menú semanal</h2>
+    <p class="muted" style="margin-top:-8px">
+        Opcional: una imagen (como el diseño del menú de la semana) que se muestra arriba del catálogo
+        en el portal de los papás. Es solo informativa — lo que sí se puede pedir y cobrar son los
+        artículos marcados con "Mostrar en portal"/"Día del menú" más abajo.
+    </p>
+    @if (Model.HasMenuImage)
+    {
+        <img src="/school-menu-image/@User.GetSchoolId()" alt="Menú semanal actual"
+             style="max-width:100%;max-height:320px;border-radius:8px;border:1px solid var(--line);margin-bottom:10px" />
+        <p class="muted" style="font-size:12px">Actualizada: @Model.MenuImageUpdatedAtUtc?.ToString("dd/MM/yyyy HH:mm") UTC</p>
+    }
+    <form method="post" asp-page-handler="UploadMenuImage" enctype="multipart/form-data" class="filter-bar">
+        <div>
+            <label for="menuImage">@(Model.HasMenuImage ? "Reemplazar imagen" : "Subir imagen")</label>
+            <input id="menuImage" name="menuImage" type="file" accept="image/jpeg,image/png,image/webp,image/gif" required />
+        </div>
+        <div><label>&nbsp;</label><button class="btn accent" type="submit">Subir</button></div>
+    </form>
+    @if (Model.HasMenuImage)
+    {
+        <form method="post" asp-page-handler="RemoveMenuImage" style="margin-top:8px">
+            <button class="btn ghost" type="submit">Quitar imagen</button>
+        </form>
+    }
+</div>
+
+<div class="card">
     <h2>Categorías</h2>
     <form method="post" asp-page-handler="CreateCategory" class="filter-bar">
         <div>

@@ -851,6 +851,35 @@ namespace SchoolPOS.Data.Migrations
                     b.ToTable("Schools");
                 });
 
+            modelBuilder.Entity("SchoolPOS.Domain.Entities.SchoolMenuImage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<byte[]>("ImageBytes")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<Guid>("SchoolId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SchoolId")
+                        .IsUnique();
+
+                    b.ToTable("SchoolMenuImages");
+                });
+
             modelBuilder.Entity("SchoolPOS.Domain.Entities.SchoolPaymentAccount", b =>
                 {
                     b.Property<Guid>("Id")

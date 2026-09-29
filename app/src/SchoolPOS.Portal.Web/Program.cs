@@ -228,6 +228,18 @@ app.UseAuthorization();
 app.MapRazorPages();
 app.MapSyncEndpoints();
 
+// Imagen del menú semanal (banner informativo del catálogo de pedidos anticipados, FR-WP).
+// Cualquier sesión autenticada puede verla (tutor o personal de la escuela) — no hay nada
+// sensible en la foto de un menú, así que no se restringe a una política en particular.
+app.MapGet("/school-menu-image/{schoolId:guid}", async (Guid schoolId, SchoolDbContext db, CancellationToken ct) =>
+{
+    var image = await db.SchoolMenuImages.AsNoTracking()
+        .Where(m => m.SchoolId == schoolId)
+        .Select(m => new { m.ImageBytes, m.ContentType })
+        .FirstOrDefaultAsync(ct);
+    return image is null ? Results.NotFound() : Results.File(image.ImageBytes, image.ContentType);
+}).RequireAuthorization();
+
 // Webhook de la pasarela: confirma el pago server-side (NUNCA por la redirección del navegador,
 // NFR-3) y aplica la recarga al libro mayor de forma idempotente.
 app.MapPost("/api/payments/webhook", async (

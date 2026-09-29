@@ -45,6 +45,10 @@ else
         </div>
     }
 
+    <img src="/school-menu-image/@User.GetSchoolId()" alt="Menú semanal"
+         style="max-width:100%;border-radius:12px;margin-bottom:18px;display:block"
+         onerror="this.remove()" />
+
     <div class="card">
         <h2>Catálogo de @Model.Selected.FullName</h2>
         @if (Model.Catalog.Count == 0)

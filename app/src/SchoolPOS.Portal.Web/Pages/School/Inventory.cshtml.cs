@@ -36,6 +36,13 @@ public class InventoryModel : PageModel
     public IReadOnlyList<Row> Rows { get; private set; } = Array.Empty<Row>();
     public IReadOnlyList<Category> Categories { get; private set; } = Array.Empty<Category>();
 
+    public bool HasMenuImage { get; private set; }
+    public DateTime? MenuImageUpdatedAtUtc { get; private set; }
+
+    private static readonly HashSet<string> AllowedMenuImageTypes = new(StringComparer.OrdinalIgnoreCase)
+        { "image/jpeg", "image/png", "image/webp", "image/gif" };
+    private const long MaxMenuImageBytes = 5 * 1024 * 1024;
+
     [BindProperty(SupportsGet = true)] public Guid? Edit { get; set; }
     [BindProperty] public ProductInput Input { get; set; } = new();
     // Nullable a propósito: es un [BindProperty] en una página con más de un formulario/handler
@@ -258,8 +265,87 @@ public class InventoryModel : PageModel
         return RedirectToPage();
     }
 
+    /// <summary>
+    /// Imagen del menú semanal (banner puramente informativo encima del catálogo de pedidos
+    /// anticipados en el portal de los papás) — no reemplaza marcar artículos con día/portal, que
+    /// es lo que de verdad se puede pedir y cobrar; esto es solo la foto/diseño de la escuela.
+    /// </summary>
+    public async Task<IActionResult> OnPostUploadMenuImageAsync(IFormFile? menuImage)
+    {
+        var schoolId = User.GetSchoolId();
+
+        if (menuImage is null || menuImage.Length == 0)
+        {
+            Error = "Selecciona una imagen para subir.";
+            return RedirectToPage();
+        }
+        if (!AllowedMenuImageTypes.Contains(menuImage.ContentType))
+        {
+            Error = "Formato no válido. Usa JPG, PNG, WEBP o GIF.";
+            return RedirectToPage();
+        }
+        if (menuImage.Length > MaxMenuImageBytes)
+        {
+            Error = "La imagen no puede pesar más de 5 MB.";
+            return RedirectToPage();
+        }
+
+        try
+        {
+            using var stream = new MemoryStream();
+            await menuImage.CopyToAsync(stream);
+
+            var existing = await _db.SchoolMenuImages.FirstOrDefaultAsync(m => m.SchoolId == schoolId);
+            var now = DateTime.UtcNow;
+            if (existing is null)
+            {
+                _db.SchoolMenuImages.Add(new SchoolMenuImage
+                {
+                    SchoolId = schoolId,
+                    ImageBytes = stream.ToArray(),
+                    ContentType = menuImage.ContentType,
+                    UpdatedAtUtc = now,
+                });
+            }
+            else
+            {
+                existing.ImageBytes = stream.ToArray();
+                existing.ContentType = menuImage.ContentType;
+                existing.UpdatedAtUtc = now;
+            }
+            await _db.SaveChangesAsync();
+            Message = "Imagen del menú semanal actualizada.";
+        }
+        catch (Exception ex)
+        {
+            Error = $"No se pudo subir la imagen: {ex.Message}";
+        }
+
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostRemoveMenuImageAsync()
+    {
+        var schoolId = User.GetSchoolId();
+        var existing = await _db.SchoolMenuImages.FirstOrDefaultAsync(m => m.SchoolId == schoolId);
+        if (existing is not null)
+        {
+            _db.SchoolMenuImages.Remove(existing);
+            await _db.SaveChangesAsync();
+            Message = "Imagen del menú semanal eliminada.";
+        }
+        return RedirectToPage();
+    }
+
     private async Task LoadAsync(Guid schoolId)
     {
+        var menuImage = await _db.SchoolMenuImages.AsNoTracking()
+            .Where(m => m.SchoolId == schoolId)
+            .Select(m => (DateTime?)m.UpdatedAtUtc)
+            .FirstOrDefaultAsync();
+        HasMenuImage = menuImage is not null;
+        MenuImageUpdatedAtUtc = menuImage;
+
         var products = await _db.Products.Where(p => p.SchoolId == schoolId).ToListAsync();
         var categories = await _db.Categories.Where(c => c.SchoolId == schoolId).OrderBy(c => c.Name).ToListAsync();
         var catName = categories.ToDictionary(c => c.Id, c => c.Name);
