@@ -128,6 +128,22 @@ public sealed class SyncCloudService : ISyncCloudService
             .Where(a => accountIds.Contains(a.Id) && a.Student.SchoolId == schoolId)
             .Select(a => a.Id).ToListAsync(ct)).ToHashSet();
 
+        // Resguardo contra un cargo duplicado real que llegó a producción: la copia local que la
+        // caja deja de un pedido anticipado ya cobrado (SyncAgent.PullOrdersAsync) es, por Type,
+        // indistinguible de una venta normal de la escuela — sin esto, este método la vuelve a
+        // aplicar aquí con un ExecuteUpdateAsync ciego, sin el resguardo de sobregiro de
+        // ApplyGuardedDebitAsync, dejando el saldo negativo por un cargo que la nube ya había hecho
+        // al colocarse el pedido. La caja ya debería marcar esa venta como sincronizada de entrada
+        // (ver el fix en SyncAgent), pero este resguardo protege aun con una caja sin actualizar.
+        var saleReferenceGuids = entries
+            .Where(e => e.Type == MovementType.Sale && e.Reference is not null)
+            .Select(e => Guid.TryParse(e.Reference, out var g) ? g : (Guid?)null)
+            .Where(g => g.HasValue).Select(g => g!.Value).Distinct().ToList();
+        var portalOrderIds = saleReferenceGuids.Count == 0
+            ? new HashSet<Guid>()
+            : (await _db.PortalOrders.AsNoTracking()
+                .Where(o => saleReferenceGuids.Contains(o.Id)).Select(o => o.Id).ToListAsync(ct)).ToHashSet();
+
         var applied = new List<Guid>();
         var skipped = new List<Guid>();
         var deltas = new Dictionary<Guid, decimal>();
@@ -138,6 +154,15 @@ public sealed class SyncCloudService : ISyncCloudService
             if (!validAccounts.Contains(e.AccountId))
             {
                 skipped.Add(e.Id); // padrón aún desfasado: el cliente lo reintenta en la próxima corrida.
+                continue;
+            }
+
+            if (e.Type == MovementType.Sale && e.Reference is not null &&
+                Guid.TryParse(e.Reference, out var referencedOrderId) && portalOrderIds.Contains(referencedOrderId))
+            {
+                // Ya cobrado por PortalOrderService.PlaceOrderAsync al colocarse el pedido: se
+                // marca aplicado (para que la caja deje de reintentarlo) sin tocar saldo ni ledger.
+                applied.Add(e.Id);
                 continue;
             }
 

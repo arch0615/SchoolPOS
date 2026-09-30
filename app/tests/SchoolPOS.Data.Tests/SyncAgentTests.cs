@@ -683,8 +683,41 @@ public class SyncAgentTests
         (await cloud.NewContext().BalanceMovements.CountAsync())
             .Should().Be(0, "ningún asiento nuevo debe llegar a la nube por este pedido");
 
-        var cloudOrder = await cloud.NewContext().PortalOrders.SingleAsync(o => o.Id == orderId);
-        cloudOrder.AppliedLocally.Should().BeTrue("la nube debe quedar marcada como acusada por la caja");
+        var cloudOrder2 = await cloud.NewContext().PortalOrders.SingleAsync(o => o.Id == orderId);
+        cloudOrder2.AppliedLocally.Should().BeTrue();
+    }
+
+    /// <summary>
+    /// Segunda capa de protección, del lado de la nube: si una caja todavía no actualizada
+    /// intentara subir el cargo local de un pedido como si fuera consumo nuevo (el bug real), la
+    /// nube debe rechazarlo igual, sin esperar a que todas las cajas se actualicen.
+    /// </summary>
+    [Fact]
+    public async Task Cloud_push_consumption_guards_against_a_stale_till_resending_a_portal_order_charge()
+    {
+        using var cloud = new TestDatabase();
+        cloud.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m);
+
+        var orderId = Guid.NewGuid();
+        cloud.Context.PortalOrders.Add(new PortalOrder
+        {
+            Id = orderId, SchoolId = SchoolId, StudentId = StudentId, AccountId = AccountId, Total = 45m,
+            CreatedAtUtc = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc),
+        });
+        await cloud.Context.SaveChangesAsync();
+        cloud.Context.ChangeTracker.Clear();
+
+        var cloudService = new SyncCloudService(cloud.Context, new TestClock());
+        var staleEntry = new ConsumptionEntryDto(
+            Guid.NewGuid(), AccountId, MovementType.Sale, -45m, 55m, orderId.ToString(), Guid.Empty,
+            new DateTime(2026, 1, 1, 12, 0, 5, DateTimeKind.Utc));
+
+        var result = await cloudService.PushConsumptionAsync(SchoolId, new[] { staleEntry });
+
+        result.Applied.Should().ContainSingle(id => id == staleEntry.Id, "se marca aplicado para que la caja deje de reintentarlo");
+        (await cloud.NewContext().Accounts.Where(a => a.Id == AccountId).Select(a => a.Balance).SingleAsync())
+            .Should().Be(100m, "el pedido no se ha cobrado en esta prueba; el resguardo debe impedir que este intento sí lo haga");
+        (await cloud.NewContext().BalanceMovements.CountAsync()).Should().Be(0);
     }
 
     /// <summary>
