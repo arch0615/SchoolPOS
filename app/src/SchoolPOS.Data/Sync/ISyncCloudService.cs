@@ -32,4 +32,7 @@ public interface ISyncCloudService
 
     /// <summary>Sube el catálogo de la caja a la nube, para que el portal pueda mostrarlo (FR-WP).</summary>
     Task<ProductsPushResult> PushProductsAsync(Guid schoolId, IReadOnlyList<ProductEntryDto> entries, CancellationToken ct = default);
+
+    /// <summary>La caja marcó estos pedidos como entregados (alumno escaneado en el mostrador).</summary>
+    Task MarkOrdersFulfilledAsync(Guid schoolId, IReadOnlyList<Guid> orderIds, CancellationToken ct = default);
 }

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SchoolPOS.Domain.Abstractions;
 using SchoolPOS.Domain.Entities;
 using SchoolPOS.Domain.Enums;
+using SchoolPOS.Domain.Exceptions;
 
 namespace SchoolPOS.Data.Services;
 
@@ -56,6 +57,20 @@ public sealed class PortalOrderService : IPortalOrderService
                 .Where(p => productIds.Contains(p.Id) && p.SchoolId == owned.SchoolId && p.IsActive
                             && (p.ShowInPortal || p.MenuDayOfWeek != null))
                 .ToDictionaryAsync(p => p.Id, ct);
+
+            // Existencia por producto (no por renglón): dos renglones del mismo artículo deben
+            // validarse contra el total pedido, no cada uno por separado.
+            var requestedByProduct = lines.GroupBy(l => l.ProductId).ToDictionary(g => g.Key, g => g.Sum(l => l.Quantity));
+            foreach (var (productId, requested) in requestedByProduct)
+            {
+                if (!products.TryGetValue(productId, out var product))
+                    continue; // se reporta abajo, al construir los renglones
+                // Existencia sincronizada de la última corrida de la caja, no en tiempo real (ver
+                // ProductEntryDto.StockOnHand) — rechaza lo claramente imposible, no es una reserva
+                // exacta bajo pedidos simultáneos.
+                if (requested > product.StockOnHand)
+                    throw new InsufficientStockException(productId, requested, product.StockOnHand);
+            }
 
             var orderLines = new List<PortalOrderLine>();
             foreach (var l in lines)

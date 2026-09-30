@@ -85,5 +85,13 @@ public static class SyncEndpoints
             var result = await sync.PushProductsAsync(user.GetSchoolId(), body, ct);
             return Results.Ok(result);
         });
+
+        // La caja marcó estos pedidos como entregados (alumno escaneado en el mostrador).
+        group.MapPost("/orders/fulfilled", async (
+            ClaimsPrincipal user, MarkOrdersFulfilledRequest body, ISyncCloudService sync, CancellationToken ct) =>
+        {
+            await sync.MarkOrdersFulfilledAsync(user.GetSchoolId(), body.OrderIds, ct);
+            return Results.Ok();
+        });
     }
 }

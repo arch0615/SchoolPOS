@@ -12,6 +12,7 @@ public sealed class MainViewModel : ViewModelBase
     private readonly DashboardViewModel _dashboard;
     private readonly SalesViewModel _sales;
     private readonly RefundsViewModel _refunds;
+    private readonly PendingOrdersViewModel _pendingOrders;
     private readonly StudentsViewModel _students;
     private readonly OperatorsViewModel _operators;
     private readonly InventoryViewModel _inventory;
@@ -28,6 +29,7 @@ public sealed class MainViewModel : ViewModelBase
         DashboardViewModel dashboard,
         SalesViewModel sales,
         RefundsViewModel refunds,
+        PendingOrdersViewModel pendingOrders,
         StudentsViewModel students,
         OperatorsViewModel operators,
         InventoryViewModel inventory,
@@ -41,6 +43,7 @@ public sealed class MainViewModel : ViewModelBase
         _dashboard = dashboard;
         _sales = sales;
         _refunds = refunds;
+        _pendingOrders = pendingOrders;
         _students = students;
         _operators = operators;
         _inventory = inventory;
@@ -53,6 +56,7 @@ public sealed class MainViewModel : ViewModelBase
         ShowDashboardCommand = new RelayCommand(async () => await NavigateAsync(_dashboard));
         ShowSalesCommand = new RelayCommand(async () => await NavigateAsync(_sales));
         ShowRefundsCommand = new RelayCommand(async () => await NavigateAsync(_refunds), () => CanRefund);
+        ShowPendingOrdersCommand = new RelayCommand(async () => await NavigateAsync(_pendingOrders));
         ShowInventoryCommand = new RelayCommand(async () => await NavigateAsync(_inventory), () => CanManageInventory);
         ShowPurchasingCommand = new RelayCommand(async () => await NavigateAsync(_purchasing), () => CanManagePurchasing);
         ShowTreasuryCommand = new RelayCommand(async () => await NavigateAsync(_treasury), () => CanOperateOwnTill);
@@ -92,6 +96,7 @@ public sealed class MainViewModel : ViewModelBase
     public RelayCommand ShowDashboardCommand { get; }
     public RelayCommand ShowSalesCommand { get; }
     public RelayCommand ShowRefundsCommand { get; }
+    public RelayCommand ShowPendingOrdersCommand { get; }
     public RelayCommand ShowInventoryCommand { get; }
     public RelayCommand ShowPurchasingCommand { get; }
     public RelayCommand ShowTreasuryCommand { get; }

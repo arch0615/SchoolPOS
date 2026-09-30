@@ -39,4 +39,12 @@ public class PortalOrder
     public DateTime CreatedAtUtc { get; set; }
     public DateTime? AppliedAtUtc { get; set; }
     public DateTime? FulfilledAtUtc { get; set; }
+
+    /// <summary>
+    /// Uso exclusivo de la caja: cuándo le avisó a la nube que este pedido ya se entregó (marcado
+    /// ahí mismo, escaneando al alumno). Nulo en la nube siempre — mismo papel que
+    /// <see cref="Sale.SyncedToCloudAtUtc"/>, solo que en la dirección caja→nube del estado de
+    /// entrega en vez de la venta misma.
+    /// </summary>
+    public DateTime? FulfilledPushedAtUtc { get; set; }
 }

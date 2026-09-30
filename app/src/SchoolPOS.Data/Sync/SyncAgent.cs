@@ -64,9 +64,10 @@ public sealed class SyncAgent
         var salesPushed = await PushSalesAsync(ct);
         var limitsUpdated = await PullAccountLimitsAsync(ct);
         var ordersApplied = await PullOrdersAsync(ct);
+        var ordersFulfilledPushed = await PushFulfilledOrdersAsync(ct);
         return new SyncReport(
             pulled, applied, failed, pushed, skipped, rosterPushed, _clock.UtcNow, limitsUpdated, salesPushed,
-            ordersApplied, productsPushed);
+            ordersApplied, productsPushed, ordersFulfilledPushed);
     }
 
     /// <summary>Baja recargas confirmadas y las aplica al libro mayor local (idempotente).</summary>
@@ -251,7 +252,8 @@ public sealed class SyncAgent
     {
         var locals = await _local.Products.AsNoTracking()
             .Select(p => new ProductEntryDto(
-                p.Id, p.Name, p.Barcode, p.Price, p.Cost, p.IsActive, p.ShowInPortal, p.MenuDayOfWeek, p.CreatedAtUtc))
+                p.Id, p.Name, p.Barcode, p.Price, p.Cost, p.IsActive, p.ShowInPortal, p.MenuDayOfWeek, p.CreatedAtUtc,
+                p.StockOnHand))
             .ToListAsync(ct);
         if (locals.Count == 0)
             return 0;
@@ -409,6 +411,32 @@ public sealed class SyncAgent
                 LineTotal = l.LineTotal,
             }).ToList(),
         });
+
+        // Copia local del pedido: para que la caja tenga dónde listar "pedidos pendientes de
+        // entregar" y marcarlos al escanear al alumno (ver PushFulfilledOrdersAsync). Si la nube ya
+        // lo tenía como entregado (la escuela lo marcó desde el portal web antes de que la caja
+        // sincronizara), se copia así — no como pendiente, que sería falso.
+        _local.PortalOrders.Add(new PortalOrder
+        {
+            Id = order.Id,
+            SchoolId = schoolId,
+            StudentId = order.StudentId,
+            AccountId = order.AccountId,
+            RequestedForDate = order.RequestedForDate,
+            Total = order.Total,
+            Status = order.Status,
+            AppliedLocally = true,
+            AppliedAtUtc = _clock.UtcNow,
+            CreatedAtUtc = order.CreatedAtUtc,
+            Lines = order.Lines.Select(l => new PortalOrderLine
+            {
+                ProductId = l.ProductId,
+                Description = l.Description,
+                Quantity = l.Quantity,
+                UnitPrice = l.UnitPrice,
+                LineTotal = l.LineTotal,
+            }).ToList(),
+        });
         await _local.SaveChangesAsync(ct);
 
         foreach (var line in order.Lines)
@@ -422,5 +450,29 @@ public sealed class SyncAgent
             {
             }
         }
+    }
+
+    /// <summary>
+    /// Sube a la nube los pedidos que la caja marcó como entregados (alumno escaneado en el
+    /// mostrador, ver la pantalla de Pedidos del POS) — mismo destino que "Marcar entregado" del
+    /// portal web. Marca localmente cuáles ya se avisaron para no reenviarlos cada corrida.
+    /// </summary>
+    public async Task<int> PushFulfilledOrdersAsync(CancellationToken ct = default)
+    {
+        var toPush = await _local.PortalOrders
+            .Where(o => o.Status == PortalOrderStatus.Fulfilled && o.FulfilledPushedAtUtc == null)
+            .Select(o => o.Id)
+            .ToListAsync(ct);
+        if (toPush.Count == 0)
+            return 0;
+
+        await _cloud.MarkOrdersFulfilledAsync(toPush, ct);
+
+        var now = _clock.UtcNow;
+        await _local.PortalOrders
+            .Where(o => toPush.Contains(o.Id))
+            .ExecuteUpdateAsync(s => s.SetProperty(o => o.FulfilledPushedAtUtc, now), ct);
+
+        return toPush.Count;
     }
 }

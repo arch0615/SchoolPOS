@@ -14,11 +14,14 @@ public class PortalOrderServiceTests
     private static PortalOrderService NewService(TestDatabase db, TestClock? clock = null) =>
         new(db.Context, new BalanceService(db.Context, clock ?? new TestClock()), clock ?? new TestClock());
 
-    private static Product SeedMenuProduct(TestDatabase db, Guid schoolId, string name, decimal price, DayOfWeek? day = null, bool showInPortal = true)
+    private static Product SeedMenuProduct(
+        TestDatabase db, Guid schoolId, string name, decimal price, DayOfWeek? day = null, bool showInPortal = true,
+        decimal stock = 100m)
     {
         var product = new Product
         {
-            SchoolId = schoolId, Name = name, Price = price, ShowInPortal = showInPortal, MenuDayOfWeek = day, IsActive = true,
+            SchoolId = schoolId, Name = name, Price = price, ShowInPortal = showInPortal, MenuDayOfWeek = day,
+            IsActive = true, StockOnHand = stock,
         };
         db.Context.Products.Add(product);
         db.Context.SaveChanges();
@@ -106,6 +109,30 @@ public class PortalOrderServiceTests
             guardian.Id, account.Id, new[] { new PortalOrderLineRequest(product.Id, 1) }, null); // 45 > 40
 
         await act.Should().ThrowAsync<Domain.Exceptions.DailyLimitExceededException>();
+    }
+
+    /// <summary>
+    /// La existencia que ve el portal viene de la última sincronización de la caja (no en tiempo
+    /// real) — igual sirve para rechazar lo claramente imposible, en vez de cobrar un pedido que
+    /// después habría que devolver porque nunca hubo el artículo.
+    /// </summary>
+    [Fact]
+    public async Task Place_order_rejects_when_synced_stock_is_insufficient()
+    {
+        using var db = new TestDatabase();
+        var school = db.SeedSchool();
+        var product = SeedMenuProduct(db, school.Id, "Torta", 45m, stock: 1m);
+        var (guardian, account) = await SeedLinkedGuardianAsync(db, school.Id, balance: 500m);
+        var svc = NewService(db);
+
+        var act = () => svc.PlaceOrderAsync(
+            guardian.Id, account.Id, new[] { new PortalOrderLineRequest(product.Id, 2) }, null);
+
+        await act.Should().ThrowAsync<Domain.Exceptions.InsufficientStockException>();
+
+        // No debe cobrarse nada si el pedido se rechaza por falta de existencia.
+        var balance = await db.NewContext().Accounts.Where(a => a.Id == account.Id).Select(a => a.Balance).SingleAsync();
+        balance.Should().Be(500m);
     }
 
     [Fact]

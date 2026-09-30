@@ -92,9 +92,17 @@ public sealed record PendingOrderLineDto(Guid ProductId, string Description, dec
 /// exactamente como una recarga confirmada (mismo IBalanceService, mismo importe).
 /// </summary>
 public sealed record PendingOrderDto(
-    Guid Id, Guid StudentId, Guid AccountId, decimal Total, DateTime CreatedAtUtc, List<PendingOrderLineDto> Lines);
+    Guid Id, Guid StudentId, Guid AccountId, decimal Total, PortalOrderStatus Status,
+    DateTime? RequestedForDate, DateTime CreatedAtUtc, List<PendingOrderLineDto> Lines);
 
 public sealed record AckOrdersRequest(List<Guid> OrderIds);
+
+/// <summary>
+/// La caja marcó estos pedidos como entregados (alumno escaneado en el mostrador) — la nube
+/// refleja el mismo estado que ya usa "Marcar entregado" del portal web, para que ambos caminos
+/// terminen en el mismo lugar. Ignora silenciosamente un Id ya entregado o cancelado (idempotente).
+/// </summary>
+public sealed record MarkOrdersFulfilledRequest(List<Guid> OrderIds);
 
 /// <summary>
 /// Un producto de la caja, para que el portal pueda mostrarlo en el catálogo de pedidos
@@ -113,6 +121,13 @@ public sealed record ProductEntryDto(
     bool IsActive,
     bool ShowInPortal,
     DayOfWeek? MenuDayOfWeek,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    /// <summary>
+    /// Existencia al momento del último ciclo de sincronización — no en tiempo real. Sirve para que
+    /// el portal rechace un pedido claramente sin existencia; no es una reserva exacta (dos pedidos
+    /// simultáneos entre sincronizaciones podrían ambos pasar la validación), aceptable para un
+    /// pedido anticipado de un día para otro, no para un carrito de compras en línea.
+    /// </summary>
+    decimal StockOnHand = 0m);
 
 public sealed record ProductsPushResult(int Pushed);

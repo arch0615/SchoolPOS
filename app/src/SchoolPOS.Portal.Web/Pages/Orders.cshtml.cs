@@ -88,6 +88,10 @@ public class OrdersModel : PageModel
         {
             Error = $"Este pedido excede el presupuesto diario del alumno (gastado hoy: {ex.SpentToday:C2} de {ex.DailyLimit:C2}).";
         }
+        catch (InsufficientStockException ex)
+        {
+            Error = $"No hay existencia suficiente de ese artículo (disponible: {ex.Available:0.##}).";
+        }
         catch (Exception ex)
         {
             Error = ex.Message;

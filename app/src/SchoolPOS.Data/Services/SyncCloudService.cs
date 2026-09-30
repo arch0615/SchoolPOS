@@ -283,7 +283,7 @@ public sealed class SyncCloudService : ISyncCloudService
         var byOrder = lines.GroupBy(l => l.OrderId).ToDictionary(g => g.Key, g => g.ToList());
 
         return orders.Select(o => new PendingOrderDto(
-            o.Id, o.StudentId, o.AccountId, o.Total, o.CreatedAtUtc,
+            o.Id, o.StudentId, o.AccountId, o.Total, o.Status, o.RequestedForDate, o.CreatedAtUtc,
             byOrder.GetValueOrDefault(o.Id, new List<PortalOrderLine>())
                 .Select(l => new PendingOrderLineDto(l.ProductId, l.Description, l.Quantity, l.UnitPrice, l.LineTotal))
                 .ToList()))
@@ -304,6 +304,29 @@ public sealed class SyncCloudService : ISyncCloudService
         {
             o.AppliedLocally = true;
             o.AppliedAtUtc = now;
+        }
+        await _db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// La caja marcó estos pedidos como entregados (alumno escaneado). Mismo destino que "Marcar
+    /// entregado" del portal web (<c>PortalOrderService.MarkFulfilledAsync</c>) — solo cambia quién
+    /// lo dispara. Ignora un Id ya entregado o cancelado en vez de fallar: la caja puede reintentar
+    /// el envío sin que eso sea un error.
+    /// </summary>
+    public async Task MarkOrdersFulfilledAsync(Guid schoolId, IReadOnlyList<Guid> orderIds, CancellationToken ct = default)
+    {
+        if (orderIds.Count == 0)
+            return;
+
+        var now = _clock.UtcNow;
+        var rows = await _db.PortalOrders
+            .Where(o => o.SchoolId == schoolId && orderIds.Contains(o.Id) && o.Status == PortalOrderStatus.Placed)
+            .ToListAsync(ct);
+        foreach (var o in rows)
+        {
+            o.Status = PortalOrderStatus.Fulfilled;
+            o.FulfilledAtUtc = now;
         }
         await _db.SaveChangesAsync(ct);
     }
@@ -329,7 +352,8 @@ public sealed class SyncCloudService : ISyncCloudService
                 {
                     if (product.Name == e.Name && product.Barcode == e.Barcode && product.Price == e.Price &&
                         product.Cost == e.Cost && product.IsActive == e.IsActive &&
-                        product.ShowInPortal == e.ShowInPortal && product.MenuDayOfWeek == e.MenuDayOfWeek)
+                        product.ShowInPortal == e.ShowInPortal && product.MenuDayOfWeek == e.MenuDayOfWeek &&
+                        product.StockOnHand == e.StockOnHand)
                         continue;
 
                     product.Name = e.Name;
@@ -339,6 +363,7 @@ public sealed class SyncCloudService : ISyncCloudService
                     product.IsActive = e.IsActive;
                     product.ShowInPortal = e.ShowInPortal;
                     product.MenuDayOfWeek = e.MenuDayOfWeek;
+                    product.StockOnHand = e.StockOnHand;
                 }
                 else
                 {
@@ -351,6 +376,7 @@ public sealed class SyncCloudService : ISyncCloudService
                         Price = e.Price,
                         Cost = e.Cost,
                         IsActive = e.IsActive,
+                        StockOnHand = e.StockOnHand,
                         ShowInPortal = e.ShowInPortal,
                         MenuDayOfWeek = e.MenuDayOfWeek,
                         CreatedAtUtc = e.CreatedAtUtc,

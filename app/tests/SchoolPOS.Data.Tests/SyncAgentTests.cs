@@ -687,6 +687,98 @@ public class SyncAgentTests
     }
 
     /// <summary>
+    /// Sin esta copia local, la caja no tenía dónde listar "pedidos pendientes de entregar" ni
+    /// cómo marcar uno al escanear al alumno en el mostrador — solo existía del lado de la nube.
+    /// </summary>
+    [Fact]
+    public async Task Pull_orders_leaves_a_local_pending_order_for_the_till_to_deliver()
+    {
+        using var cloud = new TestDatabase();
+        using var local = new TestDatabase();
+        cloud.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m);
+        local.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m);
+
+        var orderId = Guid.NewGuid();
+        var requestedFor = new DateTime(2026, 1, 5, 0, 0, 0, DateTimeKind.Utc);
+        cloud.Context.PortalOrders.Add(new PortalOrder
+        {
+            Id = orderId,
+            SchoolId = SchoolId,
+            StudentId = StudentId,
+            AccountId = AccountId,
+            Total = 45m,
+            RequestedForDate = requestedFor,
+            CreatedAtUtc = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc),
+            Lines = new List<PortalOrderLine>
+            {
+                new() { ProductId = Guid.NewGuid(), Description = "Torta de jamón", Quantity = 1, UnitPrice = 45m, LineTotal = 45m },
+            },
+        });
+        await cloud.Context.SaveChangesAsync();
+        cloud.Context.ChangeTracker.Clear();
+
+        var agent = NewAgent(cloud, local);
+        await agent.RunOnceAsync();
+
+        var localOrder = await local.NewContext().PortalOrders.Include(o => o.Lines).SingleAsync(o => o.Id == orderId);
+        localOrder.Status.Should().Be(PortalOrderStatus.Placed, "todavía no lo ha entregado nadie");
+        localOrder.StudentId.Should().Be(StudentId);
+        localOrder.RequestedForDate.Should().Be(requestedFor);
+        localOrder.Lines.Should().ContainSingle(l => l.Description == "Torta de jamón");
+    }
+
+    /// <summary>
+    /// La caja marca "entregado" al escanear al alumno; ese estado debe llegar a la nube (mismo
+    /// destino que "Marcar entregado" del portal web), y no reenviarse en corridas posteriores.
+    /// </summary>
+    [Fact]
+    public async Task Push_fulfilled_orders_notifies_the_cloud_and_does_not_resend()
+    {
+        using var cloud = new TestDatabase();
+        using var local = new TestDatabase();
+        cloud.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m);
+        local.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m);
+
+        var orderId = Guid.NewGuid();
+        cloud.Context.PortalOrders.Add(new PortalOrder
+        {
+            Id = orderId,
+            SchoolId = SchoolId,
+            StudentId = StudentId,
+            AccountId = AccountId,
+            Total = 45m,
+            CreatedAtUtc = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc),
+            Lines = new List<PortalOrderLine>
+            {
+                new() { ProductId = Guid.NewGuid(), Description = "Torta de jamón", Quantity = 1, UnitPrice = 45m, LineTotal = 45m },
+            },
+        });
+        await cloud.Context.SaveChangesAsync();
+        cloud.Context.ChangeTracker.Clear();
+
+        var agent = NewAgent(cloud, local);
+        await agent.RunOnceAsync(); // deja la copia local pendiente
+
+        // El cajero escanea al alumno y marca el pedido entregado, directo en la base local.
+        await local.Context.PortalOrders.Where(o => o.Id == orderId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(o => o.Status, PortalOrderStatus.Fulfilled)
+                .SetProperty(o => o.FulfilledAtUtc, new DateTime(2026, 1, 2, 8, 0, 0, DateTimeKind.Utc)));
+        local.Context.ChangeTracker.Clear();
+
+        var pushed = await agent.PushFulfilledOrdersAsync();
+
+        pushed.Should().Be(1);
+        var cloudOrder = await cloud.NewContext().PortalOrders.SingleAsync(o => o.Id == orderId);
+        cloudOrder.Status.Should().Be(PortalOrderStatus.Fulfilled);
+        cloudOrder.FulfilledAtUtc.Should().NotBeNull();
+
+        // Idempotente: no debe reenviarse en la siguiente corrida.
+        var second = await agent.PushFulfilledOrdersAsync();
+        second.Should().Be(0);
+    }
+
+    /// <summary>
     /// Un producto dado de alta solo desde el portal web (sin pasar por el POS de escritorio) no
     /// existe en la caja todavía — el pedido ya está pagado, así que debe aplicarse igual; el
     /// descuento de inventario de ese renglón simplemente no ocurre, sin tumbar el resto.

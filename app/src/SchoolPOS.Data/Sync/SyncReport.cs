@@ -15,7 +15,8 @@ public sealed record SyncReport(
     int AccountLimitsUpdated = 0,
     int SalesPushed = 0,
     int OrdersApplied = 0,
-    int ProductsPushed = 0)
+    int ProductsPushed = 0,
+    int OrdersFulfilledPushed = 0)
 {
     public bool HasFailures => TopUpsFailed > 0;
 

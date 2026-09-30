@@ -1,0 +1,47 @@
+<UserControl x:Class="SchoolPOS.Pos.Desktop.Views.PendingOrdersView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <DockPanel Margin="24">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,4">
+            <TextBlock Text="Pedidos" FontSize="24" FontWeight="Bold"
+                       Foreground="{StaticResource InkBrush}" VerticalAlignment="Center" />
+        </StackPanel>
+        <TextBlock DockPanel.Dock="Top" Margin="0,0,0,12" Foreground="{StaticResource MutedBrush}"
+                   Text="Pedidos anticipados del portal, ya pagados, pendientes de entregar. Busca al alumno (o escanea su código) y marca el pedido entregado." />
+
+        <Grid DockPanel.Dock="Top" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox Grid.Column="0" Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}"
+                     Tag="Buscar por alumno o matrícula…">
+                <TextBox.InputBindings>
+                    <KeyBinding Key="Return" Command="{Binding RefreshCommand}" />
+                </TextBox.InputBindings>
+            </TextBox>
+            <Button Grid.Column="1" Content="Buscar" Command="{Binding RefreshCommand}" Margin="8,0,0,0" />
+            <Button Grid.Column="2" Content="Entregar pedido" Style="{StaticResource PrimaryButton}"
+                    Command="{Binding DeliverCommand}" Margin="8,0,0,0" />
+        </Grid>
+
+        <StatusBar DockPanel.Dock="Bottom" Background="Transparent">
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource DangerBrush}" />
+            <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource AccentBrush}" />
+        </StatusBar>
+
+        <DataGrid ItemsSource="{Binding Orders}" SelectedItem="{Binding SelectedOrder}"
+                  AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                  HeadersVisibility="Column" GridLinesVisibility="Horizontal" Background="White" RowBackground="White">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Alumno" Binding="{Binding StudentName}" Width="180" />
+                <DataGridTextColumn Header="Matrícula" Binding="{Binding EnrollmentNo}" Width="110" />
+                <DataGridTextColumn Header="Pedido" Binding="{Binding CreatedAtLocal, StringFormat='dd/MM/yyyy HH:mm'}" Width="140" />
+                <DataGridTextColumn Header="Para el día" Binding="{Binding RequestedForDateText}" Width="120" />
+                <DataGridTextColumn Header="Artículos" Binding="{Binding ItemsText}" Width="*" />
+                <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=C2}" Width="100" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>

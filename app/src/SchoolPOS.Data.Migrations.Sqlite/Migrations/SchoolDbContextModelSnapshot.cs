@@ -470,6 +470,9 @@ namespace SchoolPOS.Data.Migrations.Sqlite.Migrations
                     b.Property<DateTime?>("FulfilledAtUtc")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("FulfilledPushedAtUtc")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("RequestedForDate")
                         .HasColumnType("TEXT");
 

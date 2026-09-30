@@ -111,4 +111,12 @@ public sealed class HttpSyncApiClient : ISyncApiClient
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<ProductsPushResult>(SyncJson.Options, ct))!;
     }
+
+    public async Task MarkOrdersFulfilledAsync(IReadOnlyList<Guid> orderIds, CancellationToken ct = default)
+    {
+        ApplyCurrentConfig();
+        var response = await _http.PostAsJsonAsync(
+            "/api/sync/orders/fulfilled", new MarkOrdersFulfilledRequest(orderIds.ToList()), SyncJson.Options, ct);
+        response.EnsureSuccessStatusCode();
+    }
 }

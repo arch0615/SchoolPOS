@@ -31,4 +31,7 @@ public interface ISyncApiClient
 
     /// <summary>Sube el catálogo de la caja a la nube, para que el portal pueda mostrarlo (FR-WP).</summary>
     Task<ProductsPushResult> PushProductsAsync(IReadOnlyList<ProductEntryDto> entries, CancellationToken ct = default);
+
+    /// <summary>Avisa a la nube que estos pedidos ya se entregaron (alumno escaneado en el mostrador).</summary>
+    Task MarkOrdersFulfilledAsync(IReadOnlyList<Guid> orderIds, CancellationToken ct = default);
 }
