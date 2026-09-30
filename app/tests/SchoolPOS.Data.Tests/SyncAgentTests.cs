@@ -633,6 +633,56 @@ public class SyncAgentTests
             .CountAsync(m => m.Type == MovementType.Sale && m.Reference == orderId.ToString()))
             .Should().Be(1);
 
+        var cloudOrderCheck = await cloud.NewContext().PortalOrders.SingleAsync(o => o.Id == orderId);
+        cloudOrderCheck.AppliedLocally.Should().BeTrue("la nube debe quedar marcada como acusada por la caja");
+    }
+
+    /// <summary>
+    /// Bug real reproducido en producción: el cargo local de un pedido (arriba) es, para
+    /// <see cref="MovementType.Sale"/>, indistinguible de una venta cualquiera de la escuela —
+    /// PushConsumptionAsync lo tomaba como consumo nuevo y lo volvía a aplicar en la nube, esta vez
+    /// vía el ExecuteUpdateAsync sin resguardo de SyncCloudService.PushConsumptionAsync (que confía
+    /// en que la escuela ya validó sobregiro), dejando el saldo negativo por un cargo duplicado que
+    /// nunca pasó por ApplyGuardedDebitAsync la segunda vez.
+    /// </summary>
+    [Fact]
+    public async Task Pull_orders_local_charge_is_never_re_pushed_as_new_consumption()
+    {
+        using var cloud = new TestDatabase();
+        using var local = new TestDatabase();
+        cloud.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m);
+        local.SeedRoster(SchoolId, StudentId, AccountId, balance: 100m);
+
+        var orderId = Guid.NewGuid();
+        cloud.Context.PortalOrders.Add(new PortalOrder
+        {
+            Id = orderId,
+            SchoolId = SchoolId,
+            StudentId = StudentId,
+            AccountId = AccountId,
+            Total = 45m,
+            CreatedAtUtc = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc),
+            Lines = new List<PortalOrderLine>
+            {
+                new() { ProductId = Guid.NewGuid(), Description = "Torta de jamón", Quantity = 1, UnitPrice = 45m, LineTotal = 45m },
+            },
+        });
+        await cloud.Context.SaveChangesAsync();
+        cloud.Context.ChangeTracker.Clear();
+
+        var agent = NewAgent(cloud, local);
+        await agent.RunOnceAsync(); // aplica el pedido: cobra localmente y deja la venta
+
+        // Corrida siguiente (como en producción, con el intervalo del agente): PushConsumptionAsync
+        // ya ve el asiento local del pedido. No debe subirlo — la nube ya lo cobró al colocarse.
+        var (pushed, _) = await agent.PushConsumptionAsync();
+
+        pushed.Should().Be(0, "el cargo del pedido ya existe en la nube; no es consumo nuevo de la escuela");
+        (await cloud.NewContext().Accounts.Where(a => a.Id == AccountId).Select(a => a.Balance).SingleAsync())
+            .Should().Be(100m, "la nube no debe volver a cobrar un cargo que la caja solo está reflejando localmente");
+        (await cloud.NewContext().BalanceMovements.CountAsync())
+            .Should().Be(0, "ningún asiento nuevo debe llegar a la nube por este pedido");
+
         var cloudOrder = await cloud.NewContext().PortalOrders.SingleAsync(o => o.Id == orderId);
         cloudOrder.AppliedLocally.Should().BeTrue("la nube debe quedar marcada como acusada por la caja");
     }

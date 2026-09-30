@@ -355,7 +355,17 @@ public sealed class SyncAgent
                 var alreadyCharged = await _local.BalanceMovements.AsNoTracking()
                     .AnyAsync(m => m.Type == MovementType.Sale && m.Reference == reference, ct);
                 if (!alreadyCharged)
-                    await _localBalance.ChargeSaleAsync(order.AccountId, order.Total, reference, PortalOperator, ct);
+                {
+                    var movement = await _localBalance.ChargeSaleAsync(order.AccountId, order.Total, reference, PortalOperator, ct);
+                    // Este cargo YA existe en la nube (el portal lo cobró al colocarse el pedido);
+                    // esta es solo la copia local. Marcarlo sincronizado evita que PushConsumptionAsync
+                    // lo confunda con consumo nuevo de la escuela y lo vuelva a aplicar en la nube —
+                    // ahí SIN el resguardo de sobregiro de ApplyGuardedDebitAsync (PushConsumptionAsync
+                    // hace un ExecuteUpdateAsync ciego, confía en que la escuela ya validó), lo que
+                    // deja el saldo negativo: exactamente el bug real que motivó esta nota.
+                    await _local.BalanceMovements.Where(m => m.Id == movement.Id)
+                        .ExecuteUpdateAsync(s => s.SetProperty(m => m.SyncedToCloudAtUtc, _clock.UtcNow), ct);
+                }
 
                 // Aparte del cargo (que puede venir ya aplicado de una corrida anterior que se
                 // interrumpió antes de llegar aquí): sin esto un reintento nunca dejaría la venta
