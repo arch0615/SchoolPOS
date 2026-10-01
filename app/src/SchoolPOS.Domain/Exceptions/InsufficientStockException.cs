@@ -7,13 +7,15 @@ namespace SchoolPOS.Domain.Exceptions;
 public class InsufficientStockException : Exception
 {
     public Guid ProductId { get; }
+    public string ProductName { get; }
     public decimal Requested { get; }
     public decimal Available { get; }
 
-    public InsufficientStockException(Guid productId, decimal requested, decimal available)
-        : base($"Existencias insuficientes del producto {productId}: se requiere {requested}, disponible {available}.")
+    public InsufficientStockException(Guid productId, string productName, decimal requested, decimal available)
+        : base($"Existencias insuficientes de \"{productName}\" ({productId}): se requiere {requested}, disponible {available}.")
     {
         ProductId = productId;
+        ProductName = productName;
         Requested = requested;
         Available = available;
     }

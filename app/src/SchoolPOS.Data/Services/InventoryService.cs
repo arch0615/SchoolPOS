@@ -64,7 +64,7 @@ public sealed class InventoryService : IInventoryService
                 var product = await _db.Products.AsNoTracking()
                     .FirstOrDefaultAsync(p => p.Id == productId, ct)
                     ?? throw new InvalidOperationException($"Producto {productId} no encontrado.");
-                throw new InsufficientStockException(productId, quantity, product.StockOnHand);
+                throw new InsufficientStockException(productId, product.Name, quantity, product.StockOnHand);
             }
 
             return await AppendMovementAsync(

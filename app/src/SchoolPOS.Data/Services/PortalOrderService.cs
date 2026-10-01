@@ -69,7 +69,7 @@ public sealed class PortalOrderService : IPortalOrderService
                 // ProductEntryDto.StockOnHand) — rechaza lo claramente imposible, no es una reserva
                 // exacta bajo pedidos simultáneos.
                 if (requested > product.StockOnHand)
-                    throw new InsufficientStockException(productId, requested, product.StockOnHand);
+                    throw new InsufficientStockException(productId, product.Name, requested, product.StockOnHand);
             }
 
             var orderLines = new List<PortalOrderLine>();

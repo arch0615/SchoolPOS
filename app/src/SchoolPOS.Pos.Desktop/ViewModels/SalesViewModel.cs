@@ -351,7 +351,7 @@ public sealed class SalesViewModel : ViewModelBase, IAsyncLoadable
         }
         catch (InsufficientStockException ex)
         {
-            ErrorMessage = $"Sin existencias suficientes (producto {ex.ProductId}).";
+            ErrorMessage = $"Sin existencias suficientes de \"{ex.ProductName}\" (disponible: {ex.Available:0.##}).";
         }
         catch (Exception ex)
         {

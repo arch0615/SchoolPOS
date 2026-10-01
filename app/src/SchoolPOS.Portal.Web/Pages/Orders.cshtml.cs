@@ -90,7 +90,7 @@ public class OrdersModel : PageModel
         }
         catch (InsufficientStockException ex)
         {
-            Error = $"No hay existencia suficiente de ese artículo (disponible: {ex.Available:0.##}).";
+            Error = $"No hay existencia suficiente de \"{ex.ProductName}\" (disponible: {ex.Available:0.##}).";
         }
         catch (Exception ex)
         {
